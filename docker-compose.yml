@@ -1,0 +1,68 @@
+services:
+  # Go Fiber Backend
+  app:
+    build:
+      context: .
+      dockerfile: docker/golang/Dockerfile
+    container_name: pxlfox-app
+    ports:
+      - "8080:4000"
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - CACHE_HOST=cache
+      - CACHE_PORT=6379
+    depends_on:
+      - db
+      - cache
+    networks:
+      - pxlfox-network
+
+  # MySQL Datenbank
+  db:
+    image: mysql:8.0
+    container_name: pxlfox-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - pxlfox-network
+
+  # Dragonfly Cache (Alternative zu Redis)
+  cache:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    container_name: pxlfox-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - pxlfox-network
+
+  # Optional: PHPMyAdmin für Datenbankverwaltung
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pxlfox-phpmyadmin
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - pxlfox-network
+
+volumes:
+  db_data:
+
+networks:
+  pxlfox-network:
