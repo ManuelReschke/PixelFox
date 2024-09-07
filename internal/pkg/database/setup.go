@@ -3,8 +3,8 @@ package database
 import (
 	"fmt"
 
-	"github.com/kooroshh/fiber-boostrap/app/models"
-	"github.com/kooroshh/fiber-boostrap/pkg/env"
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

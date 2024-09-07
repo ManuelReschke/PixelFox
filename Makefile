@@ -39,6 +39,11 @@ docker-clean:
 	docker-compose down -v
 	docker system prune --volumes -f
 
+.PHONY: restart
+restart:
+	@echo "🔄 Restarte Docker Compose..."
+	docker-compose restart
+
 # Golang Tests ausführen
 .PHONY: test
 test:
