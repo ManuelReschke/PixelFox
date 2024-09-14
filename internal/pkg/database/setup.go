@@ -2,12 +2,17 @@ package database
 
 import (
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
+
+const maxRetries = 5
+const retryDelay = 5 * time.Second
 
 func SetupDatabase() {
 	var err error
@@ -20,16 +25,30 @@ func SetupDatabase() {
 		"3306", // env.GetEnv("DB_PORT", "5432"),
 		env.GetEnv("DB_NAME", ""),
 	)
-	DB, err = gorm.Open(mysql.New(mysql.Config{
-		DSN:                       dsn,   // data source name
-		DefaultStringSize:         256,   // default size for string fields
-		DisableDatetimePrecision:  true,  // disable datetime precision, which not supported before MySQL 5.6
-		DontSupportRenameIndex:    true,  // drop & create when rename index, rename index not supported before MySQL 5.7, MariaDB
-		DontSupportRenameColumn:   true,  // `change` when rename column, rename column not supported before MySQL 8, MariaDB
-		SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
-	}), &gorm.Config{})
+
+	for i := 0; i < maxRetries; i++ {
+		DB, err = gorm.Open(mysql.New(mysql.Config{
+			DSN:                       dsn,   // data source name
+			DefaultStringSize:         256,   // default size for string fields
+			DisableDatetimePrecision:  true,  // disable datetime precision, which not supported before MySQL 5.6
+			DontSupportRenameIndex:    true,  // drop & create when rename index, rename index not supported before MySQL 5.7, MariaDB
+			DontSupportRenameColumn:   true,  // `change` when rename column, rename column not supported before MySQL 8, MariaDB
+			SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
+		}), &gorm.Config{})
+		if err == nil {
+			DB.AutoMigrate(&models.User{})
+
+			return
+		}
+
+		log.Printf("Failed to connect to database (try %d/%d): %v", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			log.Printf("Retry number %v...", retryDelay)
+			time.Sleep(retryDelay)
+		}
+	}
+
 	if err != nil {
 		panic(err)
 	}
-	DB.AutoMigrate(&models.User{})
 }

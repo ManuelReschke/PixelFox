@@ -1,7 +1,12 @@
 package partials
 
-templ Navbar(fromProtected bool, username string) {
-	<nav class="navbar bg-primary text-primary-content fixed top-0 z-10">
+templ Navbar(fromProtected bool, username string, isDEV bool) {
+    if isDEV {
+        <div class="dev-mode-bar bg-red-500 text-white text-center fixed top-0 left-0 w-full z-20">
+            DEV MODE
+        </div>
+    }
+    <nav class="navbar bg-primary text-primary-content fixed z-10 w-full">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
 				Todo List

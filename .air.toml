@@ -1,0 +1,13 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./pixelfox-app"
+bin = "pixelfox-app"
+full_bin = "APP_ENV=dev ./pixelfox-app"
+watch_dir = ["."]
+exclude_dir = ["tmp", "vendor", "node_modules"]
+
+[log]
+level = "debug"

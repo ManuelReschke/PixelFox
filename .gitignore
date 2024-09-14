@@ -106,3 +106,13 @@ fabric.properties
 
 .test.db
 .env
+
+# templ
+templ.log
+
+# app
+pixelfox-app
+
+# supervisord
+supervisord.log
+supervisord.pid

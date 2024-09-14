@@ -1,0 +1,22 @@
+# Build stage
+FROM golang:1.22-alpine AS fetch-stage
+WORKDIR /app
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+RUN go install github.com/air-verse/air@latest
+RUN go install github.com/a-h/templ/cmd/templ@latest
+COPY . .
+RUN templ generate
+
+# Final stage (development)
+FROM golang:1.22-alpine AS dev-stage
+WORKDIR /app
+RUN apk add --no-cache supervisor
+COPY --from=fetch-stage /go/bin/air /usr/local/bin/air
+COPY --from=fetch-stage /go/bin/templ /usr/local/bin/templ
+COPY . .
+COPY supervisord.conf /etc/supervisord.conf
+EXPOSE 8080
+#CMD ["air"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

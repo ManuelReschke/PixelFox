@@ -3,6 +3,16 @@ ENV_DEV_FILE=.env.dev
 ENV_PROD_FILE=.env.prod
 
 # Aufgabe: Kopiere .env.dev nach .env (Testumgebung)
+.PHONY: build
+build:
+	@echo "🚧 Build..."
+	docker-compose build
+
+.PHONY: build-no-cache
+build-no-cache:
+	@echo "🚧 Build..."
+	docker-compose build --no-cache --force-rm --pull
+
 .PHONY: prepare-env-test
 prepare-env-test:
 	@echo "🔧 Kopiere $(ENV_DEV_FILE) nach $(ENV_FILE) (Testumgebung)"
@@ -15,16 +25,21 @@ prepare-env-prod:
 	cp $(ENV_PROD_FILE) $(ENV_FILE)
 
 # Docker Compose Build und Start für Testumgebung
-.PHONY: docker-up-test
-docker-up-test: prepare-env-test
+.PHONY: start
+start: prepare-env-test
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
-	docker-compose up --build -d
+	docker-compose up -d
+
+.PHONY: start-build
+start-build: prepare-env-test
+	@echo "🚀 Starte Docker Compose (Testumgebung)..."
+	docker-compose up -d --build
 
 # Docker Compose Build und Start für Produktionsumgebung
-.PHONY: docker-up-prod
-docker-up-prod: prepare-env-prod
+.PHONY: start-prod
+start-prod: prepare-env-prod
 	@echo "🚀 Starte Docker Compose (Produktionsumgebung)..."
-	docker-compose up --build -d
+	docker-compose up -d
 
 # Docker Compose herunterfahren
 .PHONY: docker-down
@@ -38,6 +53,11 @@ docker-clean:
 	@echo "🧹 Entferne Docker Volumes und Container..."
 	docker-compose down -v
 	docker system prune --volumes -f
+
+.PHONY: stop
+stop:
+	@echo "🛑 Stoppe Docker Compose..."
+	docker-compose stop
 
 .PHONY: restart
 restart:
@@ -56,8 +76,11 @@ help:
 	@echo "Verfügbare Befehle:"
 	@echo "  make prepare-env-test   - Kopiere .env.dev nach .env (Testumgebung)"
 	@echo "  make prepare-env-prod   - Kopiere .env.prod nach .env (Produktionsumgebung)"
-	@echo "  make docker-up-test     - Starte Docker Compose für Testumgebung"
-	@echo "  make docker-up-prod     - Starte Docker Compose für Produktionsumgebung"
+	@echo "  make start              - Starte Docker Compose für Testumgebung"
+	@echo "  make start-build        - Starte Docker Compose für Testumgebung & Build"
+	@echo "  make start-prod         - Starte Docker Compose für Produktionsumgebung"
 	@echo "  make docker-down        - Stoppe Docker Compose"
 	@echo "  make docker-clean       - Entferne Docker Volumes und Container"
+	@echo "  make stop               - Stopppe Docker Container"
+	@echo "  make restart            - Neustarten der Container"
 	@echo "  make test               - Führe Tests aus"

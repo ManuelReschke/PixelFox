@@ -28,6 +28,7 @@ func NewApplication() *fiber.App {
 	app.Use(recover.New())
 	app.Use(logger.New())
 	app.Get("/metrics", monitor.New())
+	app.Static("/", "./web/assets")
 	router.InstallRouter(app)
 
 	return app
