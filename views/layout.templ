@@ -6,6 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+const APP_NAME = "PIXELFOX.cc"
+
 templ Layout(
 	page string,
 	fromProtected bool,
@@ -15,14 +17,14 @@ templ Layout(
 	isDEV bool,
 ) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="emerald">
+	<html lang="de" data-theme="emerald">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<meta name="description" content="Full stack application using Golang's Fiber framework & Templ templating language with user session management + CRUD to a SQLite database (To Do List) and HTMX in the frontend" />
+			<meta name="description" content="Free image hosting service" />
 			<meta name="google" content="notranslate"/>
-			<title>Todo List{ page }</title>
+			<title>{ APP_NAME } { page }</title>
 			<link rel="shortcut icon" href="/img/gopher-svgrepo-com.svg" type="image/svg+xml"/>
 			<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.10/dist/full.min.css" rel="stylesheet" type="text/css"/>
 			<link rel="stylesheet" href="/css/styles.css"/>
@@ -34,7 +36,7 @@ templ Layout(
 		<body class="sample-transition" hx-boost="true">
 			<header>
 				if !isError {
-					@partials.Navbar(fromProtected, username, isDEV)
+					@partials.Navbar(APP_NAME, fromProtected, username, isDEV)
 				}
 			</header>
 			<main class={ templ.KV("pt-40", !isError) }>

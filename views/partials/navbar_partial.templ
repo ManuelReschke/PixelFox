@@ -1,17 +1,17 @@
 package partials
 
-templ Navbar(fromProtected bool, username string, isDEV bool) {
-    if isDEV {
-        <div class="dev-mode-bar bg-red-500 text-white text-center fixed top-0 left-0 w-full z-20">
-            DEV MODE
-        </div>
-    }
-    <nav class="navbar bg-primary text-primary-content fixed z-10 w-full">
+templ Navbar(appName string, fromProtected bool, username string, isDEV bool) {
+    <nav class="navbar bg-neutral text-neutral-content fixed z-10 w-full">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
-				Todo List
+				{ appName }
 			</a>
 		</div>
+		if isDEV {
+		    <div class="navbar-center text-white text-center bg-red-500">
+		        DEV MODE
+            </div>
+        }
 		<div class="navbar-end">
 			if fromProtected {
 				<span class="font-bold text-indigo-700 mr-8">
