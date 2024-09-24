@@ -14,7 +14,6 @@ templ Layout(
 	isError bool,
 	msg fiber.Map,
 	username string,
-	isDEV bool,
 ) {
 	<!DOCTYPE html>
 	<html lang="de" data-theme="emerald">
@@ -22,11 +21,11 @@ templ Layout(
 			<meta charset="UTF-8"/>
 			<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<meta name="description" content="Free image hosting service" />
+			<meta name="description" content="Schnellster Bilder Hosting Service. Teile deine Fotos mit der Welt." />
 			<meta name="google" content="notranslate"/>
 			<title>{ APP_NAME } { page }</title>
 			<link rel="shortcut icon" href="/img/gopher-svgrepo-com.svg" type="image/svg+xml"/>
-			<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.10/dist/full.min.css" rel="stylesheet" type="text/css"/>
+			<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css"/>
 			<link rel="stylesheet" href="/css/styles.css"/>
 			<script src="https://cdn.tailwindcss.com"></script>
 			<script src="https://unpkg.com/htmx.org@2.0.2" integrity="sha384-Y7hw+L/jvKeWIRRkqWYfPcvVxHzVzn5REgzbawhxAuQGwX1XWe70vji+VSeHOThJ" crossorigin="anonymous"></script>
@@ -36,12 +35,12 @@ templ Layout(
 		<body class="sample-transition" hx-boost="true">
 			<header>
 				if !isError {
-					@partials.Navbar(APP_NAME, fromProtected, username, isDEV)
+					@partials.Navbar(APP_NAME, fromProtected, username)
 				}
 			</header>
 			<main class={ templ.KV("pt-40", !isError) }>
+                @partials.FlashMessages(msg)
 				{ children... }
-				@partials.FlashMessages(msg)
 			</main>
 		</body>
 	</html>

@@ -19,3 +19,7 @@ func SetupEnvFile() {
 		panic(err)
 	}
 }
+
+func IsDev() bool {
+	return GetEnv("APP_ENV", "prod") == "dev"
+}

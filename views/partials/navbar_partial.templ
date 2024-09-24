@@ -1,21 +1,20 @@
 package partials
 
-templ Navbar(appName string, fromProtected bool, username string, isDEV bool) {
+import "github.com/ManuelReschke/PixelFox/internal/pkg/env"
+import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
+
+templ Navbar(appName string, fromProtected bool, username string) {
     <nav class="navbar bg-neutral text-neutral-content fixed z-10 w-full">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
 				{ appName }
 			</a>
 		</div>
-		if isDEV {
-		    <div class="navbar-center text-white text-center bg-red-500">
-		        DEV MODE
-            </div>
-        }
+		@DevNote()
 		<div class="navbar-end">
 			if fromProtected {
 				<span class="font-bold text-indigo-700 mr-8">
-					{ username }
+					{ session.GetValueByKey("username") }
 				</span>
 				<a hx-swap="transition:true" class="btn btn-ghost text-lg" href="/todo/list">
 					Tasks
@@ -48,12 +47,35 @@ templ Navbar(appName string, fromProtected bool, username string, isDEV bool) {
 				</button>
 			} else {
 				<a hx-swap="transition:true" class="btn btn-ghost text-lg" href="/register">
-					Register
+					Registrieren
 				</a>
 				<a hx-swap="transition:true" class="btn btn-ghost text-lg" href="/login">
-					Login
+					Einloggen
 				</a>
 			}
+          <div class="flex-none">
+            <ul class="menu menu-horizontal px-1">
+              <!--<li><a>Link</a></li>-->
+              <li>
+                <details>
+                  <summary>Mehr ...  </summary>
+                  <ul class="bg-neutral rounded-t-none p-2 w-28">
+                    <li><a class="hover:bg-base-300 hover:text-base-content" href="/docs/api">API</a></li>
+                    <li><a class="hover:bg-base-300 hover:text-base-content" href="/about">Über Uns</a></li>
+                    <li><a class="hover:bg-base-300 hover:text-base-content" href="/contact">Kontakt</a></li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </div>
 		</div>
 	</nav>
+}
+
+templ DevNote() {
+		if env.IsDev() {
+		    <div class="navbar-center text-white text-center bg-red-500">
+		        DEV MODE
+            </div>
+        }
 }

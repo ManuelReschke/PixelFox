@@ -6,11 +6,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-templ LoginIndex(fromProtected bool) {
+templ LoginIndex(fromProtected bool, csrfToken string) {
 	<section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
 		<div class="card-body pb-2">
 			<h1 class="card-title border-b border-b-slate-600 pb-[4px]">
-				Log In
+				Einloggen
 			</h1>
 			<form
 				hx-swap="transition:true"
@@ -19,10 +19,11 @@ templ LoginIndex(fromProtected bool) {
 				action=""
 				method="post"
 			>
+                <input type="hidden" name="_csrf" value={csrfToken}>
 				<label class="flex flex-col justify-start gap-2">
 					Email:
 					<input
-						class="input input-bordered input-primary bg-gray-200"
+						class="input input-bordered input-primary-content bg-gray-200"
 						type="email"
 						name="email"
 						required
@@ -34,9 +35,9 @@ templ LoginIndex(fromProtected bool) {
 					/>
 				</label>
 				<label class="flex flex-col justify-start gap-2 relative">
-					Password:
+					Passwort:
 					<input
-						class="input input-bordered input-primary bg-gray-200"
+						class="input input-bordered input-primary-content bg-gray-200"
 						type="password"
 						name="password"
 						required
@@ -64,8 +65,8 @@ templ LoginIndex(fromProtected bool) {
 					</button>
 				</label>
 				<footer class="card-actions justify-end">
-					<button class="badge badge-primary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
-						Sign In
+					<button class="badge badge-secondary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
+						Einloggen
 					</button>
 				</footer>
 			</form>
@@ -79,7 +80,7 @@ templ Login(
 	msg fiber.Map,
 	cmp templ.Component,
 ) {
-	@views.Layout(page, fromProtected, isError, msg, "", false) {
+	@views.Layout(page, fromProtected, isError, msg, "") {
 		@cmp
 	}
 }

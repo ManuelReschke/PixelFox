@@ -1,168 +1,181 @@
 package controllers
 
 import (
-	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
+	"fmt"
+	"time"
+
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/views"
 	auth "github.com/ManuelReschke/PixelFox/views/auth"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/sujit-baniya/flash"
+	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	AUTH_KEY       string = "authenticated"
+	USER_ID        string = "user_id"
+	USER_NAME      string = "username"
+	FROM_PROTECTED string = "from_protected"
 )
 
 func HandleStart(c *fiber.Ctx) error {
-	// fromProtected := c.Locals(FROM_PROTECTED).(bool)
-	appENV := env.GetEnv("APP_ENV", "prod")
-	isDEV := appENV == "dev"
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
 
-	hindex := views.HomeIndex(false)
-	home := views.Home("", false, false, flash.Get(c), hindex, isDEV)
+	hindex := views.HomeIndex(fromProtected)
+	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
 	return handler(c)
-
-	// return c.Render("index", fiber.Map{
-	// 	"FiberTitle": "Hello From Fiber Html Engine Test",
-	// })
 }
 
 func HandleAuthLogin(c *fiber.Ctx) error {
-	// fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	csrfToken := c.Locals("csrf").(string)
 
-	lindex := auth.LoginIndex(false)
+	lindex := auth.LoginIndex(fromProtected, csrfToken)
 	login := auth.Login(
-		" | Login", false, false, flash.Get(c), lindex,
+		" | Einloggen", fromProtected, false, flash.Get(c), lindex,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(login))
 
-	// if c.Method() == "POST" {
-	// 	// obtaining the time zone from the POST request of the login form
-	// 	tzone := ""
-	// 	if len(c.GetReqHeaders()["X-Timezone"]) != 0 {
-	// 		tzone = c.GetReqHeaders()["X-Timezone"][0]
-	// 		// fmt.Println("Tzone:", tzone)
-	// 	}
-	//
-	// 	var (
-	// 		user models.User
-	// 		err  error
-	// 	)
-	// 	fm := fiber.Map{
-	// 		"type": "error",
-	// 	}
-	//
-	// 	// notice: in production you should not inform the user
-	// 	// with detailed messages about login failures
-	// 	if user, err = models.CheckEmail(c.FormValue("email")); err != nil {
-	// 		// fmt.Println(err)
-	// 		if strings.Contains(err.Error(), "no such table") ||
-	// 			strings.Contains(err.Error(), "database is locked") {
-	// 			// "no such table" is the error that SQLite3 produces
-	// 			// when some table does not exist, and we have only
-	// 			// used it as an example of the errors that can be caught.
-	// 			// Here you can add the errors that you are interested
-	// 			// in throwing as `500` codes.
-	// 			return fiber.NewError(
-	// 				fiber.StatusServiceUnavailable,
-	// 				"database temporarily out of service",
-	// 			)
-	// 		}
-	// 		fm["message"] = "There is no user with that email"
-	//
-	// 		return flash.WithError(c, fm).Redirect("/login")
-	// 	}
-	//
-	// 	err = bcrypt.CompareHashAndPassword(
-	// 		[]byte(user.Password),
-	// 		[]byte(c.FormValue("password")),
-	// 	)
-	// 	if err != nil {
-	// 		fm["message"] = "Incorrect password"
-	//
-	// 		return flash.WithError(c, fm).Redirect("/login")
-	// 	}
-	//
-	// 	session, err := store.Get(c)
-	// 	if err != nil {
-	// 		fm["message"] = fmt.Sprintf("something went wrong: %s", err)
-	//
-	// 		return flash.WithError(c, fm).Redirect("/login")
-	// 	}
-	//
-	// 	session.Set(AUTH_KEY, true)
-	// 	session.Set(USER_ID, user.ID)
-	// 	session.Set(TZONE_KEY, tzone)
-	//
-	// 	err = session.Save()
-	// 	if err != nil {
-	// 		fm["message"] = fmt.Sprintf("something went wrong: %s", err)
-	//
-	// 		return flash.WithError(c, fm).Redirect("/login")
-	// 	}
-	//
-	// 	fm = fiber.Map{
-	// 		"type":    "success",
-	// 		"message": "You have successfully logged in!!",
-	// 	}
-	//
-	// 	return flash.WithSuccess(c, fm).Redirect("/todo/list")
-	// }
+	if c.Method() == fiber.MethodPost {
+		var (
+			user models.User
+			err  error
+		)
+		fm := fiber.Map{
+			"type": "error",
+		}
+
+		// notice: in production you should not inform the user
+		// with detailed messages about login failures
+		result := database.GetDB().Where("email = ?", c.FormValue("email")).First(&user)
+		if result.Error != nil {
+			fm["message"] = "There is a problem with the login process"
+
+			return flash.WithError(c, fm).Redirect("/login")
+		}
+
+		err = bcrypt.CompareHashAndPassword(
+			[]byte(user.Password),
+			[]byte(c.FormValue("password")),
+		)
+		if err != nil {
+			fm["message"] = "There is a problem with the login process"
+
+			return flash.WithError(c, fm).Redirect("/login")
+		}
+
+		sess, err := session.GetSessionStore().Get(c)
+		if err != nil {
+			fm["message"] = fmt.Sprintf("something went wrong: %s", err)
+
+			return flash.WithError(c, fm).Redirect("/login")
+		}
+
+		sess.Set(AUTH_KEY, true)
+		sess.Set(USER_ID, user.ID)
+		sess.Set(USER_NAME, user.Name)
+
+		err = sess.Save()
+		if err != nil {
+			fm["message"] = fmt.Sprintf("something went wrong: %s", err)
+
+			return flash.WithError(c, fm).Redirect("/login")
+		}
+
+		database.GetDB().Model(&user).Update("last_login_at", time.Now())
+
+		fm = fiber.Map{
+			"type":    "success",
+			"message": "You have successfully logged in!!",
+		}
+
+		return flash.WithSuccess(c, fm).Redirect("/")
+	}
 
 	return handler(c)
 }
 
 func HandleAuthRegister(c *fiber.Ctx) error {
-	// fromProtected := c.Locals(FROM_PROTECTED).(bool)
-	fromProtected := false
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	csrfToken := c.Locals("csrf").(string)
 
-	rindex := auth.RegisterIndex(fromProtected)
+	rindex := auth.RegisterIndex(fromProtected, csrfToken)
 	register := auth.Register(
-		" | Register", fromProtected, false, flash.Get(c), rindex,
+		" | Registrieren", fromProtected, false, flash.Get(c), rindex,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(register))
 
-	// if c.Method() == "POST" {
-	// 	user := models.User{
-	// 		Email:    c.FormValue("email"),
-	// 		Password: c.FormValue("password"),
-	// 		Username: c.FormValue("username"),
-	// 	}
-	//
-	// 	err := models.CreateUser(user)
-	// 	if err != nil {
-	// 		if strings.Contains(err.Error(), "no such table") ||
-	// 			strings.Contains(err.Error(), "database is locked") {
-	// 			// "no such table" is the error that SQLite3 produces
-	// 			// when some table does not exist, and we have only
-	// 			// used it as an example of the errors that can be caught.
-	// 			// Here you can add the errors that you are interested
-	// 			// in throwing as `500` codes.
-	// 			return fiber.NewError(
-	// 				fiber.StatusServiceUnavailable,
-	// 				"database temporarily out of service",
-	// 			)
-	// 		}
-	// 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-	// 			err = errors.New("the email is already in use")
-	// 		}
-	// 		fm := fiber.Map{
-	// 			"type":    "error",
-	// 			"message": fmt.Sprintf("something went wrong: %s", err),
-	// 		}
-	//
-	// 		return flash.WithError(c, fm).Redirect("/register")
-	// 	}
-	//
-	// 	fm := fiber.Map{
-	// 		"type":    "success",
-	// 		"message": "You have successfully registered!!",
-	// 	}
-	//
-	// 	return flash.WithSuccess(c, fm).Redirect("/login")
-	// }
+	if c.Method() == fiber.MethodPost {
+		user, err := models.CreateUser(c.FormValue("username"), c.FormValue("email"), c.FormValue("password"))
+		if err != nil {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": fmt.Sprintf("something went wrong: %s", err),
+			}
+
+			return flash.WithError(c, fm).Redirect("/register")
+		}
+
+		err = database.GetDB().Create(&user).Error
+		if err != nil {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": fmt.Sprintf("something went wrong: %s", err),
+			}
+
+			return flash.WithError(c, fm).Redirect("/register")
+		}
+
+		fm := fiber.Map{
+			"type":    "success",
+			"message": "You have successfully registered!!",
+		}
+
+		return flash.WithSuccess(c, fm).Redirect("/login")
+	}
+
+	return handler(c)
+}
+
+func HandleDocsAPI(c *fiber.Ctx) error {
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+
+	hindex := views.HomeIndex(fromProtected)
+	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+
+	return handler(c)
+}
+
+func HandleAbout(c *fiber.Ctx) error {
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+
+	page := views.AboutPage(fromProtected)
+	home := views.Home("", fromProtected, false, flash.Get(c), page)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+
+	return handler(c)
+}
+
+func HandleContact(c *fiber.Ctx) error {
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+
+	hindex := views.HomeIndex(fromProtected)
+	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
 
 	return handler(c)
 }

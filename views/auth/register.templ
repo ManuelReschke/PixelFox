@@ -6,11 +6,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-templ RegisterIndex(fromProtected bool) {
+templ RegisterIndex(fromProtected bool, csrfToken string) {
 	<section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
 		<div class="card-body pb-2">
 			<h1 class="card-title border-b border-b-slate-600 pb-[4px]">
-				Register User
+				Neues Konto erstellen
 			</h1>
 			<form
 				hx-swap="transition:true"
@@ -18,10 +18,11 @@ templ RegisterIndex(fromProtected bool) {
 				action=""
 				method="post"
 			>
+			    <input type="hidden" name="_csrf" value={csrfToken}>
 				<label class="flex flex-col justify-start gap-2">
 					Email:
 					<input
-						class="input input-bordered input-primary bg-gray-200"
+						class="input input-bordered input-primary-content bg-gray-200"
 						type="email"
 						name="email"
 						required
@@ -33,9 +34,9 @@ templ RegisterIndex(fromProtected bool) {
 					/>
 				</label>
 				<label class="flex flex-col justify-start gap-2 relative">
-					Password:
+					Passwort:
 					<input
-						class="input input-bordered input-primary bg-gray-200"
+						class="input input-bordered input-primary-content bg-gray-200"
 						type="password"
 						name="password"
 						required
@@ -63,14 +64,14 @@ templ RegisterIndex(fromProtected bool) {
 					</button>
 				</label>
 				<label class="flex flex-col justify-start gap-2">
-					Username:
+					Benutzername:
 					<input
-						class="input input-bordered input-primary bg-gray-200"
+						class="input input-bordered input-primary-content bg-gray-200"
 						type="text"
 						name="username"
 						required
-						minlength="4"
-						maxlength="64"
+						minlength="3"
+						maxlength="150"
 						disabled?={ fromProtected }
 						if fromProtected {
 							value="disabled "
@@ -78,8 +79,8 @@ templ RegisterIndex(fromProtected bool) {
 					/>
 				</label>
 				<footer class="card-actions justify-end">
-					<button class="badge badge-primary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
-						Register User
+					<button class="badge badge-secondary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
+						Kostenlos Registrieren
 					</button>
 				</footer>
 			</form>
@@ -93,7 +94,7 @@ templ Register(
 	msg fiber.Map,
 	cmp templ.Component,
 ) {
-	@views.Layout(page, fromProtected, isError, msg, "", false) {
+	@views.Layout(page, fromProtected, isError, msg, "") {
 		@cmp
 	}
 }
