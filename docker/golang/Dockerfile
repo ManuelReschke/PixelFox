@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.22-alpine AS fetch-stage
+FROM golang:1.23-alpine AS fetch-stage
 WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
@@ -11,7 +11,7 @@ COPY --chown=65532:65532 . /app
 WORKDIR /app
 RUN ["templ", "generate"]
 
-FROM golang:1.22-alpine AS build-stage
+FROM golang:1.23-alpine AS build-stage
 COPY --from=generate-stage /app /app
 WORKDIR /app
 RUN go build -o /app/pixelfox-app
