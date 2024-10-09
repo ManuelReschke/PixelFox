@@ -1,0 +1,11 @@
+package views
+
+templ APIPage(fromProtected bool) {
+	<section class="mx-auto w-fit flex flex-col gap-8 text-center">
+		<h1 class="text-5xl font-bold">API</h1>
+		<span>Unsere API Dokumentation wurde mit OpenAPI Specs v3 erstellt und sind <a href="/docs/api/v1" target="_blank" class="text-blue-600 underline hover:no-underline">hier</a> zu finden</span>
+		<a href="/docs/api/v1" target="_blank">
+		    <img src="/img/openapi.png" alt="OpenAPI" class="mx-auto w-3/6 flex" />
+        </a>
+	</section>
+}

@@ -28,6 +28,8 @@ PixelFox is an image sharing platform. Its build with the following technologies
 * [X] DEV env setup 
 * [X] PROD env setup
 * [X] Run [air](https://github.com/air-verse/air) (for HotReload) & [templ](https://github.com/a-h/templ) generate --watch in one container with supervisord
+* [X] Create templates for index, login, register, contact, about
+* [X] Prepare API page and include Swagger / OpenAPI UI
 * [] DB Schema & Models
 * [] User Authentication Login & Logout
 * [] User Registration

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gofiber/contrib/swagger"
 	"log"
 
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
@@ -23,11 +24,21 @@ func main() {
 func NewApplication() *fiber.App {
 	env.SetupEnvFile()
 	database.SetupDatabase()
+
 	engine := html.New("./views", ".html")
 	app := fiber.New(fiber.Config{Views: engine})
 	app.Use(recover.New(), logger.New())
 	app.Get("/metrics", monitor.New())
-	app.Static("/", "./web/assets")
+	app.Static("/", "./public/assets")
+
+	// SWAGGER / OPENAPI
+	openAPICfg := swagger.Config{
+		BasePath: "/docs/api/",
+		FilePath: "./public/docs/v1/openapi.yml",
+		Path:     "v1",
+	}
+	app.Use(swagger.New(openAPICfg))
+
 	router.InstallRouter(app)
 
 	return app

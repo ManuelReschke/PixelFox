@@ -20,6 +20,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 		ContextKey: "csrf",
 	}
 
+	app.Post("/upload", controllers.HandleUpload)
+
 	group := app.Group("", cors.New(), csrf.New(csrfConf))
 	group.Get("/", loggedInMiddleware, controllers.HandleStart)
 	group.Get("/login", loggedInMiddleware, controllers.HandleAuthLogin)

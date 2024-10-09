@@ -1,4 +1,1 @@
-<section class=\"mx-auto w-fit flex flex-col gap-8 text-center\"><img src=\"/img/pixelfox-logo.png\" class=\"mx-auto w-32\" alt=\"PixelFox Logo\"><h1 class=\"text-5xl font-bold\">Welcome to 
-</h1><p class=\"text-2xl font-thin\">About</p>
-<hr class=\"my-4 w-4/5 mx-auto opacity-25\"><p class=\"text-base font-thin\">Hast du bereits ein Konto?</p><footer class=\"flex gap-4 justify-center\"><a hx-swap=\"transition:true\" href=\"/login\" class=\"badge badge-secondary px-6 py-4 hover:scale-[1.1] text-lg font-thin\">Einloggen</a> <a hx-swap=\"transition:true\" href=\"/register\" class=\"badge badge-neutral px-6 py-4 hover:scale-[1.1] text-lg font-thin\">Registrieren</a></footer>
-</section>
+<section class=\"mx-auto w-fit flex flex-col gap-8 text-center\"><h1 class=\"text-5xl font-bold\">Über Uns</h1></section>

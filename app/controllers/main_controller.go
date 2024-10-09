@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
@@ -138,7 +139,7 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 
 		fm := fiber.Map{
 			"type":    "success",
-			"message": "You have successfully registered!!",
+			"message": "You have successfully registered!",
 		}
 
 		return flash.WithSuccess(c, fm).Redirect("/login")
@@ -150,8 +151,8 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 func HandleDocsAPI(c *fiber.Ctx) error {
 	fromProtected := c.Locals(FROM_PROTECTED).(bool)
 
-	hindex := views.HomeIndex(fromProtected)
-	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
+	page := views.APIPage(fromProtected)
+	home := views.Home("", fromProtected, false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -172,10 +173,48 @@ func HandleAbout(c *fiber.Ctx) error {
 func HandleContact(c *fiber.Ctx) error {
 	fromProtected := c.Locals(FROM_PROTECTED).(bool)
 
-	hindex := views.HomeIndex(fromProtected)
-	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
+	page := views.ContactPage(fromProtected)
+	home := views.Home("", fromProtected, false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
 	return handler(c)
+}
+
+func HandleUpload(c *fiber.Ctx) error {
+	//fromProtected := c.Locals(FROM_PROTECTED).(bool)
+
+	// Datei aus dem Request erhalten
+	file, err := c.FormFile("file")
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("something went wrong: %s", err),
+		}
+
+		return flash.WithError(c, fm).Redirect("/")
+		//return c.Status(fiber.StatusBadRequest).SendString("Fehler beim Hochladen der Datei.")
+	}
+
+	// Speichere die Datei auf dem Server
+	savePath := filepath.Join("./uploads", file.Filename)
+
+	if err := c.SaveFile(file, savePath); err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("something went wrong: %s", err),
+		}
+
+		return flash.WithError(c, fm).Redirect("/")
+		//return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Speichern der Datei.")
+	}
+
+	//fm := fiber.Map{
+	//	"type":    "success",
+	//	"message": fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename),
+	//}
+	//
+	//return flash.WithSuccess(c, fm).Redirect("/")
+
+	return c.SendString(fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename))
 }
