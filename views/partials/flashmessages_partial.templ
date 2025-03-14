@@ -5,6 +5,7 @@ import "github.com/gofiber/fiber/v2"
 templ FlashMessages(msg fiber.Map) {
 	if msg["message"] != nil {
 		<div
+            id="flash-message"
  			role="alert"
  			class={ "alert w-fit min-w-[384px] mx-auto mb-4", templ.KV("alert-success", msg["type"] == "success"),
                 templ.KV("alert-error", msg["type"] == "error") }
@@ -33,5 +34,17 @@ templ FlashMessages(msg fiber.Map) {
 				×
 			</button>
 		</div>
+
+        <script>
+            setTimeout(function() {
+                var flashMessage = document.getElementById('flash-message');
+                if (flashMessage) {
+                    flashMessage.classList.add('fade-out');
+                    setTimeout(function() {
+                        flashMessage.style.display = 'none';
+                    }, 2000);
+                }
+            }, 4000);
+        </script>
 	}
 }

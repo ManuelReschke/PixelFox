@@ -26,7 +26,12 @@ func NewApplication() *fiber.App {
 	database.SetupDatabase()
 
 	engine := html.New("./views", ".html")
-	app := fiber.New(fiber.Config{Views: engine})
+	app := fiber.New(fiber.Config{
+		Views:     engine,
+		BodyLimit: 838860800, // 100 MiB or 104.5 MB
+		// alternative:
+		// StreamRequestBody: true
+	})
 	app.Use(recover.New(), logger.New())
 	app.Get("/metrics", monitor.New())
 	app.Static("/", "./public/assets")
@@ -39,6 +44,7 @@ func NewApplication() *fiber.App {
 	}
 	app.Use(swagger.New(openAPICfg))
 
+	// ROUTER
 	router.InstallRouter(app)
 
 	return app
