@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/ManuelReschke/PixelFox/views"
 	pages "github.com/ManuelReschke/PixelFox/views/pages"
 	"github.com/a-h/templ"
@@ -9,7 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/sujit-baniya/flash"
-	"path/filepath"
 )
 
 const (
