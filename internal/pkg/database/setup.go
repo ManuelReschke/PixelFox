@@ -36,7 +36,17 @@ func SetupDatabase() {
 			SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
 		}), &gorm.Config{})
 		if err == nil {
-			DB.AutoMigrate(&models.User{})
+			DB.AutoMigrate(
+				&models.User{},
+				&models.Image{},
+				&models.Album{},
+				&models.Tag{},
+				&models.Comment{},
+				&models.Like{},
+				&models.AlbumImage{},
+				&models.ImageTag{},
+				&models.Notification{},
+			)
 
 			return
 		}

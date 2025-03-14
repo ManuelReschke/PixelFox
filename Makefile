@@ -70,6 +70,30 @@ test:
 	@echo "🧪 Führe Tests aus..."
 	go test ./...
 
+# Migrationen ausführen
+.PHONY: migrate-up
+migrate-up:
+	@echo "🔼 Führe Datenbankmigrationen aus..."
+	docker-compose exec app go run cmd/migrate/main.go up
+
+# Migrationen zurückrollen
+.PHONY: migrate-down
+migrate-down:
+	@echo "🔽 Rolle Datenbankmigrationen zurück..."
+	docker-compose exec app go run cmd/migrate/main.go down
+
+# Spezifische Migration ausführen
+.PHONY: migrate-to
+migrate-to:
+	@echo "🎯 Führe Migration bis Version $(version) aus..."
+	docker-compose exec app go run cmd/migrate/main.go goto $(version)
+
+# Migrationsstatus anzeigen
+.PHONY: migrate-status
+migrate-status:
+	@echo "ℹ️ Zeige Migrationsstatus an..."
+	docker-compose exec app go run cmd/migrate/main.go status
+
 # Hilfsfunktion: make help
 .PHONY: help
 help:
@@ -84,3 +108,7 @@ help:
 	@echo "  make stop               - Stopppe Docker Container"
 	@echo "  make restart            - Neustarten der Container"
 	@echo "  make test               - Führe Tests aus"
+	@echo "  make migrate-up         - Führe alle ausstehenden Migrationen aus"
+	@echo "  make migrate-down       - Rolle letzte Migration zurück"
+	@echo "  make migrate-to         - Führe Migration bis zu bestimmter Version aus (version=X)"
+	@echo "  make migrate-status     - Zeige Status der Migrationen an"
