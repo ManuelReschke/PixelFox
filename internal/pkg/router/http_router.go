@@ -41,6 +41,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/register", loggedInMiddleware, controllers.HandleAuthRegister)
 	group.Post("/register", loggedInMiddleware, controllers.HandleAuthRegister)
 	group.Get("/user/profile", loggedInMiddleware, controllers.HandleUserProfile)
+	group.Get("/user/settings", loggedInMiddleware, controllers.HandleUserSettings)
 
 }
 

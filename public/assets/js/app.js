@@ -1,5 +1,13 @@
 //custom js
 
+// Sofort das gespeicherte Theme anwenden, bevor die Seite gerendert wird
+(function() {
+    var savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeAllFunctions();
 });
