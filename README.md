@@ -20,20 +20,25 @@ PixelFox is an image sharing platform. Its build with the following technologies
   * TailwindCSS & DaisyUI
   * SweetAlert2
 
-## ToDos
+## Already Done
 
 * [X] setup basic dev env with Docker
-    * [X] GoLang Container
-    * [X] MySQL Container
-    * [X] Dragonfly Cache Container
-    * [X] PHPMyAdmin Container
-* [X] DEV env setup 
+  * [X] GoLang Container
+  * [X] MySQL Container
+  * [X] Dragonfly Cache Container
+  * [X] PHPMyAdmin Container
+* [X] DEV env setup
 * [X] PROD env setup
 * [X] Run [air](https://github.com/air-verse/air) (for HotReload) & [templ](https://github.com/a-h/templ) generate --watch in one container with supervisord
 * [X] Create templates for index, login, register, contact, about, news, jobs, api
 * [X] Prepare API page and include Swagger & OpenAPI UI (github.com/go-openapi)
 * [X] User Authentication login & logout
 * [X] User Registration
+
+## ToDos
+
+* [] User Profile page
+* [] User Settings page
 * [] DB Schema & Models
 * [] Basic image upload
 * [] Store image information to DB

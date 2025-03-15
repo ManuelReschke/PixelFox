@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/gofiber/contrib/swagger"
 	"log"
 
+	"github.com/gofiber/contrib/swagger"
+
+	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/router"
@@ -24,6 +26,7 @@ func main() {
 func NewApplication() *fiber.App {
 	env.SetupEnvFile()
 	database.SetupDatabase()
+	cache.SetupCache()
 
 	engine := html.New("./views", ".html")
 	app := fiber.New(fiber.Config{

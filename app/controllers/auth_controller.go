@@ -7,6 +7,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	auth "github.com/ManuelReschke/PixelFox/views/auth"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
@@ -147,6 +148,9 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 
 			return flash.WithError(c, fm).Redirect("/register")
 		}
+
+		// Aktualisiere die Statistiken nach der Registrierung
+		go statistics.UpdateStatisticsCache()
 
 		fm := fiber.Map{
 			"type":    "success",

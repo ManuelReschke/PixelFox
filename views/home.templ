@@ -2,8 +2,10 @@ package views
 
 import "github.com/gofiber/fiber/v2"
 import "time"
+import "strconv"
+import "github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 
-templ HomeIndex(fromProtected bool, csrfToken string) {
+templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.StatisticsData) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
         <img src="/img/pixelfox-logo.png" class="mx-auto w-32"  alt="PixelFox Logo"/>
 		<h1 class="text-5xl font-bold">Kostenlos Bilder hochladen und teilen</h1>
@@ -50,7 +52,7 @@ templ HomeIndex(fromProtected bool, csrfToken string) {
 		}
 	</section>
 
-    @Stats()
+    @Stats(stats)
 }
 
 templ Home(
@@ -69,7 +71,7 @@ templ FilePicker() {
 
 }
 
-templ Stats() {
+templ Stats(stats statistics.StatisticsData) {
 <section class="mx-auto w-fit flex flex-col gap-4 text-center mt-10">
     <h4 class="text-xl font-thin"> Statistiken </h4>
     <div class="stats shadow">
@@ -91,7 +93,7 @@ templ Stats() {
             </svg>
         </div>
         <div class="stat-title">Bilder Heute</div>
-        <div class="stat-value">0</div>
+        <div class="stat-value">{ strconv.Itoa(stats.TodayImages) }</div>
         <div class="stat-desc">{ time.Now().Format("02.01.2006") }</div>
       </div>
 
@@ -113,7 +115,7 @@ templ Stats() {
             </svg>
         </div>
         <div class="stat-title">Benutzer</div>
-        <div class="stat-value">100</div>
+        <div class="stat-value">{ strconv.Itoa(stats.TotalUsers) }</div>
         <div class="stat-desc">Aktive Nutzer</div>
       </div>
 
@@ -135,7 +137,7 @@ templ Stats() {
             </svg>
         </div>
         <div class="stat-title">Bilder Insgesamt</div>
-        <div class="stat-value">99</div>
+        <div class="stat-value">{ strconv.Itoa(stats.TotalImages) }</div>
         <div class="stat-desc">Aller Nutzer</div>
       </div>
     </div>

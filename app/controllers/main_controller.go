@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/views"
 	pages "github.com/ManuelReschke/PixelFox/views/pages"
 	"github.com/a-h/templ"
@@ -21,7 +22,11 @@ func HandleStart(c *fiber.Ctx) error {
 	fromProtected := c.Locals(FROM_PROTECTED).(bool)
 	csrfToken := c.Locals("csrf").(string)
 
-	hindex := views.HomeIndex(fromProtected, csrfToken)
+	// Hole die Statistikdaten
+	stats := statistics.GetStatisticsData()
+
+	// Rendere die Startseite
+	hindex := views.HomeIndex(fromProtected, csrfToken, stats)
 	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -30,7 +35,10 @@ func HandleStart(c *fiber.Ctx) error {
 }
 
 func HandleUpload(c *fiber.Ctx) error {
-	//fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	// Pru00fcfe, ob der Benutzer eingeloggt ist
+	if !c.Locals(FROM_PROTECTED).(bool) {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+	}
 
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -51,7 +59,6 @@ func HandleUpload(c *fiber.Ctx) error {
 			"type":    "error",
 			"message": fmt.Sprintf("something went wrong: %s", err),
 		}
-
 		return flash.WithError(c, fm).Redirect("/")
 		//return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Speichern der Datei.")
 	}
@@ -62,6 +69,9 @@ func HandleUpload(c *fiber.Ctx) error {
 	//}
 	//
 	//return flash.WithSuccess(c, fm).Redirect("/")
+
+	// Aktualisiere die Statistiken nach dem Upload
+	go statistics.UpdateStatisticsCache()
 
 	return c.SendString(fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename))
 }
