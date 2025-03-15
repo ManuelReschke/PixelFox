@@ -28,18 +28,19 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/about", controllers.HandleAbout)
 	app.Get("/contact", controllers.HandleContact)
 	app.Get("/jobs", controllers.HandleJobs)
-	app.Post("/logout", loggedInMiddleware, controllers.HandleAuthLogout)
-
-	// AUTH CORS AND CSRF
-	group := app.Group("", cors.New(), csrf.New(csrfConf))
-	group.Get("/", loggedInMiddleware, controllers.HandleStart)
-	group.Post("/upload", controllers.HandleUpload)
 
 	// AUTH
+	app.Post("/logout", loggedInMiddleware, controllers.HandleAuthLogout)
+
+	// AUTH + ADD CORS AND CSRF
+	group := app.Group("", cors.New(), csrf.New(csrfConf))
+	group.Get("/", loggedInMiddleware, controllers.HandleStart)
+	group.Post("/upload", loggedInMiddleware, controllers.HandleUpload)
 	group.Get("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Post("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Get("/register", loggedInMiddleware, controllers.HandleAuthRegister)
 	group.Post("/register", loggedInMiddleware, controllers.HandleAuthRegister)
+	group.Get("/user/profile", loggedInMiddleware, controllers.HandleUserProfile)
 
 }
 

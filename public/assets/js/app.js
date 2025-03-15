@@ -1,6 +1,11 @@
 //custom js
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializeAllFunctions();
+});
+
+// Initialisiere alle Funktionen
+function initializeAllFunctions() {
     // Flash-Nachrichten ausblenden
     handleFlashMessages();
     
@@ -9,6 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Upload-Formular-Funktionalität initialisieren
     initUploadForm();
+    
+    // Theme-Funktionalität initialisieren
+    initThemeToggle();
+}
+
+// HTMX-Event-Listener für Seitenwechsel
+document.addEventListener('htmx:afterSwap', function(event) {
+    // Nach jedem HTMX-Seitenwechsel die Funktionen neu initialisieren
+    initializeAllFunctions();
 });
 
 /**
@@ -87,5 +101,39 @@ function initUploadForm() {
                 errorMessage.style.display = 'none';
             }, 500);
         }
+    });
+}
+
+/**
+ * Initialisiert die Theme-Toggle-Funktionalität
+ */
+function initThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (!themeToggle) return;
+    
+    // Beim Laden der Seite den gespeicherten Theme-Status abrufen
+    const savedTheme = localStorage.getItem('theme');
+    const htmlElement = document.documentElement;
+    
+    // Prüfen, ob das aktuelle Theme dunkel ist
+    const isDarkMode = savedTheme === 'dark';
+    
+    // Setze das Theme entsprechend dem gespeicherten Wert
+    if (savedTheme) {
+        htmlElement.setAttribute('data-theme', savedTheme);
+    } else {
+        // Standardmäßig auf emerald setzen, wenn kein Theme gespeichert ist
+        htmlElement.setAttribute('data-theme', 'emerald');
+    }
+    
+    // Toggle-Schalter auf den richtigen Zustand setzen
+    themeToggle.checked = isDarkMode;
+    
+    // Event-Listener für den Toggle-Schalter
+    themeToggle.addEventListener('change', function() {
+        // Wenn der Schalter aktiviert ist, setze das Theme auf dark, sonst auf emerald
+        const newTheme = this.checked ? 'dark' : 'emerald';
+        htmlElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
     });
 }
