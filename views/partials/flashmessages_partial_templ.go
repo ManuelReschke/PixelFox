@@ -32,7 +32,7 @@ func FlashMessages(msg fiber.Map) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if msg["message"] != nil {
-			var templ_7745c5c3_Var2 = []any{"alert w-fit min-w-[384px] mx-auto mb-4", templ.KV("alert-success", msg["type"] == "success"),
+			var templ_7745c5c3_Var2 = []any{"alert alert-soft w-fit min-w-[384px] mx-auto mb-4", templ.KV("alert-success", msg["type"] == "success"),
 				templ.KV("alert-error", msg["type"] == "error")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 			if templ_7745c5c3_Err != nil {

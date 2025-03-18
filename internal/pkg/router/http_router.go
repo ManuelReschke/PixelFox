@@ -28,6 +28,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/about", controllers.HandleAbout)
 	app.Get("/contact", controllers.HandleContact)
 	app.Get("/jobs", controllers.HandleJobs)
+	// Image Viewer
+	app.Get("/image/:filename", controllers.HandleImageViewer)
 
 	// AUTH
 	app.Post("/logout", loggedInMiddleware, controllers.HandleAuthLogout)

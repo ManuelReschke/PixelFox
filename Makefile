@@ -94,6 +94,21 @@ migrate-status:
 	@echo "ℹ️ Zeige Migrationsstatus an..."
 	docker-compose exec app go run cmd/migrate/main.go status
 
+# Datenbank zurücksetzen
+.PHONY: db-reset
+db-reset:
+	@echo "🔄 Setze Datenbank zurück..."
+	docker-compose stop db
+	docker-compose rm -f db
+	docker volume rm pixelfox_db_data || true
+	@echo "🚀 Starte Datenbank neu..."
+	docker-compose up -d db
+	@echo "⏳ Warte 10 Sekunden, bis die Datenbank bereit ist..."
+	sleep 20
+	@echo "🔼 Führe Migrationen aus..."
+	docker-compose exec app go run cmd/migrate/main.go up
+	@echo "✅ Datenbank wurde erfolgreich zurückgesetzt!"
+
 # Hilfsfunktion: make help
 .PHONY: help
 help:
@@ -112,3 +127,4 @@ help:
 	@echo "  make migrate-down       - Rolle letzte Migration zurück"
 	@echo "  make migrate-to         - Führe Migration bis zu bestimmter Version aus (version=X)"
 	@echo "  make migrate-status     - Zeige Status der Migrationen an"
+	@echo "  make db-reset           - Setze Datenbank zurück (löscht alle Daten)"

@@ -38,6 +38,8 @@ func NewApplication() *fiber.App {
 	app.Use(recover.New(), logger.New())
 	app.Get("/metrics", monitor.New())
 	app.Static("/", "./public/assets")
+	// static uploads
+	app.Static("/uploads", "./uploads")
 
 	// SWAGGER / OPENAPI
 	openAPICfg := swagger.Config{
