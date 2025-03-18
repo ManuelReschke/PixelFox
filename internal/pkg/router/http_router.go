@@ -21,15 +21,15 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	}
 
 	// API
-	app.Get("/docs/api", controllers.HandleDocsAPI)
+	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)
 
 	// NO AUTH - GENERAL
-	app.Get("/news", controllers.HandleNews)
-	app.Get("/about", controllers.HandleAbout)
-	app.Get("/contact", controllers.HandleContact)
-	app.Get("/jobs", controllers.HandleJobs)
+	app.Get("/news", loggedInMiddleware, controllers.HandleNews)
+	app.Get("/about", loggedInMiddleware, controllers.HandleAbout)
+	app.Get("/contact", loggedInMiddleware, controllers.HandleContact)
+	app.Get("/jobs", loggedInMiddleware, controllers.HandleJobs)
 	// Image Viewer
-	app.Get("/image/:filename", controllers.HandleImageViewer)
+	app.Get("/image/:filename", loggedInMiddleware, controllers.HandleImageViewer)
 
 	// AUTH
 	app.Post("/logout", loggedInMiddleware, controllers.HandleAuthLogout)

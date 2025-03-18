@@ -19,7 +19,7 @@ const (
 )
 
 func HandleStart(c *fiber.Ctx) error {
-	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	fromProtected := getFromProtected(c)
 	csrfToken := c.Locals("csrf").(string)
 
 	stats := statistics.GetStatisticsData()
@@ -89,17 +89,12 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
-	var fromProtected bool
-	if protectedValue := c.Locals(FROM_PROTECTED); protectedValue != nil {
-		fromProtected = protectedValue.(bool)
-	}
-
 	imagePath := fmt.Sprintf("/uploads/%s", imageFilename)
 
 	stats := statistics.GetStatisticsData()
 
 	imageViewer := views.ImageViewer(imagePath, imageFilename, stats)
-	home := views.Home("", fromProtected, false, flash.Get(c), imageViewer)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -108,7 +103,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 func HandleNews(c *fiber.Ctx) error {
 	page := pages.NewsPage()
-	home := views.Home("", false, false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -117,7 +112,7 @@ func HandleNews(c *fiber.Ctx) error {
 
 func HandleAbout(c *fiber.Ctx) error {
 	page := views.AboutPage()
-	home := views.Home("", false, false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -126,7 +121,7 @@ func HandleAbout(c *fiber.Ctx) error {
 
 func HandleContact(c *fiber.Ctx) error {
 	page := views.ContactPage()
-	home := views.Home("", false, false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -135,7 +130,7 @@ func HandleContact(c *fiber.Ctx) error {
 
 func HandleJobs(c *fiber.Ctx) error {
 	page := pages.JobsPage()
-	home := views.Home("", false, false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -144,7 +139,7 @@ func HandleJobs(c *fiber.Ctx) error {
 
 func HandleDocsAPI(c *fiber.Ctx) error {
 	page := views.APIPage()
-	home := views.Home("", false, false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 

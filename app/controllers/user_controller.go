@@ -21,7 +21,7 @@ func HandleUserProfile(c *fiber.Ctx) error {
 	// Render the profile page
 	profileIndex := userviews.ProfileIndex(username, csrfToken)
 	profile := userviews.Profile(
-		" | Profil", true, false, flash.Get(c), username, profileIndex,
+		" | Profil", getFromProtected(c), false, flash.Get(c), username, profileIndex,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(profile))
@@ -41,7 +41,7 @@ func HandleUserSettings(c *fiber.Ctx) error {
 	// Render the settings page
 	settingsIndex := userviews.SettingsIndex(username, csrfToken)
 	settings := userviews.Settings(
-		" | Einstellungen", true, false, flash.Get(c), username, settingsIndex,
+		" | Einstellungen", getFromProtected(c), false, flash.Get(c), username, settingsIndex,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(settings))
