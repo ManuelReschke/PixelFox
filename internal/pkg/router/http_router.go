@@ -30,6 +30,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/jobs", loggedInMiddleware, controllers.HandleJobs)
 	// Image Viewer
 	app.Get("/image/:uuid", loggedInMiddleware, controllers.HandleImageViewer)
+	// ShareLink Shortener Route
+	app.Get("/i/:sharelink", loggedInMiddleware, controllers.HandleShareLink)
 
 	// AUTH
 	app.Post("/logout", loggedInMiddleware, controllers.HandleAuthLogout)

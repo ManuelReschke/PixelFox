@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/swagger"
 
@@ -37,9 +38,16 @@ func NewApplication() *fiber.App {
 	})
 	app.Use(recover.New(), logger.New())
 	app.Get("/metrics", monitor.New())
-	app.Static("/", "./public/assets")
+	app.Static("/", "./public/assets", fiber.Static{
+		CacheDuration: 15 * time.Second,
+		Compress:      true,
+	})
 	// static uploads
-	app.Static("/uploads", "./uploads")
+	app.Static("/uploads", "./uploads", fiber.Static{
+		CacheDuration: 10 * time.Second,
+		Compress:      false,
+		MaxAge:        604800, // 7 days
+	})
 
 	// SWAGGER / OPENAPI
 	openAPICfg := swagger.Config{

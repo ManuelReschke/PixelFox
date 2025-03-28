@@ -2,7 +2,8 @@ package models
 
 import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
-	"github.com/goo
+	"github.com/google/uuid"
+	"time"
 
 	"gorm.io/gorm"
 )

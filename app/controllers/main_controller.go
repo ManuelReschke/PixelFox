@@ -90,7 +90,6 @@ func HandleUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("something went wrong: %s", err))
 	}
 
-	// ShareLink wird jetzt automatisch im Image-Modell generiert
 	image := models.Image{
 		UUID:     imageUUID,
 		UserID:   c.Locals(USER_ID).(uint),
@@ -98,7 +97,7 @@ func HandleUpload(c *fiber.Ctx) error {
 		FilePath: dirPath,
 		FileSize: file.Size,
 		FileType: fileExt,
-		Title:    file.Filename, // Verwende den ursprünglichen Dateinamen als Titel
+		Title:    file.Filename,
 	}
 
 	db := database.GetDB()
@@ -126,7 +125,6 @@ func HandleUpload(c *fiber.Ctx) error {
 		}
 		flash.WithSuccess(c, fm)
 
-		// Verwende die UUID für die Weiterleitung
 		redirectPath := fmt.Sprintf("/image/%s", imageUUID)
 		c.Set("HX-Redirect", redirectPath)
 		return c.SendString(fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename))
@@ -134,6 +132,23 @@ func HandleUpload(c *fiber.Ctx) error {
 
 	// Ansonsten leiten wir zur Bildanzeige-Seite weiter
 	redirectPath := fmt.Sprintf("/image/%s", imageUUID)
+	return c.Redirect(redirectPath)
+}
+
+func HandleShareLink(c *fiber.Ctx) error {
+	sharelink := c.Params("sharelink")
+	if sharelink == "" {
+		return c.Redirect("/")
+	}
+
+	db := database.GetDB()
+	var image models.Image
+	if err := db.Where("share_link = ?", sharelink).First(&image).Error; err != nil {
+		fiberlog.Info(fmt.Sprintf("Bild nicht gefunden mit ShareLink: %s, Fehler: %v", sharelink, err))
+		return c.Redirect("/")
+	}
+
+	redirectPath := fmt.Sprintf("/image/%s", image.UUID)
 	return c.Redirect(redirectPath)
 }
 
@@ -145,7 +160,6 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// Prüfe, ob der Identifier eine UUID ist (36 Zeichen mit Bindestrichen)
 	isUUID := len(identifier) == 36 && strings.Count(identifier, "-") == 4
-	// Wenn es eine UUID ist, versuche das Bild in der Datenbank zu finden
 	if isUUID {
 		// Versuche zuerst, das Bild anhand der UUID zu finden
 		db := database.GetDB()
@@ -172,7 +186,10 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		filePathComplete := filepath.Join(imagePath, identifier) + image.FileType
 		filePathWithDomain := filepath.Join(env.GetEnv("PUBLIC_DOMAIN", ""), filePathComplete)
 
-		imageViewer := views.ImageViewer(filePathComplete, filePathWithDomain, displayName)
+		// Generiere die ShareLink-URL mit der Domain und dem neuen /i/-Pfad
+		shareURL := filepath.Join(env.GetEnv("PUBLIC_DOMAIN", ""), "/i/", image.ShareLink)
+
+		imageViewer := views.ImageViewer(filePathComplete, filePathWithDomain, displayName, shareURL)
 		home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer)
 
 		handler := adaptor.HTTPHandler(templ.Handler(home))
