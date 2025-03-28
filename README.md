@@ -37,11 +37,17 @@ PixelFox is an image sharing platform. Its build with the following technologies
 
 ## ToDos
 
+* [] Image viewer page with:
+  * [] with download button
+  * [] with like button
+  * [] with comment form and list of comments
+  * [] for image owner only: delete button
+  * [] for image owner add tags and description
 * [] User Profile page
 * [] User Settings page
 * [] DB Schema & Models
 * [] Basic image upload
-* [] Store image information to DB
+* [] Store image information to DB (also image meta data)
 * [] Share images via link
 * [] Store images to B2 or other S3 services (or we use juicefs)
 * [] Admin Area

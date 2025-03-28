@@ -29,7 +29,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/contact", loggedInMiddleware, controllers.HandleContact)
 	app.Get("/jobs", loggedInMiddleware, controllers.HandleJobs)
 	// Image Viewer
-	app.Get("/image/:filename", loggedInMiddleware, controllers.HandleImageViewer)
+	app.Get("/image/:uuid", loggedInMiddleware, controllers.HandleImageViewer)
 
 	// AUTH
 	app.Post("/logout", loggedInMiddleware, controllers.HandleAuthLogout)
@@ -60,9 +60,13 @@ func loggedInMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
+	// set session values
+	session.SetKeyValue(controllers.USER_NAME, sess.Get(controllers.USER_NAME).(string))
+
+	// set locals fiber context values
 	c.Locals(controllers.FROM_PROTECTED, true)
 	c.Locals(controllers.USER_NAME, sess.Get(controllers.USER_NAME))
-	session.SetKeyValue(controllers.USER_NAME, sess.Get(controllers.USER_NAME).(string))
+	c.Locals(controllers.USER_ID, userId.(uint))
 
 	return c.Next()
 }

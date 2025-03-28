@@ -103,8 +103,8 @@ db-reset:
 	docker volume rm pixelfox_db_data || true
 	@echo "🚀 Starte Datenbank neu..."
 	docker-compose up -d db
-	@echo "⏳ Warte 10 Sekunden, bis die Datenbank bereit ist..."
-	sleep 20
+	@echo "⏳ Warte bis die Datenbank bereit ist..."
+	sleep 30
 	@echo "🔼 Führe Migrationen aus..."
 	docker-compose exec app go run cmd/migrate/main.go up
 	@echo "✅ Datenbank wurde erfolgreich zurückgesetzt!"

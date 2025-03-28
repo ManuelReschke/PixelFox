@@ -1,13 +1,15 @@
 package models
 
 import (
-	"time"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
+	"github.com/goo
 
 	"gorm.io/gorm"
 )
 
 type Image struct {
 	ID            uint           `gorm:"primaryKey" json:"id"`
+	UUID          string         `gorm:"type:char(36);uniqueIndex;not null" json:"uuid"`
 	UserID        uint           `gorm:"index" json:"user_id"`
 	User          User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Title         string         `gorm:"type:varchar(255)" json:"title"`
@@ -31,6 +33,37 @@ type Image struct {
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// BeforeCreate wird vor dem Erstellen eines neuen Datensatzes aufgerufen
+func (i *Image) BeforeCreate(tx *gorm.DB) error {
+	// Generiere UUID, falls nicht vorhanden
+	if i.UUID == "" {
+		i.UUID = uuid.New().String()
+	}
+
+	// Generiere einen eindeutigen ShareLink, falls nicht vorhanden
+	if i.ShareLink == "" {
+		// Wir müssen zuerst das Objekt speichern, um eine ID zu bekommen
+		// Daher setzen wir einen temporären ShareLink
+		i.ShareLink = "temp"
+	}
+
+	return nil
+}
+
+// AfterCreate wird nach dem Erstellen eines neuen Datensatzes aufgerufen
+func (i *Image) AfterCreate(tx *gorm.DB) error {
+	// Jetzt haben wir eine ID und können den ShareLink generieren
+	if i.ShareLink == "temp" {
+		// Generiere den ShareLink basierend auf der ID
+		i.ShareLink = shortener.EncodeID(i.ID)
+
+		// Aktualisiere den ShareLink in der Datenbank
+		return tx.Model(i).Update("share_link", i.ShareLink).Error
+	}
+
+	return nil
+}
+
 // IncrementViewCount erhöht den Zähler für Aufrufe
 func (i *Image) IncrementViewCount(db *gorm.DB) error {
 	return db.Model(i).Update("view_count", i.ViewCount+1).Error
@@ -45,4 +78,18 @@ func (i *Image) IncrementDownloadCount(db *gorm.DB) error {
 func (i *Image) TogglePublic(db *gorm.DB) error {
 	i.IsPublic = !i.IsPublic
 	return db.Model(i).Update("is_public", i.IsPublic).Error
+}
+
+// FindByUUID findet ein Bild anhand seiner UUID
+func FindImageByUUID(db *gorm.DB, uuid string) (*Image, error) {
+	var image Image
+	result := db.Where("uuid = ?", uuid).First(&image)
+	return &image, result.Error
+}
+
+// FindByFilename findet ein Bild anhand seines Dateinamens
+func FindImageByFilename(db *gorm.DB, filename string) (*Image, error) {
+	var image Image
+	result := db.Where("file_name = ?", filename).First(&image)
+	return &image, result.Error
 }
