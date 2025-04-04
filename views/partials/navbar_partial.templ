@@ -13,7 +13,7 @@ templ Navbar(appName string, fromProtected bool, username string) {
 		@DevNote()
 		<div class="navbar-end">
 			if fromProtected {
-                <a hx-swap="transition:true" class="btn btn-ghost text-base " href="#">
+                <a hx-swap="transition:true" class="btn btn-ghost text-base" href="/user/profile">
                     Hallo, <span class="font-bold text-indigo-200"> { session.GetValueByKey("username") }</span>
                 </a>
 				<a hx-swap="transition:true" class="btn btn-ghost text-base" href="/user/images">

@@ -1,6 +1,9 @@
 # Build stage
 FROM golang:1.23-alpine AS fetch-stage
 WORKDIR /app
+RUN apk add --no-cache build-base ffmpeg libwebp-dev
+# enable CGO (needed for kolesa-teamgo webp)
+ENV CGO_ENABLED=1
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
@@ -18,7 +21,9 @@ RUN go build -o /app/pixelfox-app
 
 # Run stage
 FROM alpine:latest
-WORKDIR /root/
+WORKDIR /app
+RUN apk add --no-cache ffmpeg libwebp-dev
+ENV CGO_ENABLED=1
 COPY --from=build-stage /app/. .
 
 EXPOSE 8080

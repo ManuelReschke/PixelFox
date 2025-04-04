@@ -1,17 +1,26 @@
 package views
 
-templ ImageViewer(imagePath string, imagePathComplete string, imageFilename string, shareURL string) {
+templ ImageViewer(imagePath string, imagePathComplete string, imageFilename string, shareURL string, hasWebP bool, hasAVIF bool, webpPath string, avifPath string, originalPath string, hasThumbnails bool) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
 		<div class="card w-96 bg-base-100 shadow-xl">
 			<figure class="px-6 pt-6">
-				<img src={imagePath} alt={imageFilename} class="rounded-xl max-h-48 object-contain" />
+				<!-- Optimierte Bildformate mit picture-Element -->
+				<picture>
+					if hasAVIF {
+						<source srcset={avifPath} type="image/avif" />
+					}
+					if hasWebP {
+						<source srcset={webpPath} type="image/webp" />
+					}
+					<img src={imagePath} alt={imageFilename} class="rounded-xl max-h-48 object-contain" />
+				</picture>
 			</figure>
 			<div class="card-body">
 				<h2 class="card-title mx-auto truncate max-w-full" title={imageFilename}>{imageFilename}</h2>
 				
 				<div class="mt-4 space-y-3">
 					<!-- ShareLink Box mit weissem Hintergrund und fetter Schrift -->
-					<div class="form-control bg-white p-2 rounded">
+					<div class="form-control bg-base-200 p-2 rounded">
 						<div class="flex items-center gap-2">
 							<label class="label w-24 justify-start p-0">
 								<span class="label-text font-bold">Link teilen:</span>
@@ -36,8 +45,8 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 								<span class="label-text">HTML</span>
 							</label>
 							<div class="join w-full">
-								<input id="html-embed" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + imagePathComplete + "\" alt=\"" + imageFilename + "\" />"} />
-								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#html-embed">
+								<input id="html" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + imagePathComplete + "\" alt=\"" + imageFilename + "\" />"} />
+								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#html">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
 									</svg>
@@ -78,21 +87,30 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 						</div>
 					</div>
 					
-					<!-- Direktlink nach unten verschoben -->
 					<div class="form-control">
 						<div class="flex items-center gap-2">
 							<label class="label w-24 justify-start p-0">
 								<span class="label-text">Direktlink</span>
 							</label>
 							<div class="join w-full">
-								<input id="direct-link" type="text" readonly class="input input-bordered input-sm join-item w-full" value={imagePathComplete} />
-								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#direct-link">
+								<input id="direktlink" type="text" readonly class="input input-bordered input-sm join-item w-full" value={imagePathComplete} />
+								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#direktlink">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
 									</svg>
 								</button>
 							</div>
 						</div>
+					</div>
+
+					<!-- Download-Link für das Original -->
+					<div class="form-control">
+						<a href={templ.SafeURL(originalPath)} download={imageFilename} class="btn btn-outline btn-sm mt-2">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+							</svg>
+							Original herunterladen
+						</a>
 					</div>
 				</div>
 				

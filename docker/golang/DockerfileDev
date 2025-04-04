@@ -1,6 +1,10 @@
 # Build stage
 FROM golang:1.23-alpine AS fetch-stage
 WORKDIR /app
+# dependencies
+RUN apk add --no-cache build-base ffmpeg libwebp-dev
+# enable CGO (needed for kolesa-teamgo webp)
+ENV CGO_ENABLED=1
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
@@ -12,7 +16,9 @@ RUN templ generate
 # Final stage (development)
 FROM golang:1.23-alpine AS dev-stage
 WORKDIR /app
-RUN apk add --no-cache supervisor
+RUN apk add --no-cache supervisor ffmpeg libwebp-dev build-base
+# enable CGO (needed for kolesa-teamgo webp)
+ENV CGO_ENABLED=1
 COPY --from=fetch-stage /go/bin/air /usr/local/bin/air
 COPY --from=fetch-stage /go/bin/templ /usr/local/bin/templ
 COPY . .

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/views"
 	pages "github.com/ManuelReschke/PixelFox/views/pages"
@@ -75,18 +76,18 @@ func HandleUpload(c *fiber.Ctx) error {
 	relativePath := fmt.Sprintf("%d/%02d/%02d", now.Year(), now.Month(), now.Day())
 	fileName := fmt.Sprintf("%s%s", imageUUID, fileExt)
 
-	// Erstelle den vollständigen Pfad
-	dirPath := filepath.Join("./"+DEFAULT_UPLOAD_DIR, relativePath)
-	savePath := filepath.Join(dirPath, fileName)
+	// Erstelle den vollständigen Pfad für das Original-Bild in der neuen Struktur
+	originalDirPath := filepath.Join("./"+imageprocessor.OriginalDir, relativePath)
+	originalSavePath := filepath.Join(originalDirPath, fileName)
 
 	// Stelle sicher, dass das Verzeichnis existiert
-	if err := os.MkdirAll(dirPath, 0755); err != nil {
+	if err := os.MkdirAll(originalDirPath, 0755); err != nil {
 		fiberlog.Error(fmt.Sprintf("Fehler beim Erstellen des Verzeichnisses: %v", err))
 		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Erstellen des Upload-Verzeichnisses")
 	}
 
-	fiberlog.Info(fmt.Sprintf("[Upload] file: %s -> %s", file.Filename, savePath))
-	if err := c.SaveFile(file, savePath); err != nil {
+	fiberlog.Info(fmt.Sprintf("[Upload] file: %s -> %s", file.Filename, originalSavePath))
+	if err := c.SaveFile(file, originalSavePath); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("something went wrong: %s", err))
 	}
 
@@ -94,7 +95,7 @@ func HandleUpload(c *fiber.Ctx) error {
 		UUID:     imageUUID,
 		UserID:   c.Locals(USER_ID).(uint),
 		FileName: fileName,
-		FilePath: dirPath,
+		FilePath: originalDirPath, // Speichere den neuen Pfad in der Datenbank
 		FileSize: file.Size,
 		FileType: fileExt,
 		Title:    file.Filename,
@@ -113,6 +114,14 @@ func HandleUpload(c *fiber.Ctx) error {
 
 		return c.Redirect(redirectPath)
 	}
+
+	// Starte die Bildverarbeitung asynchron
+	go func() {
+		fiberlog.Info(fmt.Sprintf("[Upload] Starte asynchrone Bildverarbeitung für %s", image.UUID))
+		if err := imageprocessor.ProcessImage(&image, originalSavePath); err != nil {
+			fiberlog.Error(fmt.Sprintf("Fehler bei der Bildverarbeitung: %v", err))
+		}
+	}()
 
 	// Aktualisiere die Statistiken nach dem Upload
 	go statistics.UpdateStatisticsCache()
@@ -189,17 +198,76 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		// Generiere die ShareLink-URL mit der Domain und dem neuen /i/-Pfad
 		shareURL := filepath.Join(env.GetEnv("PUBLIC_DOMAIN", ""), "/i/", image.ShareLink)
 
-		imageViewer := views.ImageViewer(filePathComplete, filePathWithDomain, displayName, shareURL)
+		// Pfade für optimierte Bildformate
+		webpPath := ""
+		avifPath := ""
+		smallThumbPath := ""
+		smallThumbWebpPath := ""
+		smallThumbAvifPath := ""
+
+		// Wenn optimierte Formate verfügbar sind, generiere die Pfade
+		if image.HasWebp {
+			webpRelativePath := imageprocessor.GetImagePath(image, "webp", "")
+			webpPath = "/" + webpRelativePath
+		}
+
+		if image.HasAVIF {
+			avifRelativePath := imageprocessor.GetImagePath(image, "avif", "")
+			avifPath = "/" + avifRelativePath
+		}
+
+		// Wenn Thumbnails verfügbar sind, generiere die Pfade
+		if image.HasThumbnails {
+			// Pfad zum kleinen Thumbnail (Original-Format)
+			smallThumbRelativePath := filepath.Join(imagePath, identifier)
+			smallThumbPath = smallThumbRelativePath
+
+			// Pfade zu optimierten Thumbnails
+			if image.HasWebp {
+				smallThumbWebpRelativePath := imageprocessor.GetImagePath(image, "webp", "small")
+				smallThumbWebpPath = "/" + smallThumbWebpRelativePath
+			}
+
+			if image.HasAVIF {
+				smallThumbAvifRelativePath := imageprocessor.GetImagePath(image, "avif", "small")
+				smallThumbAvifPath = "/" + smallThumbAvifRelativePath
+			}
+		}
+
+		// Verwende das kleine Thumbnail für die Vorschau, falls verfügbar
+		previewPath := filePathComplete
+		previewWebpPath := webpPath
+		previewAvifPath := avifPath
+
+		if image.HasThumbnails {
+			previewPath = smallThumbPath
+			if image.HasWebp {
+				previewWebpPath = smallThumbWebpPath
+			}
+			if image.HasAVIF {
+				previewAvifPath = smallThumbAvifPath
+			}
+		}
+
+		imageViewer := views.ImageViewer(
+			previewPath,         // Pfad für die Vorschau (Thumbnail oder Original)
+			filePathWithDomain,  // Vollständiger Pfad zum Original für Download
+			displayName,         // Anzeigename
+			shareURL,            // ShareLink URL
+			image.HasWebp,       // Hat WebP?
+			image.HasAVIF,       // Hat AVIF?
+			previewWebpPath,     // WebP-Pfad für die Vorschau
+			previewAvifPath,     // AVIF-Pfad für die Vorschau
+			filePathComplete,    // Original-Pfad (für Download)
+			image.HasThumbnails, // Hat Thumbnails?
+		)
 		home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer)
 
 		handler := adaptor.HTTPHandler(templ.Handler(home))
+
 		return handler(c)
 	}
 
-	//imageViewer := views.ImageViewer("-", "", "No Image Found")
-	//home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer)
-	//
-	//handler := adaptor.HTTPHandler(templ.Handler(home))
 	return c.SendStatus(404)
 }
 
