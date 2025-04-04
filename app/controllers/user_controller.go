@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"path/filepath"
+	"strconv"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
-	userviews "github.com/ManuelReschke/PixelFox/views/user"
+	user_views "github.com/ManuelReschke/PixelFox/views/user"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
@@ -15,17 +16,14 @@ import (
 )
 
 func HandleUserProfile(c *fiber.Ctx) error {
-	// Get user information from session
 	sess, _ := session.GetSessionStore().Get(c)
 	_ = sess.Get(USER_ID) // Using _ to avoid unused variable warning
 	username := sess.Get(USER_NAME).(string)
 
-	// Get CSRF token for forms
 	csrfToken := c.Locals("csrf").(string)
 
-	// Render the profile page
-	profileIndex := userviews.ProfileIndex(username, csrfToken)
-	profile := userviews.Profile(
+	profileIndex := user_views.ProfileIndex(username, csrfToken)
+	profile := user_views.Profile(
 		" | Profil", getFromProtected(c), false, flash.Get(c), username, profileIndex,
 	)
 
@@ -35,17 +33,14 @@ func HandleUserProfile(c *fiber.Ctx) error {
 }
 
 func HandleUserSettings(c *fiber.Ctx) error {
-	// Get user information from session
 	sess, _ := session.GetSessionStore().Get(c)
 	_ = sess.Get(USER_ID) // Using _ to avoid unused variable warning
 	username := sess.Get(USER_NAME).(string)
 
-	// Get CSRF token for forms
 	csrfToken := c.Locals("csrf").(string)
 
-	// Render the settings page
-	settingsIndex := userviews.SettingsIndex(username, csrfToken)
-	settings := userviews.Settings(
+	settingsIndex := user_views.SettingsIndex(username, csrfToken)
+	settings := user_views.Settings(
 		" | Einstellungen", getFromProtected(c), false, flash.Get(c), username, settingsIndex,
 	)
 
@@ -55,12 +50,10 @@ func HandleUserSettings(c *fiber.Ctx) error {
 }
 
 func HandleUserImages(c *fiber.Ctx) error {
-	// Get user information from session
 	sess, _ := session.GetSessionStore().Get(c)
 	userID := sess.Get(USER_ID).(uint)
 	username := sess.Get(USER_NAME).(string)
 
-	// Lade alle Bilder des Benutzers aus der Datenbank
 	var images []models.Image
 	result := database.DB.Where("user_id = ?", userID).Order("created_at DESC").Find(&images)
 	if result.Error != nil {
@@ -70,9 +63,8 @@ func HandleUserImages(c *fiber.Ctx) error {
 	}
 
 	// Bereite die Bilderpfade für die Galerie vor
-	var galleryImages []userviews.GalleryImage
+	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
-		// Bestimme den Pfad zum mittleren Thumbnail
 		previewPath := ""
 		if img.HasThumbnails {
 			// Verwende WebP wenn verfügbar, sonst AVIF, sonst Original
@@ -95,7 +87,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 			title = img.Title
 		}
 
-		galleryImages = append(galleryImages, userviews.GalleryImage{
+		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:          img.ID,
 			UUID:        img.UUID,
 			Title:       title,
@@ -105,13 +97,63 @@ func HandleUserImages(c *fiber.Ctx) error {
 		})
 	}
 
-	// Render the gallery page
-	imagesGallery := userviews.ImagesGallery(username, galleryImages)
-	imagesPage := userviews.Images(
+	imagesGallery := user_views.ImagesGallery(username, galleryImages)
+	imagesPage := user_views.Images(
 		" | Meine Bilder", getFromProtected(c), false, flash.Get(c), username, imagesGallery,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(imagesPage))
 
 	return handler(c)
+}
+
+func HandleLoadMoreImages(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+
+	page, err := strconv.Atoi(c.Query("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	const imagesPerPage = 20
+	offset := (page - 1) * imagesPerPage
+
+	var images []models.Image
+	result := database.DB.Where("user_id = ?", userID).Order("created_at DESC").Offset(offset).Limit(imagesPerPage).Find(&images)
+	if result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Laden der Bilder")
+	}
+
+	var galleryImages []user_views.GalleryImage
+	for _, img := range images {
+		previewPath := ""
+		if img.HasThumbnails {
+			if img.HasWebp {
+				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
+			} else if img.HasAVIF {
+				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
+			} else {
+				previewPath = filepath.Join("/", img.FilePath, img.FileName)
+			}
+		} else {
+			previewPath = filepath.Join("/", img.FilePath, img.FileName)
+		}
+
+		title := img.FileName
+		if img.Title != "" {
+			title = img.Title
+		}
+
+		galleryImages = append(galleryImages, user_views.GalleryImage{
+			ID:          img.ID,
+			UUID:        img.UUID,
+			Title:       title,
+			ShareLink:   img.ShareLink,
+			PreviewPath: previewPath,
+			CreatedAt:   img.CreatedAt.Format("02.01.2006 15:04"),
+		})
+	}
+
+	return user_views.GalleryItems(galleryImages, page).Render(c.Context(), c.Response().BodyWriter())
 }

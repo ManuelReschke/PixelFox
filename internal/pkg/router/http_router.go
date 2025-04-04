@@ -49,6 +49,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/user/profile", requireAuthMiddleware, controllers.HandleUserProfile)
 	group.Get("/user/settings", requireAuthMiddleware, controllers.HandleUserSettings)
 	group.Get("/user/images", requireAuthMiddleware, controllers.HandleUserImages)
+	group.Get("/user/images/load", requireAuthMiddleware, controllers.HandleLoadMoreImages)
 }
 
 func NewHttpRouter() *HttpRouter {
@@ -58,19 +59,17 @@ func NewHttpRouter() *HttpRouter {
 func loggedInMiddleware(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
 	userId := sess.Get(controllers.USER_ID)
+	// user is not logged in
 	if userId == nil {
-		// Benutzer ist nicht eingeloggt
 		c.Locals(controllers.FROM_PROTECTED, false)
 		return c.Next()
 	}
 
-	// Benutzer ist eingeloggt
+	// user is logged in
 	userName := sess.Get(controllers.USER_NAME)
 	if userName != nil {
-		// set session values
 		session.SetKeyValue(controllers.USER_NAME, userName.(string))
 
-		// set locals fiber context values
 		c.Locals(controllers.FROM_PROTECTED, true)
 		c.Locals(controllers.USER_NAME, userName)
 		c.Locals(controllers.USER_ID, userId.(uint))
@@ -82,15 +81,13 @@ func loggedInMiddleware(c *fiber.Ctx) error {
 func requireAuthMiddleware(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
 	userId := sess.Get(controllers.USER_ID)
+	// user is not logged in
 	if userId == nil {
-		// Benutzer ist nicht eingeloggt, leite zum Login-Formular weiter
 		return c.Redirect("/login", fiber.StatusSeeOther)
 	}
 
-	// set session values
 	session.SetKeyValue(controllers.USER_NAME, sess.Get(controllers.USER_NAME).(string))
 
-	// set locals fiber context values
 	c.Locals(controllers.FROM_PROTECTED, true)
 	c.Locals(controllers.USER_NAME, sess.Get(controllers.USER_NAME))
 	c.Locals(controllers.USER_ID, userId.(uint))

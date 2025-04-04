@@ -121,30 +121,30 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 		</div>
 	</section>
 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
-			const copyButtons = document.querySelectorAll('.copy-btn');
+			var clipboard = new ClipboardJS('.copy-btn');
 			
-			copyButtons.forEach(button => {
-				button.addEventListener('click', function() {
-					const targetId = this.getAttribute('data-clipboard-target');
-					const targetElement = document.querySelector(targetId);
-					
-					targetElement.select();
-					document.execCommand('copy');
-					
-					// Zeige Feedback an
-					const originalText = this.innerHTML;
-					this.innerHTML = `
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-						</svg>
-					`;
-					
-					setTimeout(() => {
-						this.innerHTML = originalText;
-					}, 1500);
-				});
+			clipboard.on('success', function(e) {
+				const button = e.trigger;
+				const originalHTML = button.innerHTML;
+				
+				button.innerHTML = `
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+					</svg>
+				`;
+				
+				setTimeout(function() {
+					button.innerHTML = originalHTML;
+				}, 1500);
+				
+				e.clearSelection();
+			});
+			
+			clipboard.on('error', function(e) {
+				console.error('Fehler beim Kopieren: ', e.action);
 			});
 		});
 	</script>
