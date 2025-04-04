@@ -7,7 +7,7 @@ templ FlashMessages(msg fiber.Map) {
 		<div
             id="flash-message"
  			role="alert"
- 			class={ "alert alert-soft w-fit min-w-[384px] mx-auto mb-4", templ.KV("alert-success", msg["type"] == "success"),
+ 			class={ "alert alert-soft fixed top-20 right-4 z-50 shadow-lg w-fit min-w-[300px] max-w-md", templ.KV("alert-success", msg["type"] == "success"),
                 templ.KV("alert-error", msg["type"] == "error") }
 		>
 			if msg["type"] == "error" {
@@ -35,14 +35,44 @@ templ FlashMessages(msg fiber.Map) {
 			</button>
 		</div>
 
+        <style>
+            #flash-message {
+                animation: slide-in 0.3s ease-out, fade-in 0.3s ease-out;
+            }
+            
+            #flash-message.fade-out {
+                animation: slide-out 0.3s ease-out, fade-out 0.3s ease-out;
+            }
+            
+            @keyframes slide-in {
+                from { transform: translateX(100%); }
+                to { transform: translateX(0); }
+            }
+            
+            @keyframes slide-out {
+                from { transform: translateX(0); }
+                to { transform: translateX(100%); }
+            }
+            
+            @keyframes fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes fade-out {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        </style>
+
         <script>
             setTimeout(function() {
                 var flashMessage = document.getElementById('flash-message');
                 if (flashMessage) {
                     flashMessage.classList.add('fade-out');
                     setTimeout(function() {
-                        flashMessage.style.display = 'none';
-                    }, 1800);
+                        flashMessage.remove();
+                    }, 300);
                 }
             }, 4000);
         </script>

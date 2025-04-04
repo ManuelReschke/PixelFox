@@ -92,17 +92,35 @@ templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.Statistic
 		}
 	</section>
 
-    @Stats(stats)
+    if !fromProtected {
+        @Stats(stats)
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const words = ['schnelles', 'einfaches', 'kostenloses', 'sicheres', 'zuverlässiges'];
+                const changingWord = document.getElementById('changing-word');
+                let currentIndex = 0;
+
+                function changeWord() {
+                    currentIndex = (currentIndex + 1) % words.length;
+                    changingWord.textContent = words[currentIndex];
+                }
+
+                setInterval(changeWord, 2000);
+            });
+        </script>
+    }
 }
 
 templ Home(
 	page string,
-	fromProtected,
+	fromProtected bool,
 	isError bool,
 	msg fiber.Map,
 	cmp templ.Component,
+	ogParams ...string, 
 ) {
-	@Layout(page, fromProtected, isError, msg, "") {
+	@Layout(page, fromProtected, isError, msg, "", ogParams...) {
 		@cmp
 	}
 }

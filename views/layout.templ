@@ -14,6 +14,7 @@ templ Layout(
 	isError bool,
 	msg fiber.Map,
 	username string,
+	ogImage ...string, // Optional: [0]=Bild-URL, [1]=Titel, [2]=Beschreibung
 ) {
 	<!DOCTYPE html>
 	<html lang="de" data-theme="emerald">
@@ -30,6 +31,24 @@ templ Layout(
             <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
             <meta name="apple-mobile-web-app-title" content="Pixelfox" />
             <link rel="manifest" href="/site.webmanifest" />
+			
+			<!-- Open Graph / Social Media Meta Tags -->
+			if len(ogImage) >= 3 && ogImage[0] != "" {
+				<meta property="og:type" content="website" />
+				<meta property="og:url" content={ ogImage[0] } />
+				<meta property="og:image" content={ ogImage[0] } />
+				<meta property="og:image:alt" content={ ogImage[1] } />
+				<meta property="og:title" content={ ogImage[1] } />
+				<meta property="og:description" content={ ogImage[2] } />
+				<meta property="og:site_name" content="PIXELFOX.cc" />
+				
+				<!-- Twitter Card Tags -->
+				<meta name="twitter:card" content="summary_large_image" />
+				<meta name="twitter:image" content={ ogImage[0] } />
+				<meta name="twitter:title" content={ ogImage[1] } />
+				<meta name="twitter:description" content={ ogImage[2] } />
+			}
+			
 			<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
 			<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 			<link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
@@ -62,7 +81,7 @@ templ Layout(
                 <a class="link link-hover" href="/docs/api">API</a>
               </nav>
               <aside>
-                <p>Copyright © 2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit ❤ von MR-IT</p>
+                <p>Copyright  2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit von MR-IT</p>
               </aside>
             </footer>
             }

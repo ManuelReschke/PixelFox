@@ -219,8 +219,8 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		// Wenn Thumbnails verfügbar sind, generiere die Pfade
 		if image.HasThumbnails {
 			// Pfad zum kleinen Thumbnail (Original-Format)
-			smallThumbRelativePath := filepath.Join(imagePath, identifier)
-			smallThumbPath = smallThumbRelativePath
+			smallThumbRelativePath := imageprocessor.GetImagePath(image, "", "small")
+			smallThumbPath = "/" + smallThumbRelativePath
 
 			// Pfade zu optimierten Thumbnails
 			if image.HasWebp {
@@ -240,6 +240,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		previewAvifPath := avifPath
 
 		if image.HasThumbnails {
+			// Verwende das kleine Thumbnail für die Vorschau im Viewer
 			previewPath = smallThumbPath
 			if image.HasWebp {
 				previewWebpPath = smallThumbWebpPath
@@ -248,6 +249,25 @@ func HandleImageViewer(c *fiber.Ctx) error {
 				previewAvifPath = smallThumbAvifPath
 			}
 		}
+
+		// Open Graph Meta-Tags vorbereiten
+		ogImage := ""
+		if image.HasThumbnails && image.HasAVIF {
+			// Prefer medium AVIF thumbnail for Open Graph
+			mediumAvifPath := "/" + imageprocessor.GetImagePath(image, "avif", "medium")
+			ogImage = filepath.Join(env.GetEnv("PUBLIC_DOMAIN", ""), mediumAvifPath)
+		} else if image.HasThumbnails && image.HasWebp {
+			// Fallback to medium WebP thumbnail
+			mediumWebpPath := "/" + imageprocessor.GetImagePath(image, "webp", "medium")
+			ogImage = filepath.Join(env.GetEnv("PUBLIC_DOMAIN", ""), mediumWebpPath)
+		} else {
+			// If no thumbnails available, use original
+			ogImage = filePathWithDomain
+		}
+
+		// Titel und Beschreibung für Open Graph
+		ogTitle := fmt.Sprintf("%s - %s", displayName, "PIXELFOX.cc")
+		ogDescription := "Bild hochgeladen auf PIXELFOX.cc - Kostenloser Bilderhoster"
 
 		imageViewer := views.ImageViewer(
 			previewPath,         // Pfad für die Vorschau (Thumbnail oder Original)
@@ -261,7 +281,9 @@ func HandleImageViewer(c *fiber.Ctx) error {
 			filePathComplete,    // Original-Pfad (für Download)
 			image.HasThumbnails, // Hat Thumbnails?
 		)
-		home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer)
+
+		// Open Graph Meta-Tags an das Home-Template übergeben
+		home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer, ogImage, ogTitle, ogDescription)
 
 		handler := adaptor.HTTPHandler(templ.Handler(home))
 

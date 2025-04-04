@@ -239,8 +239,14 @@ func GetImagePath(image *models.Image, format string, size string) string {
 		return filepath.Join(ThumbnailsDir, "medium", "webp", relativePath, fileNameWithoutExt+".webp")
 	case size == "medium" && format == "avif":
 		return filepath.Join(ThumbnailsDir, "medium", "avif", relativePath, fileNameWithoutExt+".avif")
+	case size == "small" && format == "":
+		// Originales Format für kleines Thumbnail
+		return filepath.Join(ThumbnailsDir, "small", relativePath, fileNameWithoutExt+filepath.Ext(image.FileName))
+	case size == "medium" && format == "":
+		// Originales Format für mittleres Thumbnail
+		return filepath.Join(ThumbnailsDir, "medium", relativePath, fileNameWithoutExt+filepath.Ext(image.FileName))
 	default:
 		// Fallback zum Original
-		return filepath.Join(image.FilePath, image.FileName)
+		return filepath.Join(image.FilePath, image.UUID+image.FileType)
 	}
 }
