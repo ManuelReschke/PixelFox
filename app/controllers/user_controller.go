@@ -19,12 +19,13 @@ func HandleUserProfile(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
 	_ = sess.Get(USER_ID) // Using _ to avoid unused variable warning
 	username := sess.Get(USER_NAME).(string)
+	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
 
 	csrfToken := c.Locals("csrf").(string)
 
 	profileIndex := user_views.ProfileIndex(username, csrfToken)
 	profile := user_views.Profile(
-		" | Profil", getFromProtected(c), false, flash.Get(c), username, profileIndex,
+		" | Profil", getFromProtected(c), false, flash.Get(c), username, profileIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(profile))
@@ -36,12 +37,13 @@ func HandleUserSettings(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
 	_ = sess.Get(USER_ID) // Using _ to avoid unused variable warning
 	username := sess.Get(USER_NAME).(string)
+	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
 
 	csrfToken := c.Locals("csrf").(string)
 
 	settingsIndex := user_views.SettingsIndex(username, csrfToken)
 	settings := user_views.Settings(
-		" | Einstellungen", getFromProtected(c), false, flash.Get(c), username, settingsIndex,
+		" | Einstellungen", getFromProtected(c), false, flash.Get(c), username, settingsIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(settings))
@@ -53,6 +55,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
 	userID := sess.Get(USER_ID).(uint)
 	username := sess.Get(USER_NAME).(string)
+	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
 
 	var images []models.Image
 	result := database.DB.Where("user_id = ?", userID).Order("created_at DESC").Find(&images)
@@ -99,7 +102,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 
 	imagesGallery := user_views.ImagesGallery(username, galleryImages)
 	imagesPage := user_views.Images(
-		" | Meine Bilder", getFromProtected(c), false, flash.Get(c), username, imagesGallery,
+		" | Meine Bilder", getFromProtected(c), false, flash.Get(c), username, imagesGallery, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(imagesPage))

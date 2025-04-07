@@ -10,8 +10,9 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/ManuelReschke/PixelFox/internal/pkg/env"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
+import "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 
-func Navbar(appName string, fromProtected bool, username string) templ.Component {
+func Navbar(appName string, layout viewmodel.Layout) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -39,7 +40,7 @@ func Navbar(appName string, fromProtected bool, username string) templ.Component
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(appName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 10, Col: 13}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 11, Col: 13}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -57,7 +58,7 @@ func Navbar(appName string, fromProtected bool, username string) templ.Component
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if fromProtected {
+		if layout.FromProtected {
 			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 4)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -65,7 +66,7 @@ func Navbar(appName string, fromProtected bool, username string) templ.Component
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(session.GetValueByKey("username"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 17, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 18, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -75,13 +76,23 @@ func Navbar(appName string, fromProtected bool, username string) templ.Component
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			if layout.IsAdmin {
+				templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 6)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 7)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 		} else {
-			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 6)
+			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 8)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 7)
+		templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 9)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -111,7 +122,7 @@ func DevNote() templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if env.IsDev() {
-			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 8)
+			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 10)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

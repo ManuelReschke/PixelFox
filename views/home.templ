@@ -1,9 +1,12 @@
 package views
 
-import "github.com/gofiber/fiber/v2"
-import "time"
-import "strconv"
-import "github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
+import (
+	"github.com/gofiber/fiber/v2"
+	"time"
+	"strconv"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+)
 
 templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.StatisticsData) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
@@ -118,9 +121,18 @@ templ Home(
 	isError bool,
 	msg fiber.Map,
 	cmp templ.Component,
-	ogParams ...string, 
+	isAdmin bool,
+	ogViewModel *viewmodel.OpenGraph,
 ) {
-	@Layout(page, fromProtected, isError, msg, "", ogParams...) {
+	@Layout(viewmodel.Layout{
+                    Page:          page,
+                    FromProtected: fromProtected,
+                    IsError:       isError,
+                    Msg:           msg,
+                    Username:      "",
+                    IsAdmin:       isAdmin,
+                    OGViewModel:   ogViewModel,
+    }) {
 		@cmp
 	}
 }

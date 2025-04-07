@@ -15,5 +15,5 @@
 <main class=\"
 \">
 </main>
-<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright  2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit von MR-IT</p></aside></footer>
+<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright © 2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit ❤ von MR-IT</p></aside></footer>
 </body></html>

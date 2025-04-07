@@ -9,21 +9,13 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views/partials"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 const APP_NAME = "PIXELFOX.cc"
 
-func Layout(
-	page string,
-	fromProtected bool,
-	isError bool,
-	msg fiber.Map,
-	username string,
-	ogImage ...string, // Optional: [0]=Bild-URL, [1]=Titel, [2]=Beschreibung
-) templ.Component {
+func Layout(layout viewmodel.Layout) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -51,7 +43,7 @@ func Layout(
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(APP_NAME)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 27, Col: 20}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 19, Col: 20}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -62,9 +54,9 @@ func Layout(
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(page)
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(layout.Page)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 27, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 19, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -74,15 +66,15 @@ func Layout(
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if len(ogImage) >= 3 && ogImage[0] != "" {
+		if layout.OGViewModel != nil {
 			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 4)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[0])
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.URL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 38, Col: 48}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 30, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -93,9 +85,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[0])
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Image)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 39, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 31, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -106,9 +98,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[1])
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 40, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 32, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -119,9 +111,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[1])
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 41, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 33, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -132,9 +124,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[2])
+			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 42, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 34, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -145,9 +137,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[0])
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Image)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 47, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 39, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -158,9 +150,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[1])
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 48, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 40, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -171,9 +163,9 @@ func Layout(
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(ogImage[2])
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(layout.OGViewModel.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 49, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 41, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -188,8 +180,8 @@ func Layout(
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if !isError {
-			templ_7745c5c3_Err = partials.Navbar(APP_NAME, fromProtected, username).Render(ctx, templ_7745c5c3_Buffer)
+		if !layout.IsError {
+			templ_7745c5c3_Err = partials.Navbar(APP_NAME, layout).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -198,7 +190,7 @@ func Layout(
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var12 = []any{templ.KV("pt-24 flex-grow", !isError)}
+		var templ_7745c5c3_Var12 = []any{templ.KV("pt-24 flex-grow", !layout.IsError)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -220,7 +212,7 @@ func Layout(
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = partials.FlashMessages(msg).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = partials.FlashMessages(layout.Msg).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -232,7 +224,7 @@ func Layout(
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if !isError {
+		if !layout.IsError {
 			templ_7745c5c3_Err = templ.WriteWatchModeString(templ_7745c5c3_Buffer, 18)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

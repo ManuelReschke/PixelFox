@@ -9,6 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 
 	"github.com/gofiber/fiber/v2"
@@ -42,7 +43,7 @@ func SettingsIndex(username string, csrfToken string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(username)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/settings.templ`, Line: 17, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/settings.templ`, Line: 18, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -58,10 +59,12 @@ func SettingsIndex(username string, csrfToken string) templ.Component {
 
 func Settings(
 	page string,
-	fromProtected, isError bool,
+	fromProtected bool,
+	isError bool,
 	msg fiber.Map,
 	username string,
 	cmp templ.Component,
+	isAdmin bool,
 ) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -101,7 +104,15 @@ func Settings(
 			}
 			return templ_7745c5c3_Err
 		})
-		templ_7745c5c3_Err = views.Layout(page, fromProtected, isError, msg, username).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = views.Layout(viewmodel.Layout{
+			Page:          page,
+			FromProtected: fromProtected,
+			IsError:       isError,
+			Msg:           msg,
+			Username:      username,
+			IsAdmin:       isAdmin,
+			OGViewModel:   nil,
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

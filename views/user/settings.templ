@@ -2,6 +2,7 @@ package user_views
 
 import (
 	"github.com/ManuelReschke/PixelFox/views"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -40,12 +41,22 @@ templ SettingsIndex(username string, csrfToken string) {
 
 templ Settings(
 	page string,
-	fromProtected, isError bool,
+	fromProtected bool,
+	isError bool,
 	msg fiber.Map,
 	username string,
 	cmp templ.Component,
+	isAdmin bool,
 ) {
-	@views.Layout(page, fromProtected, isError, msg, username) {
+	@views.Layout(viewmodel.Layout{
+        Page:          page,
+        FromProtected: fromProtected,
+        IsError:       isError,
+        Msg:           msg,
+        Username:      username,
+        IsAdmin:       isAdmin,
+        OGViewModel:   nil,
+    }) {
 		@cmp
 	}
 }

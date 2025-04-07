@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	AUTH_KEY  string = "authenticated"
-	USER_ID   string = "user_id"
-	USER_NAME string = "username"
+	AUTH_KEY      string = "authenticated"
+	USER_ID       string = "user_id"
+	USER_NAME     string = "username"
+	USER_IS_ADMIN string = "isAdmin"
 )
 
 func HandleAuthLogin(c *fiber.Ctx) error {
@@ -27,7 +28,7 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 
 	lindex := auth.LoginIndex(fromProtected, csrfToken)
 	login := auth.Login(
-		" | Einloggen", fromProtected, false, flash.Get(c), lindex,
+		" | Einloggen", fromProtected, false, flash.Get(c), "", lindex, false,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(login))
@@ -66,6 +67,7 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 		sess.Set(AUTH_KEY, true)
 		sess.Set(USER_ID, user.ID)
 		sess.Set(USER_NAME, user.Name)
+		sess.Set(USER_IS_ADMIN, user.Role == "admin")
 
 		err = sess.Save()
 		if err != nil {
@@ -123,7 +125,7 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 
 	rindex := auth.RegisterIndex(fromProtected, csrfToken)
 	register := auth.Register(
-		" | Registrieren", fromProtected, false, flash.Get(c), rindex,
+		" | Registrieren", fromProtected, false, flash.Get(c), "", rindex, false,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(register))

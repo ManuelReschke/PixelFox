@@ -2,20 +2,12 @@ package views
 
 import (
 	"github.com/ManuelReschke/PixelFox/views/partials"
-
-	"github.com/gofiber/fiber/v2"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 )
 
 const APP_NAME = "PIXELFOX.cc"
 
-templ Layout(
-	page string,
-	fromProtected bool,
-	isError bool,
-	msg fiber.Map,
-	username string,
-	ogImage ...string, // Optional: [0]=Bild-URL, [1]=Titel, [2]=Beschreibung
-) {
+templ Layout(layout viewmodel.Layout) {
 	<!DOCTYPE html>
 	<html lang="de" data-theme="emerald">
 		<head>
@@ -24,7 +16,7 @@ templ Layout(
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<meta name="description" content="Bilder und Fotos hochladen und kostenlos teilen. Schnellster Bilder Hosting Dienst." />
 			<meta name="google" content="notranslate"/>
-			<title>{ APP_NAME } { page }</title>
+			<title>{ APP_NAME } { layout.Page }</title>
 			<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
             <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
             <link rel="shortcut icon" href="/favicon.ico" />
@@ -33,20 +25,20 @@ templ Layout(
             <link rel="manifest" href="/site.webmanifest" />
 			
 			<!-- Open Graph / Social Media Meta Tags -->
-			if len(ogImage) >= 3 && ogImage[0] != "" {
+			if layout.OGViewModel != nil {
 				<meta property="og:type" content="website" />
-				<meta property="og:url" content={ ogImage[0] } />
-				<meta property="og:image" content={ ogImage[0] } />
-				<meta property="og:image:alt" content={ ogImage[1] } />
-				<meta property="og:title" content={ ogImage[1] } />
-				<meta property="og:description" content={ ogImage[2] } />
+				<meta property="og:url" content={ layout.OGViewModel.URL } />
+				<meta property="og:image" content={ layout.OGViewModel.Image } />
+				<meta property="og:image:alt" content={ layout.OGViewModel.Title } />
+				<meta property="og:title" content={ layout.OGViewModel.Title } />
+				<meta property="og:description" content={ layout.OGViewModel.Description } />
 				<meta property="og:site_name" content="PIXELFOX.cc" />
 				
 				<!-- Twitter Card Tags -->
 				<meta name="twitter:card" content="summary_large_image" />
-				<meta name="twitter:image" content={ ogImage[0] } />
-				<meta name="twitter:title" content={ ogImage[1] } />
-				<meta name="twitter:description" content={ ogImage[2] } />
+				<meta name="twitter:image" content={ layout.OGViewModel.Image } />
+				<meta name="twitter:title" content={ layout.OGViewModel.Title } />
+				<meta name="twitter:description" content={ layout.OGViewModel.Description } />
 			}
 			
 			<link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
@@ -61,17 +53,17 @@ templ Layout(
 		</head>
 		<body class="sample-transition flex flex-col min-h-screen" hx-boost="true">
 			<header>
-				if !isError {
-					@partials.Navbar(APP_NAME, fromProtected, username)
+				if !layout.IsError {
+					@partials.Navbar(APP_NAME, layout)
 				}
 			</header>
 
-			<main class={ templ.KV("pt-24 flex-grow", !isError) }>
-                @partials.FlashMessages(msg)
+			<main class={ templ.KV("pt-24 flex-grow", !layout.IsError) }>
+                @partials.FlashMessages(layout.Msg)
 				{ children... }
 			</main>
 
-			if !isError {
+			if !layout.IsError {
             <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full">
               <nav class="grid grid-flow-col gap-4">
                 <a class="link link-hover" href="/news">Neuigkeiten</a>
@@ -81,7 +73,7 @@ templ Layout(
                 <a class="link link-hover" href="/docs/api">API</a>
               </nav>
               <aside>
-                <p>Copyright  2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit von MR-IT</p>
+                <p>Copyright © 2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit ❤ von MR-IT</p>
               </aside>
             </footer>
             }

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/views"
 	pages "github.com/ManuelReschke/PixelFox/views/pages"
@@ -32,10 +34,17 @@ func HandleStart(c *fiber.Ctx) error {
 	fromProtected := getFromProtected(c)
 	csrfToken := c.Locals("csrf").(string)
 
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if fromProtected {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
 	stats := statistics.GetStatisticsData()
 
-	hindex := views.HomeIndex(fromProtected, csrfToken, stats)
-	home := views.Home("", fromProtected, false, flash.Get(c), hindex)
+	page := views.HomeIndex(fromProtected, csrfToken, stats)
+	home := views.Home("", fromProtected, false, flash.Get(c), page, isAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -265,9 +274,14 @@ func HandleImageViewer(c *fiber.Ctx) error {
 			ogImage = filePathWithDomain
 		}
 
-		// Titel und Beschreibung für Open Graph
 		ogTitle := fmt.Sprintf("%s - %s", displayName, "PIXELFOX.cc")
 		ogDescription := "Bild hochgeladen auf PIXELFOX.cc - Kostenloser Bilderhoster"
+
+		isAdmin := false
+		if getFromProtected(c) {
+			sess, _ := session.GetSessionStore().Get(c)
+			isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+		}
 
 		imageViewer := views.ImageViewer(
 			previewPath,         // Pfad für die Vorschau (Thumbnail oder Original)
@@ -282,8 +296,15 @@ func HandleImageViewer(c *fiber.Ctx) error {
 			image.HasThumbnails, // Hat Thumbnails?
 		)
 
-		// Open Graph Meta-Tags an das Home-Template übergeben
-		home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer, ogImage, ogTitle, ogDescription)
+		ogViewModel := &viewmodel.OpenGraph{
+			URL:         shareURL,
+			Image:       ogImage,
+			ImageAlt:    ogTitle,
+			Title:       ogTitle,
+			Description: ogDescription,
+		}
+
+		home := views.Home("", getFromProtected(c), false, flash.Get(c), imageViewer, isAdmin, ogViewModel)
 
 		handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -294,8 +315,15 @@ func HandleImageViewer(c *fiber.Ctx) error {
 }
 
 func HandleNews(c *fiber.Ctx) error {
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if getFromProtected(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
 	page := pages.NewsPage()
-	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page, isAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -303,8 +331,15 @@ func HandleNews(c *fiber.Ctx) error {
 }
 
 func HandleAbout(c *fiber.Ctx) error {
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if getFromProtected(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
 	page := views.AboutPage()
-	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page, isAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -312,8 +347,15 @@ func HandleAbout(c *fiber.Ctx) error {
 }
 
 func HandleContact(c *fiber.Ctx) error {
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if getFromProtected(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
 	page := views.ContactPage()
-	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page, isAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -321,8 +363,15 @@ func HandleContact(c *fiber.Ctx) error {
 }
 
 func HandleJobs(c *fiber.Ctx) error {
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if getFromProtected(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
 	page := pages.JobsPage()
-	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page, isAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -330,8 +379,15 @@ func HandleJobs(c *fiber.Ctx) error {
 }
 
 func HandleDocsAPI(c *fiber.Ctx) error {
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if getFromProtected(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
 	page := views.APIPage()
-	home := views.Home("", getFromProtected(c), false, flash.Get(c), page)
+	home := views.Home("", getFromProtected(c), false, flash.Get(c), page, isAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 

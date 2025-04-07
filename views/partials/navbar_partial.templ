@@ -2,8 +2,9 @@ package partials
 
 import "github.com/ManuelReschke/PixelFox/internal/pkg/env"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
+import "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 
-templ Navbar(appName string, fromProtected bool, username string) {
+templ Navbar(appName string, layout viewmodel.Layout) {
     <nav class="navbar bg-neutral text-neutral-content fixed z-10 w-full">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
@@ -12,7 +13,7 @@ templ Navbar(appName string, fromProtected bool, username string) {
 		</div>
 		@DevNote()
 		<div class="navbar-end">
-			if fromProtected {
+			if layout.FromProtected {
                 <a hx-swap="transition:true" class="btn btn-ghost text-base" href="/user/profile">
                     Hallo, <span class="font-bold text-indigo-200"> { session.GetValueByKey("username") }</span>
                 </a>
@@ -39,6 +40,15 @@ templ Navbar(appName string, fromProtected bool, username string) {
                       </a>
                     </li>
                     <li><a href="/user/settings">Einstellungen</a></li>
+                    
+                    if layout.IsAdmin {
+                      <li>
+                        <a href="/admin" class="text-purple-500 font-semibold">
+                          Admin Panel
+                        </a>
+                      </li>
+                    }
+                    
                     <li>
                         <a
                             hx-swap="transition:true"

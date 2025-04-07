@@ -34,6 +34,14 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// auth
 	app.Post("/logout", requireAuthMiddleware, controllers.HandleAuthLogout)
 
+	// Admin routes
+	adminGroup := app.Group("/admin", RequireAdminMiddleware)
+	adminGroup.Get("/", controllers.HandleAdminDashboard)
+	adminGroup.Get("/users", controllers.HandleAdminUsers)
+	adminGroup.Get("/users/edit/:id", controllers.HandleAdminUserEdit)
+	adminGroup.Post("/users/update/:id", controllers.HandleAdminUserUpdate)
+	adminGroup.Get("/users/delete/:id", controllers.HandleAdminUserDelete)
+
 	csrfConf := csrf.Config{
 		KeyLookup:  "form:_csrf",
 		ContextKey: "csrf",
@@ -91,6 +99,33 @@ func requireAuthMiddleware(c *fiber.Ctx) error {
 	c.Locals(controllers.FROM_PROTECTED, true)
 	c.Locals(controllers.USER_NAME, sess.Get(controllers.USER_NAME))
 	c.Locals(controllers.USER_ID, userId.(uint))
+
+	return c.Next()
+}
+
+func RequireAdminMiddleware(c *fiber.Ctx) error {
+	// First check if user is authenticated
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(controllers.USER_ID)
+
+	// User is not logged in
+	if userID == nil {
+		return c.Redirect("/login", fiber.StatusSeeOther)
+	}
+
+	// Check if user is admin based on session value
+	isAdmin := sess.Get(controllers.USER_IS_ADMIN)
+	if isAdmin == nil || isAdmin.(bool) != true {
+		// User is not an admin
+		return c.Redirect("/", fiber.StatusSeeOther)
+	}
+
+	// Set user info in context
+	session.SetKeyValue(controllers.USER_NAME, sess.Get(controllers.USER_NAME).(string))
+	c.Locals(controllers.FROM_PROTECTED, true)
+	c.Locals(controllers.USER_NAME, sess.Get(controllers.USER_NAME))
+	c.Locals(controllers.USER_ID, userID.(uint))
+	c.Locals(controllers.USER_IS_ADMIN, true)
 
 	return c.Next()
 }
