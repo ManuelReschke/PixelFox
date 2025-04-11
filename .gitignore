@@ -1,4 +1,6 @@
 .idea/
+.vscode/
 tmp/
 .env
 pixelfox-app
+uploads/

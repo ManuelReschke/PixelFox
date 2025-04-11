@@ -1,32 +1,36 @@
 package views
 
-templ ImageViewer(imagePath string, imagePathComplete string, imageFilename string, shareURL string, hasWebP bool, hasAVIF bool, webpPath string, avifPath string, originalPath string, hasThumbnails bool) {
+import (
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+)
+
+templ ImageViewer(model viewmodel.Image) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
-		<div class="card w-96 bg-base-100 shadow-xl">
-			<figure class="px-6 pt-6">
+		<div class="card w-[32rem] bg-base-100 shadow-xl">
+			<figure class="px-6 pt-3 pb-3 bg-base-200 bg-opacity-30 rounded-t-xl">
 				<!-- Optimierte Bildformate mit picture-Element -->
 				<picture>
-					if hasAVIF {
-						<source srcset={avifPath} type="image/avif" />
+					if model.HasAVIF {
+						<source srcset={model.PreviewAVIFPath} type="image/avif" />
 					}
-					if hasWebP {
-						<source srcset={webpPath} type="image/webp" />
+					if model.HasWebP {
+						<source srcset={model.PreviewWebPPath} type="image/webp" />
 					}
-					<img src={imagePath} alt={imageFilename} class="rounded-xl max-h-48 object-contain" />
+					<img loading="lazy" src={model.PreviewPath} alt={model.DisplayName} class="rounded-xl max-h-48 object-contain cursor-pointer" id="preview-image" />
 				</picture>
 			</figure>
-			<div class="card-body">
-				<h2 class="card-title mx-auto truncate max-w-full" title={imageFilename}>{imageFilename}</h2>
+			<div class="card-body bg-base-100">
+				<h2 class="card-title mx-auto truncate max-w-full" title={model.DisplayName}>{model.DisplayName}</h2>
 				
 				<div class="mt-4 space-y-3">
 					<!-- ShareLink Box mit weissem Hintergrund und fetter Schrift -->
-					<div class="form-control bg-base-200 p-2 rounded">
+					<div class="form-control bg-base-200 bg-opacity-50 p-2 rounded border border-base-300">
 						<div class="flex items-center gap-2">
 							<label class="label w-24 justify-start p-0">
 								<span class="label-text font-bold">Link teilen:</span>
 							</label>
 							<div class="join w-full">
-								<input id="share-link" type="text" readonly class="input input-bordered input-sm join-item w-full font-bold" value={shareURL} />
+								<input id="share-link" type="text" readonly class="input input-bordered input-sm join-item w-full font-bold" value={model.ShareURL} />
 								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#share-link">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
@@ -45,7 +49,13 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 								<span class="label-text">HTML</span>
 							</label>
 							<div class="join w-full">
-								<input id="html" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + imagePathComplete + "\" alt=\"" + imageFilename + "\" />"} />
+								if model.HasAVIF {
+									<input id="html" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
+								} else if model.HasWebP {
+									<input id="html" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
+								} else {
+									<input id="html" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewPath + "\" alt=\"" + model.DisplayName + "\" />"} />
+								}
 								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#html">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
@@ -61,7 +71,13 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 								<span class="label-text">BBCode</span>
 							</label>
 							<div class="join w-full">
-								<input id="bbcode" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + imagePathComplete + "[/img]"} />
+								if model.HasAVIF {
+									<input id="bbcode" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewAVIFPath + "[/img]"} />
+								} else if model.HasWebP {
+									<input id="bbcode" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewWebPPath + "[/img]"} />
+								} else {
+									<input id="bbcode" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewPath + "[/img]"} />
+								}
 								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#bbcode">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
@@ -77,7 +93,13 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 								<span class="label-text">Markdown</span>
 							</label>
 							<div class="join w-full">
-								<input id="markdown" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + imageFilename + "](" + imagePathComplete + ")"} />
+								if model.HasAVIF {
+									<input id="markdown" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewAVIFPath + ")"} />
+								} else if model.HasWebP {
+									<input id="markdown" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewWebPPath + ")"} />
+								} else {
+									<input id="markdown" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewPath + ")"} />
+								}
 								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#markdown">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
@@ -93,7 +115,13 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 								<span class="label-text">Direktlink</span>
 							</label>
 							<div class="join w-full">
-								<input id="direktlink" type="text" readonly class="input input-bordered input-sm join-item w-full" value={imagePathComplete} />
+								if model.HasAVIF {
+									<input id="direktlink" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewAVIFPath} />
+								} else if model.HasWebP {
+									<input id="direktlink" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewWebPPath} />
+								} else {
+									<input id="direktlink" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewPath} />
+								}
 								<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#direktlink">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
@@ -102,28 +130,138 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 							</div>
 						</div>
 					</div>
-
-					<!-- Download-Link für das Original -->
-					<div class="form-control">
-						<a href={templ.SafeURL(originalPath)} download={imageFilename} class="btn btn-outline btn-sm mt-2">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-							</svg>
-							Original herunterladen
-						</a>
-					</div>
 				</div>
 				
 				<div class="card-actions justify-center mt-4">
+					<a href={templ.URL(model.Domain + model.OriginalPath)} download={model.DisplayName} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm w-full">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+						</svg>
+						Original herunterladen
+					</a>
 					<a href="/" class="btn btn-primary btn-sm">Neues Bild hochladen</a>
 				</div>
 			</div>
 		</div>
 	</section>
 
+	<!-- Modal für Bildanzeige mit lazy loading -->
+	<dialog id="image-modal" class="modal">
+		<div class="modal-box max-w-5xl">
+			<form method="dialog">
+				<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">×</button>
+			</form>
+			<div class="py-4 flex justify-center">
+				<!-- Loading spinner that shows initially -->
+				<div id="loading-spinner" class="flex flex-col items-center justify-center">
+					<span class="loading loading-spinner loading-lg text-primary"></span>
+					<p class="mt-2">Loading optimized image...</p>
+				</div>
+				
+				<!-- Picture element that will be populated via JavaScript -->
+				<picture id="modal-picture" class="hidden">
+					<!-- Sources will be added dynamically -->
+					<img id="modal-image" class="max-h-[80vh] object-contain" alt="" />
+				</picture>
+			</div>
+		</div>
+	</dialog>
+
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
 	<script>
+		// Check if imagePaths is already defined to avoid redeclaration
+		if (typeof window.pixelFoxImagePaths === 'undefined') {
+			// Create a global variable to store image paths
+			window.pixelFoxImagePaths = {};
+		}
+
+		// Update image paths for current image
+		window.pixelFoxImagePaths = {
+			avif: "{{ model.OptimizedAVIFPath }}",
+			webp: "{{ model.OptimizedWebPPath }}",
+			original: "{{ model.OriginalPath }}",
+			hasAvif: {{ model.HasAVIF }},
+			hasWebp: {{ model.HasWebP }},
+			displayName: "{{ model.DisplayName }}"
+		};
+
+		// Function to open the modal and load images on demand
+		function openImageModal() {
+			// Show the modal first
+			const modal = document.getElementById('image-modal');
+			modal.showModal();
+			
+			// Show loading spinner, hide picture
+			const spinner = document.getElementById('loading-spinner');
+			const picture = document.getElementById('modal-picture');
+			spinner.classList.remove('hidden');
+			picture.classList.add('hidden');
+			
+			// Get the image element
+			const img = document.getElementById('modal-image');
+			
+			// Clear existing sources
+			while (picture.firstChild) {
+				if (picture.firstChild !== img) {
+					picture.removeChild(picture.firstChild);
+				} else {
+					break;
+				}
+			}
+			
+			// Create image object to preload
+			const preloadImg = new Image();
+			
+			// Determine which optimized format to use
+			let imageSrc = "";
+			if (window.pixelFoxImagePaths.hasAvif) {
+				// Use AVIF if available
+				imageSrc = window.pixelFoxImagePaths.avif;
+				const avifSource = document.createElement('source');
+				avifSource.srcset = window.pixelFoxImagePaths.avif;
+				avifSource.type = 'image/avif';
+				picture.insertBefore(avifSource, img);
+			} else if (window.pixelFoxImagePaths.hasWebp) {
+				// Use WebP if AVIF not available
+				imageSrc = window.pixelFoxImagePaths.webp;
+				const webpSource = document.createElement('source');
+				webpSource.srcset = window.pixelFoxImagePaths.webp;
+				webpSource.type = 'image/webp';
+				picture.insertBefore(webpSource, img);
+			} else {
+				// Fallback to original only if no optimized version exists
+				imageSrc = window.pixelFoxImagePaths.original;
+			}
+			
+			// When image loads, hide spinner and show image
+			preloadImg.onload = function() {
+				spinner.classList.add('hidden');
+				picture.classList.remove('hidden');
+			};
+			
+			// Set image src and alt
+			img.alt = window.pixelFoxImagePaths.displayName;
+			img.src = imageSrc; // Use the selected optimized format
+			preloadImg.src = imageSrc; // Start loading
+		}
+
+		// Function to initialize event listeners
+		function initializeEventListeners() {
+			// Add click event to preview image
+			const previewImage = document.getElementById('preview-image');
+			if (previewImage) {
+				// Remove any existing listeners to avoid duplicates
+				previewImage.removeEventListener('click', openImageModal);
+				// Add the click event listener
+				previewImage.addEventListener('click', openImageModal);
+			}
+		}
+
+		// Initialize clipboard and event listeners when DOM is loaded
 		document.addEventListener('DOMContentLoaded', function() {
+			initializeEventListeners();
+
+			// Initialize clipboard
 			var clipboard = new ClipboardJS('.copy-btn');
 			
 			clipboard.on('success', function(e) {
@@ -146,6 +284,11 @@ templ ImageViewer(imagePath string, imagePathComplete string, imageFilename stri
 			clipboard.on('error', function(e) {
 				console.error('Fehler beim Kopieren: ', e.action);
 			});
+		});
+
+		// Handle HTMX after-swap event to reinitialize event listeners
+		document.body.addEventListener('htmx:afterSwap', function(event) {
+			initializeEventListeners();
 		});
 	</script>
 }

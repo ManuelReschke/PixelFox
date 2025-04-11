@@ -25,7 +25,7 @@ func HandleUserProfile(c *fiber.Ctx) error {
 
 	profileIndex := user_views.ProfileIndex(username, csrfToken)
 	profile := user_views.Profile(
-		" | Profil", getFromProtected(c), false, flash.Get(c), username, profileIndex, isAdmin,
+		" | Profil", isLoggedIn(c), false, flash.Get(c), username, profileIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(profile))
@@ -43,7 +43,7 @@ func HandleUserSettings(c *fiber.Ctx) error {
 
 	settingsIndex := user_views.SettingsIndex(username, csrfToken)
 	settings := user_views.Settings(
-		" | Einstellungen", getFromProtected(c), false, flash.Get(c), username, settingsIndex, isAdmin,
+		" | Einstellungen", isLoggedIn(c), false, flash.Get(c), username, settingsIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(settings))
@@ -69,7 +69,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
 		previewPath := ""
-		if img.HasThumbnails {
+		if img.HasThumbnailSmall {
 			// Verwende WebP wenn verfügbar, sonst AVIF, sonst Original
 			if img.HasWebp {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
@@ -102,7 +102,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 
 	imagesGallery := user_views.ImagesGallery(username, galleryImages)
 	imagesPage := user_views.Images(
-		" | Meine Bilder", getFromProtected(c), false, flash.Get(c), username, imagesGallery, isAdmin,
+		" | Meine Bilder", isLoggedIn(c), false, flash.Get(c), username, imagesGallery, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(imagesPage))
@@ -131,7 +131,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
 		previewPath := ""
-		if img.HasThumbnails {
+		if img.HasThumbnailSmall {
 			if img.HasWebp {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else if img.HasAVIF {

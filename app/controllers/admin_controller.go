@@ -34,7 +34,7 @@ func HandleAdminDashboard(c *fiber.Ctx) error {
 
 	// Render dashboard
 	dashboard := admin_views.Dashboard(int(totalUsers), int(totalImages), recentUsers)
-	home := views.Home(" | Admin Dashboard", getFromProtected(c), false, flash.Get(c), dashboard, true, nil)
+	home := views.Home(" | Admin Dashboard", isLoggedIn(c), false, flash.Get(c), dashboard, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -49,7 +49,7 @@ func HandleAdminUsers(c *fiber.Ctx) error {
 
 	// Render user management page
 	userManagement := admin_views.UserManagement(users)
-	home := views.Home(" | User Management", getFromProtected(c), false, flash.Get(c), userManagement, true, nil)
+	home := views.Home(" | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -76,7 +76,7 @@ func HandleAdminUserEdit(c *fiber.Ctx) error {
 
 	// Render user edit page
 	userEdit := admin_views.UserEdit(user)
-	home := views.Home(" | Edit User", getFromProtected(c), false, flash.Get(c), userEdit, true, nil)
+	home := views.Home(" | Edit User", isLoggedIn(c), false, flash.Get(c), userEdit, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

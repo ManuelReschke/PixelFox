@@ -10,33 +10,33 @@ import (
 )
 
 type Image struct {
-	ID             uint           `gorm:"primaryKey" json:"id"`
-	UUID           string         `gorm:"type:char(36);uniqueIndex;not null" json:"uuid"`
-	UserID         uint           `gorm:"index" json:"user_id"`
-	User           User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Title          string         `gorm:"type:varchar(255)" json:"title"`
-	Description    string         `gorm:"type:text" json:"description"`
-	FilePath       string         `gorm:"type:varchar(255);not null" json:"file_path"`
-	FileName       string         `gorm:"type:varchar(255);not null" json:"file_name"`
-	FileSize       int64          `gorm:"type:bigint" json:"file_size"`
-	FileType       string         `gorm:"type:varchar(50)" json:"file_type"`
-	Width          int            `gorm:"type:int" json:"width"`
-	Height         int            `gorm:"type:int" json:"height"`
-	ShareLink      string         `gorm:"type:varchar(255);uniqueIndex" json:"share_link"`
-	IsPublic       bool           `gorm:"default:false" json:"is_public"`
-	ViewCount      int            `gorm:"default:0" json:"view_count"`
-	DownloadCount  int            `gorm:"default:0" json:"download_count"`
-	HasWebp        bool           `gorm:"default:false" json:"has_webp"`
-	HasAVIF        bool           `gorm:"default:false" json:"has_avif"`
-	HasThumbnails  bool           `gorm:"default:false" json:"has_thumbnails"`
-	ThumbnailSizes string         `gorm:"type:varchar(255)" json:"thumbnail_sizes"`
-	Tags           []Tag          `gorm:"many2many:image_tags;" json:"tags,omitempty"`
-	Comments       []Comment      `gorm:"foreignKey:ImageID" json:"comments,omitempty"`
-	Likes          []Like         `gorm:"foreignKey:ImageID" json:"likes,omitempty"`
-	Albums         []Album        `gorm:"many2many:album_images;" json:"albums,omitempty"`
-	CreatedAt      time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt      time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                 uint           `gorm:"primaryKey" json:"id"`
+	UUID               string         `gorm:"type:char(36);uniqueIndex;not null" json:"uuid"`
+	UserID             uint           `gorm:"index" json:"user_id"`
+	User               User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Title              string         `gorm:"type:varchar(255)" json:"title"`
+	Description        string         `gorm:"type:text" json:"description"`
+	FilePath           string         `gorm:"type:varchar(255);not null" json:"file_path"`
+	FileName           string         `gorm:"type:varchar(255);not null" json:"file_name"`
+	FileSize           int64          `gorm:"type:bigint" json:"file_size"`
+	FileType           string         `gorm:"type:varchar(50)" json:"file_type"`
+	Width              int            `gorm:"type:int" json:"width"`
+	Height             int            `gorm:"type:int" json:"height"`
+	ShareLink          string         `gorm:"type:varchar(255);uniqueIndex" json:"share_link"`
+	IsPublic           bool           `gorm:"default:false" json:"is_public"`
+	ViewCount          int            `gorm:"default:0" json:"view_count"`
+	DownloadCount      int            `gorm:"default:0" json:"download_count"`
+	HasWebp            bool           `gorm:"default:false" json:"has_webp"`
+	HasAVIF            bool           `gorm:"default:false" json:"has_avif"`
+	HasThumbnailSmall  bool           `gorm:"default:false" json:"has_thumbnail_small"`
+	HasThumbnailMedium bool           `gorm:"default:false" json:"has_thumbnail_medium"`
+	Tags               []Tag          `gorm:"many2many:image_tags;" json:"tags,omitempty"`
+	Comments           []Comment      `gorm:"foreignKey:ImageID" json:"comments,omitempty"`
+	Likes              []Like         `gorm:"foreignKey:ImageID" json:"likes,omitempty"`
+	Albums             []Album        `gorm:"many2many:album_images;" json:"albums,omitempty"`
+	CreatedAt          time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // BeforeCreate wird vor dem Erstellen eines neuen Datensatzes aufgerufen

@@ -13,6 +13,11 @@ build-no-cache:
 	@echo "🚧 Build..."
 	docker-compose build --no-cache --force-rm --pull
 
+.PHONY: generate-template
+generate-template:
+	@echo "🔧 Generiere Templates..."
+	docker exec -it pxlfox-app templ generate ./..
+
 .PHONY: prepare-env-test
 prepare-env-test:
 	@echo "🔧 Kopiere $(ENV_DEV_FILE) nach $(ENV_FILE) (Testumgebung)"
@@ -128,3 +133,4 @@ help:
 	@echo "  make migrate-to         - Führe Migration bis zu bestimmter Version aus (version=X)"
 	@echo "  make migrate-status     - Zeige Status der Migrationen an"
 	@echo "  make db-reset           - Setze Datenbank zurück (löscht alle Daten)"
+	@echo "  make generate-template  - Generiere Templates"

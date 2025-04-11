@@ -33,7 +33,7 @@ func GetImagePathForBrowser(c *fiber.Ctx, image *models.Image, size string) stri
 	format := GetOptimalImageFormat(c, image)
 
 	// Wenn Thumbnails angefordert wurden, aber keine vorhanden sind, verwende das Original
-	if (size == "small" || size == "medium") && !image.HasThumbnails {
+	if (size == "small" || size == "medium") && !image.HasThumbnailSmall {
 		size = ""
 	}
 
