@@ -14,7 +14,7 @@ type Album struct {
 	Description  string         `gorm:"type:text" json:"description"`
 	CoverImageID uint           `json:"cover_image_id"`
 	IsPublic     bool           `gorm:"default:false" json:"is_public"`
-	ShareLink    string         `gorm:"type:varchar(255);uniqueIndex" json:"share_link"`
+	ShareLink    string         `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
 	ViewCount    int            `gorm:"default:0" json:"view_count"`
 	Images       []Image        `gorm:"many2many:album_images;" json:"images,omitempty"`
 	CreatedAt    time.Time      `gorm:"autoCreateTime" json:"created_at"`

@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-templ RegisterIndex(fromProtected bool, csrfToken string) {
+templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string) {
 	<section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
 		<div class="card-body pb-2">
 			<h1 class="card-title border-b border-b-slate-600 pb-[4px]">
@@ -18,8 +18,25 @@ templ RegisterIndex(fromProtected bool, csrfToken string) {
 				class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8"
 				action=""
 				method="post"
+				hx-on:htmx:after-swap="if(window.hcaptcha) { hcaptcha.reset(); hcaptcha.render('hcaptcha-container'); }"
 			>
-			    <input type="hidden" name="_csrf" value={csrfToken}>
+			    <!-- CSRF-Token als verstecktes Feld -->
+			    <input type="hidden" name="_csrf" value={csrfToken} id="csrf-token">
+				<label class="flex flex-col justify-start gap-2">
+					Benutzername:
+					<input
+						class="input input-bordered input-primary-content bg-gray-200"
+						type="text"
+						name="username"
+						required
+						minlength="3"
+						maxlength="150"
+						disabled?={ fromProtected }
+						if fromProtected {
+							value="disabled "
+						}
+					/>
+				</label>
 				<label class="flex flex-col justify-start gap-2">
 					Email:
 					<input
@@ -64,21 +81,12 @@ templ RegisterIndex(fromProtected bool, csrfToken string) {
 						</svg>
 					</button>
 				</label>
-				<label class="flex flex-col justify-start gap-2">
-					Benutzername:
-					<input
-						class="input input-bordered input-primary-content bg-gray-200"
-						type="text"
-						name="username"
-						required
-						minlength="3"
-						maxlength="150"
-						disabled?={ fromProtected }
-						if fromProtected {
-							value="disabled "
-						}
-					/>
-				</label>
+				
+				<!-- hCaptcha Widget (immer hell) -->
+				<div class="mt-2 flex justify-center">
+					<div id="hcaptcha-container" class="h-captcha" data-sitekey={hcaptchaSitekey} data-theme="light"></div>
+				</div>
+				
 				<footer class="card-actions justify-end">
 					<button class="badge badge-secondary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
 						Kostenlos Registrieren
@@ -87,6 +95,60 @@ templ RegisterIndex(fromProtected bool, csrfToken string) {
 			</form>
 		</div>
 	</section>
+	
+	<!-- hCaptcha Script mit HTMX-Kompatibilität -->
+	<script>
+		function loadHCaptcha() {
+			if (window.hcaptcha) {
+				// Zuerst zurücksetzen, falls es bereits existiert
+				try {
+					window.hcaptcha.reset('hcaptcha-container');
+				} catch (e) {
+					// Ignorieren, falls es noch nicht existiert
+				}
+				
+				// Dann neu rendern
+				window.hcaptcha.render('hcaptcha-container', {
+					sitekey: "{hcaptchaSitekey}",
+					theme: 'light'
+				});
+			}
+		}
+		
+		// Lade hCaptcha beim ersten Laden der Seite
+		document.addEventListener('DOMContentLoaded', function() {
+			// Lade das hCaptcha-Skript, falls es noch nicht geladen ist
+			if (!window.hcaptcha) {
+				var script = document.createElement('script');
+				script.src = 'https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoad';
+				script.async = true;
+				script.defer = true;
+				document.head.appendChild(script);
+				
+				// Callback nach dem Laden
+				window.onHCaptchaLoad = function() {
+					loadHCaptcha();
+				};
+			} else {
+				loadHCaptcha();
+			}
+		});
+		
+		// Lade hCaptcha neu, wenn die Seite über HTMX geladen wird
+		document.body.addEventListener('htmx:afterSwap', function(event) {
+			if (document.getElementById('hcaptcha-container')) {
+				if (window.hcaptcha) {
+					loadHCaptcha();
+				} else {
+					var script = document.createElement('script');
+					script.src = 'https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoad';
+					script.async = true;
+					script.defer = true;
+					document.head.appendChild(script);
+				}
+			}
+		});
+	</script>
 }
 
 templ Register(

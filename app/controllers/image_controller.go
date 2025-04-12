@@ -33,13 +33,33 @@ func HandleUpload(c *fiber.Ctx) error {
 	// Use MultipartForm instead of FormFile for better control
 	form, err := c.MultipartForm()
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Something went wrong: %s", err))
+		fiberlog.Error(fmt.Sprintf("Error parsing multipart form: %v", err))
+		
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("Fehler beim Hochladen: %s", err),
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Fehler beim Hochladen: %s", err))
+		}
+		return c.Redirect("/")
 	}
 	defer form.RemoveAll() // Important: Clean up temporary files
 
 	files := form.File["file"]
 	if len(files) == 0 {
-		return c.Status(fiber.StatusBadRequest).SendString("No file uploaded")
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Keine Datei hochgeladen",
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusBadRequest).SendString("Keine Datei hochgeladen")
+		}
+		return c.Redirect("/")
 	}
 	file := files[0]
 
@@ -57,8 +77,35 @@ func HandleUpload(c *fiber.Ctx) error {
 	}
 
 	if !validImageExtensions[fileExt] {
-		return c.Status(fiber.StatusBadRequest).SendString("Only image formats are supported (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)")
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)",
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusBadRequest).SendString("Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)")
+		}
+		return c.Redirect("/")
 	}
+
+	// Open the file to get its content
+	src, err := file.Open()
+	if err != nil {
+		fiberlog.Error(fmt.Sprintf("Error opening uploaded file: %v", err))
+		
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("Fehler beim Öffnen der Datei: %s", err),
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Öffnen der Datei: %s", err))
+		}
+		return c.Redirect("/")
+	}
+	defer src.Close()
 
 	// Generate UUID for the image
 	imageUUID := uuid.New().String()
@@ -75,28 +122,54 @@ func HandleUpload(c *fiber.Ctx) error {
 	// Make sure the directory exists
 	if err := os.MkdirAll(originalDirPath, 0755); err != nil {
 		fiberlog.Error(fmt.Sprintf("Error creating directory: %v", err))
-		return c.Status(fiber.StatusInternalServerError).SendString("Error creating upload directory")
+		
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Erstellen des Upload-Verzeichnisses",
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Erstellen des Upload-Verzeichnisses")
+		}
+		return c.Redirect("/")
 	}
 
 	fiberlog.Info(fmt.Sprintf("[Upload] file: %s -> %s", file.Filename, originalSavePath))
 	
-	// More memory-efficient method to save the file
-	src, err := file.Open()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Error opening file: %s", err))
-	}
-	defer src.Close()
-
+	// Create the destination file
 	dst, err := os.Create(originalSavePath)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Error creating target file: %s", err))
+		fiberlog.Error(fmt.Sprintf("Error creating target file: %v", err))
+		
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err),
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err))
+		}
+		return c.Redirect("/")
 	}
 	defer dst.Close()
 
 	// Copy the file in blocks to reduce memory usage
 	buffer := make([]byte, 1024*1024) // 1MB Buffer
 	if _, err = io.CopyBuffer(dst, src, buffer); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Error saving file: %s", err))
+		fiberlog.Error(fmt.Sprintf("Error copying file: %v", err))
+		
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("Fehler beim Speichern der Datei: %s", err),
+		}
+		flash.WithError(c, fm)
+		
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Speichern der Datei: %s", err))
+		}
+		return c.Redirect("/")
 	}
 
 	image := models.Image{
@@ -113,14 +186,20 @@ func HandleUpload(c *fiber.Ctx) error {
 	if err := db.Create(&image).Error; err != nil {
 		fiberlog.Error(fmt.Sprintf("Error saving image to database: %v", err))
 
+		// Clean up the file if database insertion fails
+		os.Remove(originalSavePath)
+
 		fm := fiber.Map{
 			"type":    "error",
-			"message": fmt.Sprintf("File could not be saved: %s", file.Filename),
+			"message": fmt.Sprintf("Datei konnte nicht gespeichert werden: %s", file.Filename),
 		}
 		flash.WithError(c, fm)
-		redirectPath := fmt.Sprintf("/image/%s", fileName)
 
-		return c.Redirect(redirectPath)
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Speichern: %s", err))
+		}
+
+		return c.Redirect("/")
 	}
 
 	// Start image processing asynchronously with a semaphore to limit concurrent processing
@@ -138,13 +217,13 @@ func HandleUpload(c *fiber.Ctx) error {
 	if c.Get("HX-Request") == "true" {
 		fm := fiber.Map{
 			"type":    "success",
-			"message": fmt.Sprintf("File uploaded successfully: %s", file.Filename),
+			"message": fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename),
 		}
 		flash.WithSuccess(c, fm)
 
 		redirectPath := fmt.Sprintf("/image/%s", imageUUID)
 		c.Set("HX-Redirect", redirectPath)
-		return c.SendString(fmt.Sprintf("File uploaded successfully: %s", file.Filename))
+		return c.SendString(fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename))
 	}
 
 	// Otherwise, redirect to the image view page

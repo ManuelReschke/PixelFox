@@ -71,9 +71,10 @@ func NewApplication() *fiber.App {
 	app.Use(recover.New(), logger.New())
 
 	// fiber metrics
+	metricsPW := env.GetEnv("PROTECTED_ROUTE_METRICS_PW", "")
 	app.Get("/metrics", basicauth.New(basicauth.Config{
 		Users: map[string]string{
-			"admin": "test",
+			"admin": metricsPW,
 		},
 	}), monitor.New())
 

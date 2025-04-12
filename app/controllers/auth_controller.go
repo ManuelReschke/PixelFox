@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
-	auth "github.com/ManuelReschke/PixelFox/views/auth"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/sujit-baniya/flash"
+
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/hcaptcha"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
+	auth_views "github.com/ManuelReschke/PixelFox/views/auth"
 )
 
 const (
@@ -26,8 +29,8 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 	fromProtected := c.Locals(FROM_PROTECTED).(bool)
 	csrfToken := c.Locals("csrf").(string)
 
-	lindex := auth.LoginIndex(fromProtected, csrfToken)
-	login := auth.Login(
+	lindex := auth_views.LoginIndex(fromProtected, csrfToken)
+	login := auth_views.Login(
 		" | Einloggen", fromProtected, false, flash.Get(c), "", lindex, false,
 	)
 
@@ -80,7 +83,7 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 
 		fm = fiber.Map{
 			"type":    "success",
-			"message": "You have successfully logged in!",
+			"message": "Glückwunsch du bist drin! Viel Spaß!",
 		}
 
 		return flash.WithSuccess(c, fm).Redirect("/")
@@ -110,7 +113,7 @@ func HandleAuthLogout(c *fiber.Ctx) error {
 
 	fm = fiber.Map{
 		"type":    "success",
-		"message": "You have successfully logged out!!",
+		"message": "Bye bye! Auf wiedersehen.",
 	}
 
 	c.Locals(FROM_PROTECTED, false)
@@ -123,14 +126,40 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 	fromProtected := c.Locals(FROM_PROTECTED).(bool)
 	csrfToken := c.Locals("csrf").(string)
 
-	rindex := auth.RegisterIndex(fromProtected, csrfToken)
-	register := auth.Register(
+	// Get hCaptcha site key from environment
+	hcaptchaSitekey := env.GetEnv("HCAPTCHA_SITEKEY", "")
+
+	rindex := auth_views.RegisterIndex(fromProtected, csrfToken, hcaptchaSitekey)
+	register := auth_views.Register(
 		" | Registrieren", fromProtected, false, flash.Get(c), "", rindex, false,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(register))
 
 	if c.Method() == fiber.MethodPost {
+		// Verify hCaptcha token
+		hcaptchaToken := c.FormValue("h-captcha-response")
+		valid, err := hcaptcha.Verify(hcaptchaToken)
+		if err != nil || !valid {
+			// Detailliertere Fehlermeldung für Debugging
+			errorMsg := "Captcha validation failed. Please try again."
+			if err != nil {
+				// Im Entwicklungsmodus den genauen Fehler anzeigen
+				if env.IsDev() {
+					errorMsg = fmt.Sprintf("Captcha validation failed: %v", err)
+				}
+				// Fehler loggen
+				fmt.Printf("hCaptcha validation error: %v\n", err)
+			}
+			
+			fm := fiber.Map{
+				"type":    "error",
+				"message": errorMsg,
+			}
+			return flash.WithError(c, fm).Redirect("/register")
+		}
+
+		// Create user after successful captcha validation
 		user, err := models.CreateUser(c.FormValue("username"), c.FormValue("email"), c.FormValue("password"))
 		if err != nil {
 			fm := fiber.Map{
@@ -151,12 +180,12 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/register")
 		}
 
-		// Aktualisiere die Statistiken nach der Registrierung
+		// Update statistics after registration
 		go statistics.UpdateStatisticsCache()
 
 		fm := fiber.Map{
 			"type":    "success",
-			"message": "You have successfully registered!",
+			"message": "Mega! Du hast dich erfolgreich registriert!",
 		}
 
 		return flash.WithSuccess(c, fm).Redirect("/login")

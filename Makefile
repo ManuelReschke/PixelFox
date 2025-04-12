@@ -23,8 +23,8 @@ generate-template:
 	@echo "🔧 Generiere Templates..."
 	cd $(PROJECT_ROOT) && docker exec -it pxlfox-app templ generate ./..
 
-.PHONY: prepare-env-test
-prepare-env-test:
+.PHONY: prepare-env-dev
+prepare-env-dev:
 	@echo "🔧 Kopiere $(ENV_DEV_FILE) nach $(ENV_FILE) (Testumgebung)"
 	cp $(ENV_DEV_FILE) $(ENV_FILE)
 
@@ -36,12 +36,12 @@ prepare-env-prod:
 
 # Docker Compose Build und Start für Testumgebung
 .PHONY: start
-start: prepare-env-test
+start: prepare-env-dev
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
 	cd $(PROJECT_ROOT) && docker-compose up -d
 
 .PHONY: start-build
-start-build: prepare-env-test
+start-build: prepare-env-dev
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
 	cd $(PROJECT_ROOT) && docker-compose up -d --build
 

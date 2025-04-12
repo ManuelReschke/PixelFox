@@ -15,7 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterIndex(fromProtected bool, csrfToken string) templ.Component {
+func RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -36,20 +36,20 @@ func RegisterIndex(fromProtected bool, csrfToken string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"card w-fit bg-base-200 shadow-xl mx-auto mb-8\"><div class=\"card-body pb-2\"><h1 class=\"card-title border-b border-b-slate-600 pb-[4px]\">Neues Konto erstellen</h1><form hx-swap=\"transition:true\" class=\"rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8\" action=\"\" method=\"post\"><input type=\"hidden\" name=\"_csrf\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"card w-fit bg-base-200 shadow-xl mx-auto mb-8\"><div class=\"card-body pb-2\"><h1 class=\"card-title border-b border-b-slate-600 pb-[4px]\">Neues Konto erstellen</h1><form hx-swap=\"transition:true\" class=\"rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8\" action=\"\" method=\"post\" hx-on:htmx:after-swap=\"if(window.hcaptcha) { hcaptcha.reset(); hcaptcha.render(&#39;hcaptcha-container&#39;); }\"><!-- CSRF-Token als verstecktes Feld --><input type=\"hidden\" name=\"_csrf\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 22, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 24, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <label class=\"flex flex-col justify-start gap-2\">Email: <input class=\"input input-bordered input-primary-content bg-gray-200\" type=\"email\" name=\"email\" required autofocus")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" id=\"csrf-token\"> <label class=\"flex flex-col justify-start gap-2\">Benutzername: <input class=\"input input-bordered input-primary-content bg-gray-200\" type=\"text\" name=\"username\" required minlength=\"3\" maxlength=\"150\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -65,7 +65,7 @@ func RegisterIndex(fromProtected bool, csrfToken string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "></label> <label class=\"flex flex-col justify-start gap-2 relative\">Passwort: <input class=\"input input-bordered input-primary-content bg-gray-200\" type=\"password\" name=\"password\" required minlength=\"6\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "></label> <label class=\"flex flex-col justify-start gap-2\">Email: <input class=\"input input-bordered input-primary-content bg-gray-200\" type=\"email\" name=\"email\" required autofocus")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -81,7 +81,7 @@ func RegisterIndex(fromProtected bool, csrfToken string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "> <button title=\"View password\" type=\"button\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "></label> <label class=\"flex flex-col justify-start gap-2 relative\">Passwort: <input class=\"input input-bordered input-primary-content bg-gray-200\" type=\"password\" name=\"password\" required minlength=\"6\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -91,33 +91,46 @@ func RegisterIndex(fromProtected bool, csrfToken string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " class=\"absolute top-12 right-3\" _=\"on click if [type of previous &lt;input/&gt;] == &#39;password&#39; then remove [@type=password] from previous &lt;input/&gt; then hide #eye then remove .hidden from #eye-slash else show #eye then add .hidden to #eye-slash then tell previous &lt;input/&gt; toggle [@type=password] end\"><svg id=\"eye\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0\"></path> <path d=\"M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7\"></path></svg> <svg id=\"eye-slash\" class=\"hidden\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z\"></path> <path d=\"M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z\"></path></svg></button></label> <label class=\"flex flex-col justify-start gap-2\">Benutzername: <input class=\"input input-bordered input-primary-content bg-gray-200\" type=\"text\" name=\"username\" required minlength=\"3\" maxlength=\"150\"")
+		if fromProtected {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " value=\"disabled \"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "> <button title=\"View password\" type=\"button\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if fromProtected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		if fromProtected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " value=\"disabled \"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " class=\"absolute top-12 right-3\" _=\"on click if [type of previous &lt;input/&gt;] == &#39;password&#39; then remove [@type=password] from previous &lt;input/&gt; then hide #eye then remove .hidden from #eye-slash else show #eye then add .hidden to #eye-slash then tell previous &lt;input/&gt; toggle [@type=password] end\"><svg id=\"eye\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0\"></path> <path d=\"M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7\"></path></svg> <svg id=\"eye-slash\" class=\"hidden\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path d=\"m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z\"></path> <path d=\"M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z\"></path></svg></button></label><!-- hCaptcha Widget (immer hell) --><div class=\"mt-2 flex justify-center\"><div id=\"hcaptcha-container\" class=\"h-captcha\" data-sitekey=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "></label><footer class=\"card-actions justify-end\"><button class=\"badge badge-secondary px-6 py-4 hover:scale-[1.1]\"")
+		var templ_7745c5c3_Var3 string
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(hcaptchaSitekey)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 87, Col: 81}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" data-theme=\"light\"></div></div><footer class=\"card-actions justify-end\"><button class=\"badge badge-secondary px-6 py-4 hover:scale-[1.1]\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if fromProtected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, " disabled")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " disabled")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, ">Kostenlos Registrieren</button></footer></form></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, ">Kostenlos Registrieren</button></footer></form></div></section><!-- hCaptcha Script mit HTMX-Kompatibilität --><script>\n\t\tfunction loadHCaptcha() {\n\t\t\tif (window.hcaptcha) {\n\t\t\t\t// Zuerst zurücksetzen, falls es bereits existiert\n\t\t\t\ttry {\n\t\t\t\t\twindow.hcaptcha.reset('hcaptcha-container');\n\t\t\t\t} catch (e) {\n\t\t\t\t\t// Ignorieren, falls es noch nicht existiert\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t// Dann neu rendern\n\t\t\t\twindow.hcaptcha.render('hcaptcha-container', {\n\t\t\t\t\tsitekey: \"{hcaptchaSitekey}\",\n\t\t\t\t\ttheme: 'light'\n\t\t\t\t});\n\t\t\t}\n\t\t}\n\t\t\n\t\t// Lade hCaptcha beim ersten Laden der Seite\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\t// Lade das hCaptcha-Skript, falls es noch nicht geladen ist\n\t\t\tif (!window.hcaptcha) {\n\t\t\t\tvar script = document.createElement('script');\n\t\t\t\tscript.src = 'https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoad';\n\t\t\t\tscript.async = true;\n\t\t\t\tscript.defer = true;\n\t\t\t\tdocument.head.appendChild(script);\n\t\t\t\t\n\t\t\t\t// Callback nach dem Laden\n\t\t\t\twindow.onHCaptchaLoad = function() {\n\t\t\t\t\tloadHCaptcha();\n\t\t\t\t};\n\t\t\t} else {\n\t\t\t\tloadHCaptcha();\n\t\t\t}\n\t\t});\n\t\t\n\t\t// Lade hCaptcha neu, wenn die Seite über HTMX geladen wird\n\t\tdocument.body.addEventListener('htmx:afterSwap', function(event) {\n\t\t\tif (document.getElementById('hcaptcha-container')) {\n\t\t\t\tif (window.hcaptcha) {\n\t\t\t\t\tloadHCaptcha();\n\t\t\t\t} else {\n\t\t\t\t\tvar script = document.createElement('script');\n\t\t\t\t\tscript.src = 'https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoad';\n\t\t\t\t\tscript.async = true;\n\t\t\t\t\tscript.defer = true;\n\t\t\t\t\tdocument.head.appendChild(script);\n\t\t\t\t}\n\t\t\t}\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -149,12 +162,12 @@ func Register(
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Var4 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Var5 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 			if !templ_7745c5c3_IsBuffer {
@@ -180,7 +193,7 @@ func Register(
 			Username:      username,
 			IsAdmin:       isAdmin,
 			OGViewModel:   nil,
-		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ.Component {
+func dashboardContent(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -34,38 +34,38 @@ func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-4 py-8\"><div class=\"mb-8\"><h1 class=\"text-3xl font-bold text-gray-800 mb-2\">Admin Dashboard</h1><p class=\"text-gray-600\">Manage your PixelFox application</p></div><div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8\"><!-- Stats Card: Total Users --><div class=\"bg-white rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-blue-100 text-blue-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-gray-600 text-sm font-medium\">Total Users</h2><p class=\"text-2xl font-semibold text-gray-800\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-8\"><h1 class=\"text-3xl font-bold text-gray-800 mb-2\">Admin Dashboard</h1><p class=\"text-gray-600\">Verwalte deine PixelFox-Anwendung</p></div><div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8\"><!-- Stats Card: Total Users --><div class=\"bg-white rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-blue-100 text-blue-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-gray-600 text-sm font-medium\">Benutzer gesamt</h2><p class=\"text-2xl font-semibold text-gray-800\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(totalUsers))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 26, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 25, Col: 79}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div></div></div><!-- Stats Card: Total Images --><div class=\"bg-white rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-green-100 text-green-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-gray-600 text-sm font-medium\">Total Images</h2><p class=\"text-2xl font-semibold text-gray-800\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div></div></div><!-- Stats Card: Total Images --><div class=\"bg-white rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-green-100 text-green-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-gray-600 text-sm font-medium\">Bilder gesamt</h2><p class=\"text-2xl font-semibold text-gray-800\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(totalImages))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 41, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 40, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div></div></div><!-- Quick Actions --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-gray-600 text-sm font-medium mb-4\">Quick Actions</h2><div class=\"space-y-2\"><a href=\"/admin/users\" class=\"flex items-center text-blue-600 hover:text-blue-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg> Manage Users</a></div></div></div><!-- Recent Users --><div class=\"bg-white rounded-lg shadow overflow-hidden\"><div class=\"px-6 py-4 border-b border-gray-200\"><h2 class=\"text-lg font-medium text-gray-800\">Recent Users</h2></div><div class=\"divide-y divide-gray-200\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div></div></div><!-- Quick Actions --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-gray-600 text-sm font-medium mb-4\">Schnellzugriff</h2><div class=\"space-y-2\"><a href=\"/admin/users\" class=\"flex items-center text-blue-600 hover:text-blue-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg> Benutzerverwaltung</a> <a href=\"/admin/images\" class=\"flex items-center text-green-600 hover:text-green-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg> Bilderverwaltung</a></div></div></div><!-- Charts --><div class=\"grid grid-cols-1 md:grid-cols-2 gap-6 mb-8\"><!-- Image Chart --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-lg font-medium text-gray-800 mb-4\">Bilder pro Tag (letzte 7 Tage)</h2><div class=\"h-64\"><canvas id=\"imageChart\"></canvas></div></div><!-- User Chart --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-lg font-medium text-gray-800 mb-4\">Benutzer pro Tag (letzte 7 Tage)</h2><div class=\"h-64\"><canvas id=\"userChart\"></canvas></div></div></div><!-- Recent Users --><div class=\"bg-white rounded-lg shadow overflow-hidden\"><div class=\"px-6 py-4 border-b border-gray-200\"><h2 class=\"text-lg font-medium text-gray-800\">Neueste Benutzer</h2></div><div class=\"divide-y divide-gray-200\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(recentUsers) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"px-6 py-4 text-gray-500 text-center\">No users found</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"px-6 py-4 text-gray-500 text-center\">Keine Benutzer gefunden</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -78,7 +78,7 @@ func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(string(user.Name[0]))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 74, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 98, Col: 31}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -91,7 +91,7 @@ func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 78, Col: 67}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 102, Col: 66}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -104,7 +104,7 @@ func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 79, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 103, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -117,7 +117,7 @@ func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(user.Role)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 83, Col: 21}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 107, Col: 20}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -129,7 +129,48 @@ func Dashboard(totalUsers int, totalImages int, recentUsers []models.User) templ
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div><!-- JSON-Daten für Charts -->")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.JSONScript("imageStatsData", imageStats).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.JSONScript("userStatsData", userStats).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<!-- Chart.js Script --><script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script><script>\n\t\t// Globale Variablen für die Charts\n\t\tlet imageChart = null;\n\t\tlet userChart = null;\n\n\t\t// Funktion zum Initialisieren oder Aktualisieren der Charts\n\t\tfunction initCharts() {\n\t\t\t// Daten aus den JSON-Skripten laden\n\t\t\tconst imageStats = JSON.parse(document.getElementById('imageStatsData').textContent);\n\t\t\tconst userStats = JSON.parse(document.getElementById('userStatsData').textContent);\n\n\t\t\t// Daten für Charts vorbereiten\n\t\t\tconst imageData = {\n\t\t\t\tlabels: imageStats.map(stat => stat.date),\n\t\t\t\tdatasets: [{\n\t\t\t\t\tlabel: 'Bilder',\n\t\t\t\t\tdata: imageStats.map(stat => stat.count),\n\t\t\t\t\tbackgroundColor: 'rgba(34, 197, 94, 0.2)',\n\t\t\t\t\tborderColor: 'rgba(34, 197, 94, 1)',\n\t\t\t\t\tborderWidth: 1\n\t\t\t\t}]\n\t\t\t};\n\n\t\t\tconst userData = {\n\t\t\t\tlabels: userStats.map(stat => stat.date),\n\t\t\t\tdatasets: [{\n\t\t\t\t\tlabel: 'Benutzer',\n\t\t\t\t\tdata: userStats.map(stat => stat.count),\n\t\t\t\t\tbackgroundColor: 'rgba(59, 130, 246, 0.2)',\n\t\t\t\t\tborderColor: 'rgba(59, 130, 246, 1)',\n\t\t\t\t\tborderWidth: 1\n\t\t\t\t}]\n\t\t\t};\n\n\t\t\t// Chart-Optionen\n\t\t\tconst chartOptions = {\n\t\t\t\tresponsive: true,\n\t\t\t\tmaintainAspectRatio: false,\n\t\t\t\tscales: {\n\t\t\t\t\ty: {\n\t\t\t\t\t\tbeginAtZero: true,\n\t\t\t\t\t\tticks: {\n\t\t\t\t\t\t\tprecision: 0\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t};\n\n\t\t\t// Bilder-Chart\n\t\t\tconst imageCtx = document.getElementById('imageChart');\n\t\t\tif (imageCtx) {\n\t\t\t\t// Bestehenden Chart zerstören, falls vorhanden\n\t\t\t\tif (imageChart) {\n\t\t\t\t\timageChart.destroy();\n\t\t\t\t}\n\n\t\t\t\t// Neuen Chart erstellen\n\t\t\t\timageChart = new Chart(imageCtx.getContext('2d'), {\n\t\t\t\t\ttype: 'bar',\n\t\t\t\t\tdata: imageData,\n\t\t\t\t\toptions: chartOptions\n\t\t\t\t});\n\t\t\t}\n\n\t\t\t// Benutzer-Chart\n\t\t\tconst userCtx = document.getElementById('userChart');\n\t\t\tif (userCtx) {\n\t\t\t\t// Bestehenden Chart zerstören, falls vorhanden\n\t\t\t\tif (userChart) {\n\t\t\t\t\tuserChart.destroy();\n\t\t\t\t}\n\n\t\t\t\t// Neuen Chart erstellen\n\t\t\t\tuserChart = new Chart(userCtx.getContext('2d'), {\n\t\t\t\t\ttype: 'bar',\n\t\t\t\t\tdata: userData,\n\t\t\t\t\toptions: chartOptions\n\t\t\t\t});\n\t\t\t}\n\t\t}\n\n\t\t// Charts initialisieren, wenn DOM geladen ist\n\t\tdocument.addEventListener('DOMContentLoaded', initCharts);\n\n\t\t// MutationObserver für dynamisches Nachladen\n\t\tconst observer = new MutationObserver(function(mutations) {\n\t\t\tfor (let mutation of mutations) {\n\t\t\t\tif (mutation.type === 'childList' && document.getElementById('imageChart') && document.getElementById('userChart')) {\n\t\t\t\t\tinitCharts();\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t}\n\t\t});\n\n\t\t// Observer starten\n\t\tobserver.observe(document.body, { childList: true, subtree: true });\n\n\t\t// Sofort initialisieren\n\t\tinitCharts();\n\t</script>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func Dashboard(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = AdminLayout(dashboardContent(totalUsers, totalImages, recentUsers, imageStats, userStats)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -8,7 +8,7 @@ import (
 
 type Tag struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
-	Name      string         `gorm:"type:varchar(100);uniqueIndex" json:"name" validate:"required,min=2,max=100"`
+	Name      string         `gorm:"type:varchar(100) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"name" validate:"required,min=2,max=100"`
 	Images    []Image        `gorm:"many2many:image_tags;" json:"images,omitempty"`
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

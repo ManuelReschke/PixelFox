@@ -210,58 +210,73 @@ function initUploadForm() {
         errorMessage.classList.add('hidden');
     });
 
-    // Fortschritt während des Uploads
+    // Fortschritt beim Upload
     htmx.on('#upload_form', 'htmx:xhr:progress', function(evt) {
-        const percentComplete = Math.round(evt.detail.loaded/evt.detail.total * 100);
-        progressBar.style.width = percentComplete + '%';
-        uploadPercentage.textContent = percentComplete + '%';
-        
-        // Status-Text aktualisieren
-        if (percentComplete < 25) {
-            uploadStatus.textContent = 'Wird hochgeladen...';
-        } else if (percentComplete < 75) {
-            uploadStatus.textContent = 'Fast fertig...';
-        } else if (percentComplete < 100) {
-            uploadStatus.textContent = 'Abschließen...';
-        } else {
-            uploadStatus.textContent = 'Verarbeitung...';
+        if (evt.lengthComputable) {
+            const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+            progressBar.style.width = percentComplete + '%';
+            uploadPercentage.textContent = percentComplete + '%';
+            if (percentComplete === 100) {
+                uploadStatus.textContent = 'Verarbeitung...';
+            }
         }
     });
 
-    // Erfolgreiche Anfrage
-    htmx.on('#upload_form', 'htmx:afterRequest', function(evt) {
-        // Nur Ergebnis anzeigen, wenn der Upload vollständig abgeschlossen ist
-        if (evt.detail.xhr.readyState === 4) {
-            uploadResult.classList.remove('hidden');
-            
-            // Prüfe den HTTP-Status direkt, statt evt.detail.successful zu verwenden
-            if (evt.detail.xhr.status >= 200 && evt.detail.xhr.status < 300) {
-                // we dont need here a message box, because the redirect will handle it
-                //successMessage.classList.remove('hidden');
-                //successText.textContent = evt.detail.xhr.responseText || 'Datei erfolgreich hochgeladen!';
-                
-                // Formular nach 2 Sekunden zurücksetzen
-                setTimeout(function() {
-                    resetUploadForm();
-                    fileInput.value = '';
-                }, 2000);
-            } else {
-                // Fehlerbehandlung
-                errorMessage.classList.remove('hidden');
-                
-                if (evt.detail.xhr.status === 413) {
-                    errorText.textContent = 'Die Datei ist zu groß.';
-                } else {
-                    errorText.textContent = 'Fehler beim Hochladen: ' + evt.detail.xhr.statusText;
-                }
-                
-                // Fehler nach 3 Sekunden ausblenden
-                setTimeout(function() {
-                    errorMessage.classList.add('hidden');
-                    uploadButton.disabled = false;
-                }, 3000);
-            }
+    // Erfolgreicher Upload
+    htmx.on('#upload_form', 'htmx:beforeOnLoad', function(evt) {
+        // Prüfe, ob ein Redirect Header gesetzt wurde
+        const redirectHeader = evt.detail.xhr.getResponseHeader('HX-Redirect');
+        if (redirectHeader) {
+            // Wenn ein Redirect Header gesetzt wurde, wird die Seite automatisch umgeleitet
+            // Wir müssen hier nichts tun
+            return;
         }
+    });
+
+    // Fehler beim Upload
+    htmx.on('#upload_form', 'htmx:responseError', function(evt) {
+        // Fortschrittsanzeige zurücksetzen
+        progressContainer.classList.add('hidden');
+        progressBar.style.width = '0%';
+        uploadPercentage.textContent = '0%';
+        uploadStatus.textContent = '';
+        
+        // Fehlermeldung anzeigen
+        errorMessage.classList.remove('hidden');
+        errorText.textContent = evt.detail.xhr.responseText || 'Fehler beim Hochladen: Unbekannter Fehler';
+        uploadResult.classList.remove('hidden');
+        
+        // Upload-Button wieder aktivieren
+        uploadButton.disabled = false;
+    });
+
+    // Bei allen anderen Fehlern (z.B. Netzwerkfehler)
+    htmx.on('#upload_form', 'htmx:sendError', function(evt) {
+        // Fortschrittsanzeige zurücksetzen
+        progressContainer.classList.add('hidden');
+        progressBar.style.width = '0%';
+        uploadPercentage.textContent = '0%';
+        uploadStatus.textContent = '';
+        
+        // Fehlermeldung anzeigen
+        errorMessage.classList.remove('hidden');
+        errorText.textContent = 'Netzwerkfehler beim Hochladen. Bitte versuche es später erneut.';
+        uploadResult.classList.remove('hidden');
+        
+        // Upload-Button wieder aktivieren
+        uploadButton.disabled = false;
+    });
+
+    // Bei Abbruch des Uploads
+    htmx.on('#upload_form', 'htmx:abort', function(evt) {
+        // Fortschrittsanzeige zurücksetzen
+        progressContainer.classList.add('hidden');
+        progressBar.style.width = '0%';
+        uploadPercentage.textContent = '0%';
+        uploadStatus.textContent = '';
+        
+        // Upload-Button wieder aktivieren
+        uploadButton.disabled = false;
     });
 }
 

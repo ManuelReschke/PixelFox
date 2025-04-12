@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    uuid CHAR(36) NOT NULL UNIQUE,
+    uuid CHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL UNIQUE,
     user_id BIGINT UNSIGNED NOT NULL,
     title VARCHAR(255),
     description TEXT,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS images (
     file_type VARCHAR(50),
     width INT,
     height INT,
-    share_link VARCHAR(255) UNIQUE,
+    share_link VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin UNIQUE,
     is_public BOOLEAN DEFAULT FALSE,
     view_count INT DEFAULT 0,
     download_count INT DEFAULT 0,

@@ -3,15 +3,15 @@ package models
 import (
 	"time"
 
-	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
 	"github.com/google/uuid"
-
 	"gorm.io/gorm"
+
+	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
 )
 
 type Image struct {
 	ID                 uint           `gorm:"primaryKey" json:"id"`
-	UUID               string         `gorm:"type:char(36);uniqueIndex;not null" json:"uuid"`
+	UUID               string         `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"uuid"`
 	UserID             uint           `gorm:"index" json:"user_id"`
 	User               User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Title              string         `gorm:"type:varchar(255)" json:"title"`
@@ -22,7 +22,7 @@ type Image struct {
 	FileType           string         `gorm:"type:varchar(50)" json:"file_type"`
 	Width              int            `gorm:"type:int" json:"width"`
 	Height             int            `gorm:"type:int" json:"height"`
-	ShareLink          string         `gorm:"type:varchar(255);uniqueIndex" json:"share_link"`
+	ShareLink          string         `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
 	IsPublic           bool           `gorm:"default:false" json:"is_public"`
 	ViewCount          int            `gorm:"default:0" json:"view_count"`
 	DownloadCount      int            `gorm:"default:0" json:"download_count"`

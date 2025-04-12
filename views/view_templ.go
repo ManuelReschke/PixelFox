@@ -294,7 +294,7 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</h2><div class=\"mt-4 space-y-3\"><!-- ShareLink Box mit weissem Hintergrund und fetter Schrift --><div class=\"form-control bg-base-200 bg-opacity-50 p-2 rounded border border-base-300\"><div class=\"flex items-center gap-2\"><label class=\"label w-24 justify-start p-0\"><span class=\"label-text font-bold\">Link teilen:</span></label><div class=\"join w-full\"><input id=\"share-link\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full font-bold\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</h2><div class=\"mt-4 space-y-3\"><!-- ShareLink Box mit weissem Hintergrund und fetter Schrift --><div class=\"form-control rounded\"><div class=\"flex items-center gap-2\"><label class=\"label w-24 justify-start p-0\"><span class=\"label-text font-bold\">Teilen:</span></label><div class=\"join w-full\"><input id=\"share-link\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full font-bold\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

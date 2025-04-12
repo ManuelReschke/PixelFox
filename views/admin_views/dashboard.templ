@@ -5,89 +5,223 @@ import (
 	"strconv"
 )
 
-templ Dashboard(totalUsers int, totalImages int, recentUsers []models.User) {
-	<div class="container mx-auto px-4 py-8">
-		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
-			<p class="text-gray-600">Manage your PixelFox application</p>
-		</div>
+templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
+	<div class="mb-8">
+		<h1 class="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
+		<p class="text-gray-600">Verwalte deine PixelFox-Anwendung</p>
+	</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-			<!-- Stats Card: Total Users -->
-			<div class="bg-white rounded-lg shadow p-6">
-				<div class="flex items-center">
-					<div class="p-3 rounded-full bg-blue-100 text-blue-600">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-						</svg>
-					</div>
-					<div class="ml-4">
-						<h2 class="text-gray-600 text-sm font-medium">Total Users</h2>
-						<p class="text-2xl font-semibold text-gray-800">{ strconv.Itoa(totalUsers) }</p>
-					</div>
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+		<!-- Stats Card: Total Users -->
+		<div class="bg-white rounded-lg shadow p-6">
+			<div class="flex items-center">
+				<div class="p-3 rounded-full bg-blue-100 text-blue-600">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+					</svg>
 				</div>
-			</div>
-
-			<!-- Stats Card: Total Images -->
-			<div class="bg-white rounded-lg shadow p-6">
-				<div class="flex items-center">
-					<div class="p-3 rounded-full bg-green-100 text-green-600">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-						</svg>
-					</div>
-					<div class="ml-4">
-						<h2 class="text-gray-600 text-sm font-medium">Total Images</h2>
-						<p class="text-2xl font-semibold text-gray-800">{ strconv.Itoa(totalImages) }</p>
-					</div>
-				</div>
-			</div>
-
-			<!-- Quick Actions -->
-			<div class="bg-white rounded-lg shadow p-6">
-				<h2 class="text-gray-600 text-sm font-medium mb-4">Quick Actions</h2>
-				<div class="space-y-2">
-					<a href="/admin/users" class="flex items-center text-blue-600 hover:text-blue-800">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-						</svg>
-						Manage Users
-					</a>
+				<div class="ml-4">
+					<h2 class="text-gray-600 text-sm font-medium">Benutzer gesamt</h2>
+					<p class="text-2xl font-semibold text-gray-800">{ strconv.Itoa(totalUsers) }</p>
 				</div>
 			</div>
 		</div>
 
-		<!-- Recent Users -->
-		<div class="bg-white rounded-lg shadow overflow-hidden">
-			<div class="px-6 py-4 border-b border-gray-200">
-				<h2 class="text-lg font-medium text-gray-800">Recent Users</h2>
+		<!-- Stats Card: Total Images -->
+		<div class="bg-white rounded-lg shadow p-6">
+			<div class="flex items-center">
+				<div class="p-3 rounded-full bg-green-100 text-green-600">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+				</div>
+				<div class="ml-4">
+					<h2 class="text-gray-600 text-sm font-medium">Bilder gesamt</h2>
+					<p class="text-2xl font-semibold text-gray-800">{ strconv.Itoa(totalImages) }</p>
+				</div>
 			</div>
-			<div class="divide-y divide-gray-200">
-				if len(recentUsers) == 0 {
-					<div class="px-6 py-4 text-gray-500 text-center">No users found</div>
-				} else {
-					for _, user := range recentUsers {
-						<div class="px-6 py-4">
-							<div class="flex items-center">
-								<div class="flex-shrink-0">
-									<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-										{ string(user.Name[0]) }
-									</div>
-								</div>
-								<div class="ml-4">
-									<div class="text-sm font-medium text-gray-900">{ user.Name }</div>
-									<div class="text-sm text-gray-500">{ user.Email }</div>
-								</div>
-								<div class="ml-auto">
-									<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-										{ user.Role }
-									</span>
-								</div>
-							</div>
-						</div>
-					}
-				}
+		</div>
+
+		<!-- Quick Actions -->
+		<div class="bg-white rounded-lg shadow p-6">
+			<h2 class="text-gray-600 text-sm font-medium mb-4">Schnellzugriff</h2>
+			<div class="space-y-2">
+				<a href="/admin/users" class="flex items-center text-blue-600 hover:text-blue-800">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+					</svg>
+					Benutzerverwaltung
+				</a>
+				<a href="/admin/images" class="flex items-center text-green-600 hover:text-green-800">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+					Bilderverwaltung
+				</a>
 			</div>
 		</div>
 	</div>
+
+	<!-- Charts -->
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+		<!-- Image Chart -->
+		<div class="bg-white rounded-lg shadow p-6">
+			<h2 class="text-lg font-medium text-gray-800 mb-4">Bilder pro Tag (letzte 7 Tage)</h2>
+			<div class="h-64">
+				<canvas id="imageChart"></canvas>
+			</div>
+		</div>
+
+		<!-- User Chart -->
+		<div class="bg-white rounded-lg shadow p-6">
+			<h2 class="text-lg font-medium text-gray-800 mb-4">Benutzer pro Tag (letzte 7 Tage)</h2>
+			<div class="h-64">
+				<canvas id="userChart"></canvas>
+			</div>
+		</div>
+	</div>
+
+	<!-- Recent Users -->
+	<div class="bg-white rounded-lg shadow overflow-hidden">
+		<div class="px-6 py-4 border-b border-gray-200">
+			<h2 class="text-lg font-medium text-gray-800">Neueste Benutzer</h2>
+		</div>
+		<div class="divide-y divide-gray-200">
+			if len(recentUsers) == 0 {
+				<div class="px-6 py-4 text-gray-500 text-center">Keine Benutzer gefunden</div>
+			} else {
+				for _, user := range recentUsers {
+					<div class="px-6 py-4">
+						<div class="flex items-center">
+							<div class="flex-shrink-0">
+								<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+									{ string(user.Name[0]) }
+								</div>
+							</div>
+							<div class="ml-4">
+								<div class="text-sm font-medium text-gray-900">{ user.Name }</div>
+								<div class="text-sm text-gray-500">{ user.Email }</div>
+							</div>
+							<div class="ml-auto">
+								<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+									{ user.Role }
+								</span>
+							</div>
+						</div>
+					</div>
+				}
+			}
+		</div>
+	</div>
+
+	<!-- JSON-Daten für Charts -->
+	@templ.JSONScript("imageStatsData", imageStats)
+	@templ.JSONScript("userStatsData", userStats)
+
+	<!-- Chart.js Script -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+		// Globale Variablen für die Charts
+		let imageChart = null;
+		let userChart = null;
+
+		// Funktion zum Initialisieren oder Aktualisieren der Charts
+		function initCharts() {
+			// Daten aus den JSON-Skripten laden
+			const imageStats = JSON.parse(document.getElementById('imageStatsData').textContent);
+			const userStats = JSON.parse(document.getElementById('userStatsData').textContent);
+
+			// Daten für Charts vorbereiten
+			const imageData = {
+				labels: imageStats.map(stat => stat.date),
+				datasets: [{
+					label: 'Bilder',
+					data: imageStats.map(stat => stat.count),
+					backgroundColor: 'rgba(34, 197, 94, 0.2)',
+					borderColor: 'rgba(34, 197, 94, 1)',
+					borderWidth: 1
+				}]
+			};
+
+			const userData = {
+				labels: userStats.map(stat => stat.date),
+				datasets: [{
+					label: 'Benutzer',
+					data: userStats.map(stat => stat.count),
+					backgroundColor: 'rgba(59, 130, 246, 0.2)',
+					borderColor: 'rgba(59, 130, 246, 1)',
+					borderWidth: 1
+				}]
+			};
+
+			// Chart-Optionen
+			const chartOptions = {
+				responsive: true,
+				maintainAspectRatio: false,
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: {
+							precision: 0
+						}
+					}
+				}
+			};
+
+			// Bilder-Chart
+			const imageCtx = document.getElementById('imageChart');
+			if (imageCtx) {
+				// Bestehenden Chart zerstören, falls vorhanden
+				if (imageChart) {
+					imageChart.destroy();
+				}
+
+				// Neuen Chart erstellen
+				imageChart = new Chart(imageCtx.getContext('2d'), {
+					type: 'bar',
+					data: imageData,
+					options: chartOptions
+				});
+			}
+
+			// Benutzer-Chart
+			const userCtx = document.getElementById('userChart');
+			if (userCtx) {
+				// Bestehenden Chart zerstören, falls vorhanden
+				if (userChart) {
+					userChart.destroy();
+				}
+
+				// Neuen Chart erstellen
+				userChart = new Chart(userCtx.getContext('2d'), {
+					type: 'bar',
+					data: userData,
+					options: chartOptions
+				});
+			}
+		}
+
+		// Charts initialisieren, wenn DOM geladen ist
+		document.addEventListener('DOMContentLoaded', initCharts);
+
+		// MutationObserver für dynamisches Nachladen
+		const observer = new MutationObserver(function(mutations) {
+			for (let mutation of mutations) {
+				if (mutation.type === 'childList' && document.getElementById('imageChart') && document.getElementById('userChart')) {
+					initCharts();
+					break;
+				}
+			}
+		});
+
+		// Observer starten
+		observer.observe(document.body, { childList: true, subtree: true });
+
+		// Sofort initialisieren
+		initCharts();
+	</script>
+}
+
+templ Dashboard(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
+	@AdminLayout(dashboardContent(totalUsers, totalImages, recentUsers, imageStats, userStats))
 }
