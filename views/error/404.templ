@@ -13,18 +13,8 @@ templ Error404(fromProtected bool) {
 		<p class="text-xs text-center md:text-sm text-gray-400">
 			The requested resource could not be found but may be available again in the future.
 		</p>
-		if !fromProtected {
-			<a hx-swap="transition:true" href="/" class="btn btn-secondary btn-outline">
-				Go Home Page
-			</a>
-		} else {
-			<a
-				hx-swap="transition:true"
-				href="/todo/list"
-				class="btn btn-secondary btn-outline"
-			>
-				Go Todo List Page
-			</a>
-		}
+		<a hx-swap="transition:true" href="/" class="btn btn-secondary btn-outline">
+			Go Home Page
+		</a>
 	</section>
 }

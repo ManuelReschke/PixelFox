@@ -18,18 +18,8 @@ templ Error500(fromProtected bool, code int, reason string) {
 		<p class="text-xs text-center md:text-sm text-rose-700 mt-2">
 			Code: { strconv.Itoa(code) } - Reason: { reason }
 		</p>
-		if !fromProtected {
-			<a hx-swap="transition:true" href="/" class="btn btn-secondary btn-outline">
-				Go Home Page
-			</a>
-		} else {
-			<a
-				hx-swap="transition:true"
-				href="/todo/list"
-				class="btn btn-secondary btn-outline"
-			>
-				Go Todo List Page
-			</a>
-		}
+		<a hx-swap="transition:true" href="/" class="btn btn-secondary btn-outline">
+			Go Home Page
+		</a>
 	</section>
 }

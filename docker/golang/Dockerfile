@@ -17,7 +17,7 @@ RUN ["templ", "generate"]
 FROM golang:1.23-alpine AS build-stage
 COPY --from=generate-stage /app /app
 WORKDIR /app
-RUN go build -o /app/pixelfox-app
+RUN go build -o /app/pixelfox-app ./cmd/pixelfox
 
 # Run stage
 FROM alpine:latest

@@ -25,6 +25,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/contact", loggedInMiddleware, controllers.HandleContact)
 	app.Get("/jobs", loggedInMiddleware, controllers.HandleJobs)
 
+	// image processing status endpoint
+	app.Get("/image/status/:uuid", loggedInMiddleware, controllers.HandleImageProcessingStatus)
 	// image viewer
 	app.Get("/image/:uuid", loggedInMiddleware, controllers.HandleImageViewer)
 

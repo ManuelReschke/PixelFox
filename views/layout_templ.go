@@ -62,7 +62,7 @@ func Layout(layout viewmodel.Layout) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</title><link rel=\"icon\" type=\"image/png\" href=\"/favicon-96x96.png\" sizes=\"96x96\"><link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\"><link rel=\"shortcut icon\" href=\"/favicon.ico\"><link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\"><meta name=\"apple-mobile-web-app-title\" content=\"Pixelfox\"><link rel=\"manifest\" href=\"/site.webmanifest\"><!-- Open Graph / Social Media Meta Tags -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</title><link rel=\"icon\" type=\"image/png\" href=\"/icons/favicon-96x96.png\" sizes=\"96x96\"><link rel=\"icon\" type=\"image/svg+xml\" href=\"/icons/favicon.svg\"><link rel=\"shortcut icon\" href=\"/icons/favicon.ico\"><link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/icons/apple-touch-icon.png\"><meta name=\"apple-mobile-web-app-title\" content=\"Pixelfox\"><link rel=\"manifest\" href=\"/manifest.json\"><!-- Open Graph / Social Media Meta Tags -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -225,12 +225,12 @@ func Layout(layout viewmodel.Layout) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if !layout.IsError {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright © 2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit ❤ von MR-IT</p></aside></footer>")
+			templ_7745c5c3_Err = partials.Footer().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,23 +1,58 @@
 package views
 
 import (
+	"fmt"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 )
+
+// ImageProcessingStatus zeigt eine Ladeanimation an und aktualisiert sich selbst
+templ ImageProcessingStatus(uuid string) {
+	<div class="flex flex-col items-center justify-center py-8" id="image-processing-status">
+		<span class="loading loading-spinner loading-lg text-primary"></span>
+		<p class="mt-2">Optimierte Versionen werden generiert...</p>
+		<p class="text-xs mt-1">Dies kann einige Sekunden dauern</p>
+		
+		<!-- Automatische Aktualisierung alle 2 Sekunden -->
+		<div 
+			hx-get={"/image/status/" + uuid} 
+			hx-trigger="load delay:2s"
+			hx-target="#image-processing-status"
+			hx-swap="outerHTML"
+		></div>
+	</div>
+}
+
+// ProcessedImageElement zeigt das verarbeitete Bild an
+templ ProcessedImageElement(model viewmodel.Image) {
+	<picture
+		data-avif-path={model.OptimizedAVIFPath}
+		data-webp-path={model.OptimizedWebPPath}
+		data-original-path={model.OriginalPath}
+		data-has-avif={fmt.Sprintf("%t", model.HasAVIF)}
+		data-has-webp={fmt.Sprintf("%t", model.HasWebP)}
+		data-display-name={model.DisplayName}
+		id="processed-image-element"
+	>
+		if model.HasAVIF {
+			<source srcset={model.PreviewAVIFPath} type="image/avif" />
+		}
+		if model.HasWebP {
+			<source srcset={model.PreviewWebPPath} type="image/webp" />
+		}
+		<img loading="lazy" src={model.PreviewPath} alt={model.DisplayName} class="rounded-xl max-h-48 object-contain cursor-pointer" id="preview-image" />
+	</picture>
+}
 
 templ ImageViewer(model viewmodel.Image) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
 		<div class="card w-[32rem] bg-base-100 shadow-xl">
 			<figure class="px-6 pt-3 pb-3 bg-base-200 bg-opacity-30 rounded-t-xl">
-				<!-- Optimierte Bildformate mit picture-Element -->
-				<picture>
-					if model.HasAVIF {
-						<source srcset={model.PreviewAVIFPath} type="image/avif" />
-					}
-					if model.HasWebP {
-						<source srcset={model.PreviewWebPPath} type="image/webp" />
-					}
-					<img loading="lazy" src={model.PreviewPath} alt={model.DisplayName} class="rounded-xl max-h-48 object-contain cursor-pointer" id="preview-image" />
-				</picture>
+				<!-- If image is still being processed, show loading animation -->
+				if model.IsProcessing {
+					@ImageProcessingStatus(model.UUID)
+				} else {
+					@ProcessedImageElement(model)
+				}
 			</figure>
 			<div class="card-body bg-base-100">
 				<h2 class="card-title mx-auto truncate max-w-full" title={model.DisplayName}>{model.DisplayName}</h2>
@@ -255,6 +290,20 @@ templ ImageViewer(model viewmodel.Image) {
 				// Add the click event listener
 				previewImage.addEventListener('click', openImageModal);
 			}
+
+			// Update image paths when processed image element is loaded
+			const processedImageElement = document.getElementById('processed-image-element');
+			if (processedImageElement) {
+				// Extract paths from data attributes
+				window.pixelFoxImagePaths = {
+					avif: processedImageElement.getAttribute('data-avif-path') || '',
+					webp: processedImageElement.getAttribute('data-webp-path') || '',
+					original: processedImageElement.getAttribute('data-original-path') || '',
+					hasAvif: processedImageElement.getAttribute('data-has-avif') === 'true',
+					hasWebp: processedImageElement.getAttribute('data-has-webp') === 'true',
+					displayName: processedImageElement.getAttribute('data-display-name') || ''
+				};
+			}
 		}
 
 		// Initialize clipboard and event listeners when DOM is loaded
@@ -282,7 +331,7 @@ templ ImageViewer(model viewmodel.Image) {
 			});
 			
 			clipboard.on('error', function(e) {
-				console.error('Fehler beim Kopieren: ', e.action);
+				console.error('Error copying: ', e.action);
 			});
 		});
 

@@ -35,4 +35,10 @@ type Image struct {
 	// Additional metadata
 	Width  int
 	Height int
+	
+	// Image UUID for status tracking
+	UUID string
+	
+	// Processing status flag
+	IsProcessing bool
 }

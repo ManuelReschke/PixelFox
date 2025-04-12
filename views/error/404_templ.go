@@ -29,22 +29,7 @@ func Error404(fromProtected bool) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"flex flex-col items-center justify-center h-[100vh] gap-4\"><div class=\"items-center justify-center flex flex-col gap-4\"><h1 class=\"text-9xl font-extrabold text-gray-700 tracking-widest\">404</h1><h2 class=\"bg-rose-700 px-2 text-sm rounded rotate-[20deg] absolute\">Resource not found</h2></div><p class=\"text-xs text-center md:text-sm text-gray-400\">The requested resource could not be found but may be available again in the future.</p>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !fromProtected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<a hx-swap=\"transition:true\" href=\"/\" class=\"btn btn-secondary btn-outline\">Go Home Page</a>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a hx-swap=\"transition:true\" href=\"/todo/list\" class=\"btn btn-secondary btn-outline\">Go Todo List Page</a>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"flex flex-col items-center justify-center h-[100vh] gap-4\"><div class=\"items-center justify-center flex flex-col gap-4\"><h1 class=\"text-9xl font-extrabold text-gray-700 tracking-widest\">404</h1><h2 class=\"bg-rose-700 px-2 text-sm rounded rotate-[20deg] absolute\">Resource not found</h2></div><p class=\"text-xs text-center md:text-sm text-gray-400\">The requested resource could not be found but may be available again in the future.</p><a hx-swap=\"transition:true\" href=\"/\" class=\"btn btn-secondary btn-outline\">Go Home Page</a></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

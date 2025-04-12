@@ -8,7 +8,6 @@ package partials
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/ManuelReschke/PixelFox/internal/pkg/env"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 
@@ -40,92 +39,53 @@ func Navbar(appName string, layout viewmodel.Layout) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(appName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 11, Col: 13}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 10, Col: 13}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</a></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = DevNote().Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"navbar-end\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</a></div><div class=\"navbar-end\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if layout.FromProtected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/user/profile\">Hallo, <span class=\"font-bold text-indigo-200\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/user/profile\">Hallo, <span class=\"font-bold text-indigo-200\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(session.GetValueByKey("username"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 18, Col: 103}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/navbar_partial.templ`, Line: 16, Col: 103}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span></a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/user/images\">Meine Bilder</a> <a class=\"btn btn-ghost text-base line-through\" href=\"#\" onclick=\"return false;\">Meine Alben</a><div class=\"dropdown dropdown-end\"><div tabindex=\"0\" role=\"button\" class=\"btn btn-ghost btn-circle avatar\"><div class=\"w-10 rounded-full\"><img alt=\"Profil Bild\" src=\"/img/avatar-default.jpg\"></div></div><ul tabindex=\"0\" class=\"menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow\"><li><a href=\"/user/profile\" class=\"justify-between\">Profil <span class=\"badge\">New</span></a></li><li><a href=\"/user/settings\">Einstellungen</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/user/images\">Meine Bilder</a> <a class=\"btn btn-ghost text-base line-through\" href=\"#\" onclick=\"return false;\">Meine Alben</a><div class=\"dropdown dropdown-end\"><div tabindex=\"0\" role=\"button\" class=\"btn btn-ghost btn-circle avatar\"><div class=\"w-10 rounded-full\"><img alt=\"Profil Bild\" src=\"/img/avatar-default.jpg\"></div></div><ul tabindex=\"0\" class=\"menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow\"><li><a href=\"/user/profile\" class=\"justify-between\">Profil <span class=\"badge\">New</span></a></li><li><a href=\"/user/settings\">Einstellungen</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if layout.IsAdmin {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li><a href=\"/admin\" class=\"text-purple-500 font-semibold\">Admin Panel</a></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li><a href=\"/admin\" class=\"text-purple-500 font-semibold\">Admin Panel</a></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<li><a hx-swap=\"transition:true\" hx-post=\"/logout\" hx-confirm=\"Are you sure you want to log out?\" onClick=\"this.addEventListener(&#39;htmx:confirm&#39;, (e) =&gt; {\n                                e.preventDefault()\n                                Swal.fire({\n                                    title: &#39;Do you want to perform this action?&#39;,\n                                    text: `${e.detail.question}`,\n                                    icon: &#39;warning&#39;,\n                                    background: &#39;#1D232A&#39;,\n                                    color: &#39;#A6ADBA&#39;,\n                                    showCancelButton: true,\n                                    confirmButtonColor: &#39;#3085d6&#39;,\n                                    cancelButtonColor: &#39;#d33&#39;,\n                                    confirmButtonText: &#39;Yes&#39;\n                                }).then((result) =&gt; {\n                                    if(result.isConfirmed) e.detail.issueRequest(true);\n                                })\n                            })\" hx-target=\"body\" hx-push-url=\"true\" class=\"text-red-500\">Logout</a></li></ul></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li><a hx-swap=\"transition:true\" hx-post=\"/logout\" hx-confirm=\"Are you sure you want to log out?\" onClick=\"this.addEventListener(&#39;htmx:confirm&#39;, (e) =&gt; {\n                                e.preventDefault()\n                                Swal.fire({\n                                    title: &#39;Do you want to perform this action?&#39;,\n                                    text: `${e.detail.question}`,\n                                    icon: &#39;warning&#39;,\n                                    background: &#39;#1D232A&#39;,\n                                    color: &#39;#A6ADBA&#39;,\n                                    showCancelButton: true,\n                                    confirmButtonColor: &#39;#3085d6&#39;,\n                                    cancelButtonColor: &#39;#d33&#39;,\n                                    confirmButtonText: &#39;Yes&#39;\n                                }).then((result) =&gt; {\n                                    if(result.isConfirmed) e.detail.issueRequest(true);\n                                })\n                            })\" hx-target=\"body\" hx-push-url=\"true\" class=\"text-red-500\">Logout</a></li></ul></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/register\">Registrieren</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/login\">Einloggen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/register\">Registrieren</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/login\">Einloggen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-func DevNote() templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var4 == nil {
-			templ_7745c5c3_Var4 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		if env.IsDev() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"navbar-center text-white text-center bg-red-500\">DEV MODE</div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
 		}
 		return nil
 	})

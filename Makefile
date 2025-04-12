@@ -1,22 +1,27 @@
-ENV_FILE=.env
-ENV_DEV_FILE=.env.dev
-ENV_PROD_FILE=.env.prod
+# Projektverzeichnis definieren (relativ zum Makefile)
+PROJECT_ROOT := .
+CMD_DIR := $(PROJECT_ROOT)/cmd/pixelfox
+
+# Umgebungsvariablen
+ENV_FILE=$(PROJECT_ROOT)/.env
+ENV_DEV_FILE=$(PROJECT_ROOT)/.env.dev
+ENV_PROD_FILE=$(PROJECT_ROOT)/.env.prod
 
 # Aufgabe: Kopiere .env.dev nach .env (Testumgebung)
 .PHONY: build
 build:
 	@echo "🚧 Build..."
-	docker-compose build
+	cd $(PROJECT_ROOT) && docker-compose build
 
 .PHONY: build-no-cache
 build-no-cache:
 	@echo "🚧 Build..."
-	docker-compose build --no-cache --force-rm --pull
+	cd $(PROJECT_ROOT) && docker-compose build --no-cache --force-rm --pull
 
 .PHONY: generate-template
 generate-template:
 	@echo "🔧 Generiere Templates..."
-	docker exec -it pxlfox-app templ generate ./..
+	cd $(PROJECT_ROOT) && docker exec -it pxlfox-app templ generate ./..
 
 .PHONY: prepare-env-test
 prepare-env-test:
@@ -33,85 +38,85 @@ prepare-env-prod:
 .PHONY: start
 start: prepare-env-test
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
-	docker-compose up -d
+	cd $(PROJECT_ROOT) && docker-compose up -d
 
 .PHONY: start-build
 start-build: prepare-env-test
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
-	docker-compose up -d --build
+	cd $(PROJECT_ROOT) && docker-compose up -d --build
 
 # Docker Compose Build und Start für Produktionsumgebung
 .PHONY: start-prod
 start-prod: prepare-env-prod
 	@echo "🚀 Starte Docker Compose (Produktionsumgebung)..."
-	docker-compose up -d
+	cd $(PROJECT_ROOT) && docker-compose up -d
 
 # Docker Compose herunterfahren
 .PHONY: docker-down
 docker-down:
 	@echo "🛑 Stoppe Docker Compose..."
-	docker-compose down
+	cd $(PROJECT_ROOT) && docker-compose down
 
 # Docker Compose herunterfahren und Volumes entfernen
 .PHONY: docker-clean
 docker-clean:
 	@echo "🧹 Entferne Docker Volumes und Container..."
-	docker-compose down -v
-	docker system prune --volumes -f
+	cd $(PROJECT_ROOT) && docker-compose down -v
+	cd $(PROJECT_ROOT) && docker system prune --volumes -f
 
 .PHONY: stop
 stop:
 	@echo "🛑 Stoppe Docker Compose..."
-	docker-compose stop
+	cd $(PROJECT_ROOT) && docker-compose stop
 
 .PHONY: restart
 restart:
 	@echo "🔄 Restarte Docker Compose..."
-	docker-compose restart
+	cd $(PROJECT_ROOT) && docker-compose restart
 
 # Golang Tests ausführen
 .PHONY: test
 test:
 	@echo "🧪 Führe Tests aus..."
-	go test ./...
+	cd $(PROJECT_ROOT) && go test ./...
 
 # Migrationen ausführen
 .PHONY: migrate-up
 migrate-up:
 	@echo "🔼 Führe Datenbankmigrationen aus..."
-	docker-compose exec app go run cmd/migrate/main.go up
+	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go up
 
 # Migrationen zurückrollen
 .PHONY: migrate-down
 migrate-down:
 	@echo "🔽 Rolle Datenbankmigrationen zurück..."
-	docker-compose exec app go run cmd/migrate/main.go down
+	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go down
 
 # Spezifische Migration ausführen
 .PHONY: migrate-to
 migrate-to:
 	@echo "🎯 Führe Migration bis Version $(version) aus..."
-	docker-compose exec app go run cmd/migrate/main.go goto $(version)
+	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go goto $(version)
 
 # Migrationsstatus anzeigen
 .PHONY: migrate-status
 migrate-status:
 	@echo "ℹ️ Zeige Migrationsstatus an..."
-	docker-compose exec app go run cmd/migrate/main.go status
+	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go status
 
 # Datenbank zurücksetzen
 .PHONY: db-reset
 db-reset:
 	@echo "🔄 Setze Datenbank zurück..."
-	docker-compose stop db
-	docker-compose rm -f db
-	docker volume rm pixelfox_db_data || true
+	cd $(PROJECT_ROOT) && docker-compose stop db
+	cd $(PROJECT_ROOT) && docker-compose rm -f db
+	cd $(PROJECT_ROOT) && docker volume rm pixelfox_db_data || true
 	@echo "🚀 Starte Datenbank neu..."
-	docker-compose up -d db
+	cd $(PROJECT_ROOT) && docker-compose up -d db
 	@echo "⏳ Warte bis die Datenbank bereit ist..."
 	sleep 30
 	@echo "🔼 Führe Migrationen aus..."
-	docker-compose exec app go run cmd/migrate/main.go up
+	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go up
 	@echo "✅ Datenbank wurde erfolgreich zurückgesetzt!"
 
 # Hilfsfunktion: make help

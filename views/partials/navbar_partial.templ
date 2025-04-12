@@ -1,6 +1,5 @@
 package partials
 
-import "github.com/ManuelReschke/PixelFox/internal/pkg/env"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 
@@ -11,7 +10,6 @@ templ Navbar(appName string, layout viewmodel.Layout) {
 				{ appName }
 			</a>
 		</div>
-		@DevNote()
 		<div class="navbar-end">
 			if layout.FromProtected {
                 <a hx-swap="transition:true" class="btn btn-ghost text-base" href="/user/profile">
@@ -90,12 +88,4 @@ templ Navbar(appName string, layout viewmodel.Layout) {
 
 		</div>
 	</nav>
-}
-
-templ DevNote() {
-		if env.IsDev() {
-		    <div class="navbar-center text-white text-center bg-red-500">
-		        DEV MODE
-            </div>
-        }
 }
