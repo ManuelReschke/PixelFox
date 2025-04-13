@@ -164,6 +164,12 @@ func processImage(image *models.Image, originalPath string) error {
 	// Status auf "processing" setzen
 	SetImageStatus(image.UUID, STATUS_PROCESSING)
 
+	// Extrahiere Metadaten aus dem Bild
+	if err := ExtractMetadata(image, originalPath); err != nil {
+		log.Error(fmt.Sprintf("[ImageProcessor] Error extracting metadata: %v", err))
+		// Fahre mit der Verarbeitung fort, auch wenn die Metadatenextraktion fehlschlu00e4gt
+	}
+
 	originalDir := filepath.Dir(originalPath)
 
 	// Remove "uploads/original/" from path
@@ -263,6 +269,12 @@ func processImage(image *models.Image, originalPath string) error {
 			}
 		}
 
+		// Extrahiere Metadaten aus dem Bild
+		if err := ExtractMetadata(image, originalPath); err != nil {
+			log.Error(fmt.Sprintf("[ImageProcessor] Error extracting metadata for %s format: %v", formatName, err))
+			// Fahre mit der Verarbeitung fort, auch wenn die Metadatenextraktion fehlschlägt
+		}
+
 		// Update database - Wichtig: has_webp und has_avif auf false setzen, da keine optimierten Versionen existieren
 		// Wir verwenden direkt das Original, daher brauchen wir keine optimierten Versionen
 		db := database.GetDB()
@@ -273,6 +285,15 @@ func processImage(image *models.Image, originalPath string) error {
 			"has_thumbnail_medium": false,
 			"width":                width,  // Breite des Bildes
 			"height":               height, // Höhe des Bildes
+			"camera_model":         image.CameraModel,
+			"taken_at":             image.TakenAt,
+			"latitude":             image.Latitude,
+			"longitude":            image.Longitude,
+			"exposure_time":        image.ExposureTime,
+			"aperture":             image.Aperture,
+			"iso":                  image.ISO,
+			"focal_length":         image.FocalLength,
+			"metadata":             image.Metadata,
 		})
 
 		log.Info(fmt.Sprintf("[ImageProcessor] Image processing completed for %s", image.UUID))
@@ -408,8 +429,17 @@ func processImage(image *models.Image, originalPath string) error {
 		"has_avif":             hasAvif,
 		"has_thumbnail_small":  true,
 		"has_thumbnail_medium": true,
-		"width":                width,  // Breite des Bildes
-		"height":               height, // Höhe des Bildes
+		"width":                width,
+		"height":               height,
+		"camera_model":         image.CameraModel,
+		"taken_at":             image.TakenAt,
+		"latitude":             image.Latitude,
+		"longitude":            image.Longitude,
+		"exposure_time":        image.ExposureTime,
+		"aperture":             image.Aperture,
+		"iso":                  image.ISO,
+		"focal_length":         image.FocalLength,
+		"metadata":             image.Metadata,
 	})
 
 	log.Info(fmt.Sprintf("[ImageProcessor] Image processing completed for %s", image.UUID))

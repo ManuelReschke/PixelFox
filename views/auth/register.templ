@@ -18,7 +18,7 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 				class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8"
 				action=""
 				method="post"
-				hx-on:htmx:after-swap="if(window.hcaptcha) { hcaptcha.reset(); hcaptcha.render('hcaptcha-container'); }"
+				hx-on:htmx:after-swap="if(document.getElementById('hcaptcha-container')) { if(window.hcaptcha) { hcaptcha.reset('hcaptcha-container'); hcaptcha.render('hcaptcha-container', { sitekey: document.getElementById('hcaptcha-container').getAttribute('data-sitekey'), theme: 'light' }); } }"
 			>
 			    <!-- CSRF-Token als verstecktes Feld -->
 			    <input type="hidden" name="_csrf" value={csrfToken} id="csrf-token">
@@ -109,7 +109,7 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 				
 				// Dann neu rendern
 				window.hcaptcha.render('hcaptcha-container', {
-					sitekey: "{hcaptchaSitekey}",
+					sitekey: document.getElementById('hcaptcha-container').getAttribute('data-sitekey'),
 					theme: 'light'
 				});
 			}
