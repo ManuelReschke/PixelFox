@@ -57,44 +57,50 @@ func (j *JSON) UnmarshalJSON(data []byte) error {
 }
 
 type Image struct {
-	ID                 uint           `gorm:"primaryKey" json:"id"`
-	UUID               string         `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"uuid"`
-	UserID             uint           `gorm:"index" json:"user_id"`
-	User               User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Title              string         `gorm:"type:varchar(255)" json:"title"`
-	Description        string         `gorm:"type:text" json:"description"`
-	FilePath           string         `gorm:"type:varchar(255);not null" json:"file_path"`
-	FileName           string         `gorm:"type:varchar(255);not null" json:"file_name"`
-	FileSize           int64          `gorm:"type:bigint" json:"file_size"`
-	FileType           string         `gorm:"type:varchar(50)" json:"file_type"`
-	Width              int            `gorm:"type:int" json:"width"`
-	Height             int            `gorm:"type:int" json:"height"`
-	ShareLink          string         `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
-	IsPublic           bool           `gorm:"default:false" json:"is_public"`
-	ViewCount          int            `gorm:"default:0" json:"view_count"`
-	DownloadCount      int            `gorm:"default:0" json:"download_count"`
-	HasWebp            bool           `gorm:"default:false" json:"has_webp"`
-	HasAVIF            bool           `gorm:"default:false" json:"has_avif"`
-	HasThumbnailSmall  bool           `gorm:"default:false" json:"has_thumbnail_small"`
-	HasThumbnailMedium bool           `gorm:"default:false" json:"has_thumbnail_medium"`
-	// Neue Metadatenfelder
-	CameraModel        string         `gorm:"type:varchar(255)" json:"camera_model"`
-	TakenAt            *time.Time     `gorm:"type:datetime" json:"taken_at"`
-	Latitude           *float64       `gorm:"type:decimal(10,8)" json:"latitude"`
-	Longitude          *float64       `gorm:"type:decimal(11,8)" json:"longitude"`
-	ExposureTime       string         `gorm:"type:varchar(50)" json:"exposure_time"`
-	Aperture           string         `gorm:"type:varchar(20)" json:"aperture"`
-	ISO                *int           `gorm:"type:int" json:"iso"`
-	FocalLength        string         `gorm:"type:varchar(20)" json:"focal_length"`
-	Metadata           JSON           `gorm:"type:json" json:"metadata"`
-	// Beziehungen
-	Tags               []Tag          `gorm:"many2many:image_tags;" json:"tags,omitempty"`
-	Comments           []Comment      `gorm:"foreignKey:ImageID" json:"comments,omitempty"`
-	Likes              []Like         `gorm:"foreignKey:ImageID" json:"likes,omitempty"`
-	Albums             []Album        `gorm:"many2many:album_images;" json:"albums,omitempty"`
-	CreatedAt          time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt          time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
+	gorm.Model
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	UUID        string         `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"uuid"`
+	UserID      uint           `gorm:"index" json:"user_id"`
+	User        User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Filename    string         `gorm:"type:varchar(255);not null" json:"filename"`
+	Title       string         `gorm:"type:varchar(255)" json:"title"`
+	Description string         `gorm:"type:text" json:"description"`
+	FilePath    string         `gorm:"column:file_path;type:varchar(255);not null" json:"file_path"`
+	FileType    string         `gorm:"column:file_type;type:varchar(50)" json:"file_type"`
+	Width       int            `gorm:"type:int" json:"width"`
+	Height      int            `gorm:"type:int" json:"height"`
+	Filesize    int64          `gorm:"type:bigint" json:"filesize"`
+	ContentType string         `gorm:"type:varchar(100)" json:"content_type"`
+	ShareLink   string         `gorm:"type:varchar(100) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
+	Downloads   int            `gorm:"type:int" json:"downloads"`
+	Views       int            `gorm:"type:int" json:"views"`
+	IsPublic    bool           `gorm:"default:false" json:"is_public"`
+	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	// Metadata fields
+	CameraModel  string     `gorm:"type:varchar(100)" json:"camera_model"`
+	TakenAt      *time.Time `gorm:"type:datetime" json:"taken_at"`
+	Latitude     *float64   `gorm:"type:decimal(10,8)" json:"latitude"`
+	Longitude    *float64   `gorm:"type:decimal(11,8)" json:"longitude"`
+	ExposureTime string     `gorm:"type:varchar(50)" json:"exposure_time"`
+	Aperture     string     `gorm:"type:varchar(50)" json:"aperture"`
+	ISO          *int       `gorm:"type:int" json:"iso"`
+	FocalLength  string     `gorm:"type:varchar(50)" json:"focal_length"`
+	Metadata     JSON       `gorm:"type:json" json:"metadata"`
+	// Relations
+	Variants   []ImageVariant `gorm:"foreignKey:ImageID" json:"variants,omitempty"`
+	Tags       []Tag          `gorm:"many2many:image_tags;" json:"tags,omitempty"`
+	Comments   []Comment      `gorm:"foreignKey:ImageID" json:"comments,omitempty"`
+	Likes      []Like         `gorm:"foreignKey:ImageID" json:"likes,omitempty"`
+	Albums     []Album        `gorm:"many2many:album_images;" json:"albums,omitempty"`
+	PreviewURL string         `gorm:"-"`
+	// Fields for compatibility with older code
+	HasWebPField            bool   `gorm:"-"`
+	HasAVIFField            bool   `gorm:"-"`
+	HasThumbnailSmallField  bool   `gorm:"-"`
+	HasThumbnailMediumField bool   `gorm:"-"`
+	MimeType                string `gorm:"-"`
 }
 
 // BeforeCreate wird vor dem Erstellen eines neuen Datensatzes aufgerufen
@@ -130,12 +136,12 @@ func (i *Image) AfterCreate(tx *gorm.DB) error {
 
 // IncrementViewCount erhöht den Zähler für Aufrufe
 func (i *Image) IncrementViewCount(db *gorm.DB) error {
-	return db.Model(i).Update("view_count", i.ViewCount+1).Error
+	return db.Model(i).Update("views", i.Views+1).Error
 }
 
 // IncrementDownloadCount erhöht den Zähler für Downloads
 func (i *Image) IncrementDownloadCount(db *gorm.DB) error {
-	return db.Model(i).Update("download_count", i.DownloadCount+1).Error
+	return db.Model(i).Update("downloads", i.Downloads+1).Error
 }
 
 // TogglePublic ändert den öffentlichen Status des Bildes
@@ -154,6 +160,56 @@ func FindImageByUUID(db *gorm.DB, uuid string) (*Image, error) {
 // FindByFilename findet ein Bild anhand seines Dateinamens
 func FindImageByFilename(db *gorm.DB, filename string) (*Image, error) {
 	var image Image
-	result := db.Where("file_name = ?", filename).First(&image)
+	result := db.Where("filename = ?", filename).First(&image)
 	return &image, result.Error
+}
+
+// HasWebP prüft, ob eine WebP-Variante vorhanden ist
+func (i *Image) HasWebP() bool {
+	for _, variant := range i.Variants {
+		if variant.VariantType == "webp" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasAVIF prüft, ob eine AVIF-Variante vorhanden ist
+func (i *Image) HasAVIF() bool {
+	for _, variant := range i.Variants {
+		if variant.VariantType == "avif" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasThumbnailSmall prüft, ob eine kleine Thumbnail-Variante vorhanden ist
+func (i *Image) HasThumbnailSmall() bool {
+	for _, variant := range i.Variants {
+		if variant.VariantType == "thumbnail_small" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasThumbnailMedium prüft, ob eine mittlere Thumbnail-Variante vorhanden ist
+func (i *Image) HasThumbnailMedium() bool {
+	for _, variant := range i.Variants {
+		if variant.VariantType == "thumbnail_medium" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasVariant prüft, ob eine bestimmte Variante vorhanden ist
+func (i *Image) HasVariant(variantType string) bool {
+	for _, variant := range i.Variants {
+		if variant.VariantType == variantType {
+			return true
+		}
+	}
+	return false
 }

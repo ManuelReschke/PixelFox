@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
@@ -37,4 +38,19 @@ func GetValueByKey(key string) string {
 	sessionMutex.RLock()         // Read-Lock vor dem Lesen
 	defer sessionMutex.RUnlock() // Unlock nach dem Lesen
 	return sessionKeyValue[key]
+}
+
+// GetUserID retrieves the user ID from the session
+func GetUserID(c *fiber.Ctx) uint {
+	sess, err := sessionStore.Get(c)
+	if err != nil {
+		return 0
+	}
+
+	userID := sess.Get("userID")
+	if userID == nil {
+		return 0
+	}
+
+	return userID.(uint)
 }

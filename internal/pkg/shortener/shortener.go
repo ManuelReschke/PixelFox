@@ -1,7 +1,8 @@
 package shortener
 
 import (
-	"strings"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
+	
 )
 
 // Alphabet für die Umwandlung (62 Zeichen: 0-9, a-z, A-Z)
@@ -49,4 +50,9 @@ func DecodeID(encoded string) uint {
 	}
 
 	return id
+}
+
+// GetDomain returns the domain for short URLs
+func GetDomain() string {
+	return env.GetEnv("PUBLIC_DOMAIN", "localhost:3000")
 }

@@ -2,8 +2,27 @@ package views
 
 import (
 	"fmt"
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+	"github.com/gofiber/fiber/v2"
 )
+
+// ImageInfoStruct enthält Informationen über ein Bild und seine Varianten
+type ImageInfoStruct struct {
+	UUID            string
+	Filename        string
+	OriginalPath    string
+	WebPPath        string
+	AVIFPath        string
+	ThumbnailSmall  string
+	ThumbnailMedium string
+	HasWebP         bool
+	HasAVIF         bool
+	HasThumbnailS   bool
+	HasThumbnailM   bool
+}
 
 // ImageProcessingStatus zeigt eine Ladeanimation an und aktualisiert sich selbst
 templ ImageProcessingStatus(uuid string) {
@@ -41,6 +60,29 @@ templ ProcessedImageElement(model viewmodel.Image) {
 		}
 		<img loading="lazy" src={model.PreviewPath} alt={model.DisplayName} class="rounded-xl max-h-48 object-contain cursor-pointer" id="preview-image" />
 	</picture>
+}
+
+// ImageView zeigt ein Bild mit seinen Details an
+templ ImageView(image models.Image, imageInfo ImageInfoStruct) {
+	@Layout(viewmodel.Layout{
+		Page: " - " + image.Title,
+		Msg:  fiber.Map{},
+	})
+		@ImageViewer(viewmodel.Image{
+			UUID:        image.UUID,
+			DisplayName: image.Title,
+			ShareURL:    image.ShareLink,
+			IsProcessing: !imageprocessor.HasProcessedVariants(&image),
+			HasAVIF:     imageprocessor.HasAVIF(&image),
+			HasWebP:     imageprocessor.HasWebP(&image),
+			Domain:      "https://" + shortener.GetDomain(),
+			PreviewAVIFPath:    imageprocessor.GetImagePathWithSize(&image, "avif", "medium"),
+			PreviewWebPPath:    imageprocessor.GetImagePathWithSize(&image, "webp", "medium"),
+			PreviewPath:        imageprocessor.GetImagePathWithSize(&image, "original", "medium"),
+			OptimizedAVIFPath:  imageprocessor.GetImagePathForVariant(&image, "avif"),
+			OptimizedWebPPath:  imageprocessor.GetImagePathForVariant(&image, "webp"),
+			OriginalPath:       imageprocessor.GetImagePathForVariant(&image, "original"),
+		})
 }
 
 templ ImageViewer(model viewmodel.Image) {

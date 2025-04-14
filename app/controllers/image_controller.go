@@ -10,21 +10,20 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
-	fiberlog "github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/google/uuid"
 	"github.com/sujit-baniya/flash"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 )
 
+// HandleUpload handles the image upload
 func HandleUpload(c *fiber.Ctx) error {
 	if !isLoggedIn(c) {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
@@ -33,18 +32,17 @@ func HandleUpload(c *fiber.Ctx) error {
 	// Use MultipartForm instead of FormFile for better control
 	form, err := c.MultipartForm()
 	if err != nil {
-		fiberlog.Error(fmt.Sprintf("Error parsing multipart form: %v", err))
-		
+		log.Error(fmt.Sprintf("Error parsing multipart form: %v", err))
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Hochladen: %s", err),
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Fehler beim Hochladen: %s", err))
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 	defer form.RemoveAll() // Important: Clean up temporary files
 
@@ -54,12 +52,11 @@ func HandleUpload(c *fiber.Ctx) error {
 			"type":    "error",
 			"message": "Keine Datei hochgeladen",
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusBadRequest).SendString("Keine Datei hochgeladen")
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 	file := files[0]
 
@@ -79,31 +76,29 @@ func HandleUpload(c *fiber.Ctx) error {
 	if !validImageExtensions[fileExt] {
 		fm := fiber.Map{
 			"type":    "error",
-			"message": "Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)",
+			"message": "Nur Bildformate werden unterstu00fctzt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)",
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
-			return c.Status(fiber.StatusBadRequest).SendString("Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)")
+			return c.Status(fiber.StatusBadRequest).SendString("Nur Bildformate werden unterstu00fctzt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)")
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 
 	// Open the file to get its content
 	src, err := file.Open()
 	if err != nil {
-		fiberlog.Error(fmt.Sprintf("Error opening uploaded file: %v", err))
-		
+		log.Error(fmt.Sprintf("Error opening uploaded file: %v", err))
+
 		fm := fiber.Map{
 			"type":    "error",
-			"message": fmt.Sprintf("Fehler beim Öffnen der Datei: %s", err),
+			"message": fmt.Sprintf("Fehler beim u00d6ffnen der Datei: %s", err),
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
-			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Öffnen der Datei: %s", err))
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim u00d6ffnen der Datei: %s", err))
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 	defer src.Close()
 
@@ -121,70 +116,67 @@ func HandleUpload(c *fiber.Ctx) error {
 
 	// Make sure the directory exists
 	if err := os.MkdirAll(originalDirPath, 0755); err != nil {
-		fiberlog.Error(fmt.Sprintf("Error creating directory: %v", err))
-		
+		log.Error(fmt.Sprintf("Error creating directory: %v", err))
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": "Fehler beim Erstellen des Upload-Verzeichnisses",
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Erstellen des Upload-Verzeichnisses")
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 
-	fiberlog.Info(fmt.Sprintf("[Upload] file: %s -> %s", file.Filename, originalSavePath))
-	
+	log.Info(fmt.Sprintf("[Upload] file: %s -> %s", file.Filename, originalSavePath))
+
 	// Create the destination file
 	dst, err := os.Create(originalSavePath)
 	if err != nil {
-		fiberlog.Error(fmt.Sprintf("Error creating target file: %v", err))
-		
+		log.Error(fmt.Sprintf("Error creating target file: %v", err))
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err),
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err))
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 	defer dst.Close()
 
 	// Copy the file in blocks to reduce memory usage
 	buffer := make([]byte, 1024*1024) // 1MB Buffer
 	if _, err = io.CopyBuffer(dst, src, buffer); err != nil {
-		fiberlog.Error(fmt.Sprintf("Error copying file: %v", err))
-		
+		log.Error(fmt.Sprintf("Error copying file: %v", err))
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Speichern der Datei: %s", err),
 		}
-		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Speichern der Datei: %s", err))
 		}
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 
 	image := models.Image{
 		UUID:     imageUUID,
-		UserID:   c.Locals(USER_ID).(uint),
-		FileName: fileName,
+		UserID:   c.Locals("user_id").(uint),
+		Filename: fileName,
 		FilePath: originalDirPath, // Save the new path in the database
-		FileSize: file.Size,
+		Filesize: file.Size,
 		FileType: fileExt,
 		Title:    file.Filename,
 	}
 
 	db := database.GetDB()
 	if err := db.Create(&image).Error; err != nil {
-		fiberlog.Error(fmt.Sprintf("Error saving image to database: %v", err))
+		log.Error(fmt.Sprintf("Error saving image to database: %v", err))
 
 		// Clean up the file if database insertion fails
 		os.Remove(originalSavePath)
@@ -193,20 +185,19 @@ func HandleUpload(c *fiber.Ctx) error {
 			"type":    "error",
 			"message": fmt.Sprintf("Datei konnte nicht gespeichert werden: %s", file.Filename),
 		}
-		flash.WithError(c, fm)
 
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Speichern: %s", err))
 		}
 
-		return c.Redirect("/")
+		return flash.WithError(c, fm).Redirect("/")
 	}
 
 	// Start image processing asynchronously with a semaphore to limit concurrent processing
 	go func() {
-		fiberlog.Info(fmt.Sprintf("[Upload] Starting asynchronous image processing for %s", image.UUID))
+		log.Info(fmt.Sprintf("[Upload] Starting asynchronous image processing for %s", image.UUID))
 		if err := imageprocessor.ProcessImage(&image, originalSavePath); err != nil {
-			fiberlog.Error(fmt.Sprintf("Error during image processing: %v", err))
+			log.Error(fmt.Sprintf("Error during image processing: %v", err))
 		}
 	}()
 
@@ -219,7 +210,6 @@ func HandleUpload(c *fiber.Ctx) error {
 			"type":    "success",
 			"message": fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename),
 		}
-		flash.WithSuccess(c, fm)
 
 		redirectPath := fmt.Sprintf("/image/%s", imageUUID)
 		c.Set("HX-Redirect", redirectPath)
@@ -228,317 +218,343 @@ func HandleUpload(c *fiber.Ctx) error {
 
 	// Otherwise, redirect to the image view page
 	redirectPath := fmt.Sprintf("/image/%s", imageUUID)
-	return c.Redirect(redirectPath)
+
+	fm := fiber.Map{
+		"type":    "success",
+		"message": fmt.Sprintf("Datei erfolgreich hochgeladen: %s", file.Filename),
+	}
+	return flash.WithSuccess(c, fm).Redirect(redirectPath)
 }
 
-func HandleShareLink(c *fiber.Ctx) error {
-	sharelink := c.Params("sharelink")
-	if sharelink == "" {
-		return c.Redirect("/")
-	}
-
-	db := database.GetDB()
-	var image models.Image
-	if err := db.Where("share_link = ?", sharelink).First(&image).Error; err != nil {
-		fiberlog.Info(fmt.Sprintf("Image not found with ShareLink: %s, Error: %v", sharelink, err))
-		return c.Redirect("/")
-	}
-
-	redirectPath := fmt.Sprintf("/image/%s", image.UUID)
-	return c.Redirect(redirectPath)
-}
-
-func HandleImageViewer(c *fiber.Ctx) error {
-	identifier := c.Params("uuid")
-	if identifier == "" {
-		return c.Redirect("/")
-	}
-
-	// Check if the identifier is a UUID (36 characters with hyphens)
-	isUUID := len(identifier) == 36 && strings.Count(identifier, "-") == 4
-	if isUUID == false {
-		return c.SendStatus(404)
-	}
-
-	// Try to find the image by UUID first
-	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, identifier)
-	if err != nil {
-		fiberlog.Info(fmt.Sprintf("Image not found with UUID: %s, Error: %v", identifier, err))
-
-		return c.Redirect("/")
-	}
-
-	// The FilePath contains the relative path within the uploads folder
-	imagePath := fmt.Sprintf("/%s", image.FilePath)
-
-	// Increase the view counter
-	image.IncrementViewCount(db)
-
-	// Use the original file name (title) for display, if available
-	displayName := image.FileName
-	if image.Title != "" {
-		displayName = image.Title
-	}
-
-	domain := env.GetEnv("PUBLIC_DOMAIN", "")
-
-	// Build the full path to the image /uploads/Year/Month/Day/UUID.ext
-	filePathComplete := filepath.Join(imagePath, identifier) + image.FileType
-	filePathWithDomain := filepath.Join(domain, filePathComplete)
-
-	// Generate the share link URL with the domain and the new /i/ path
-	shareURL := filepath.Join(domain, "/i/", image.ShareLink)
-
-	// Paths for optimized image formats
-	webpPath := ""
-	avifPath := ""
-	smallThumbPath := ""
-	smallThumbWebpPath := ""
-	smallThumbAvifPath := ""
-
-	// If optimized formats are available, generate the paths
-	if image.HasWebp {
-		webpRelativePath := imageprocessor.GetImagePath(image, "webp", "")
-		webpPath = "/" + webpRelativePath
-	}
-
-	if image.HasAVIF {
-		avifRelativePath := imageprocessor.GetImagePath(image, "avif", "")
-		avifPath = "/" + avifRelativePath
-	}
-
-	// If thumbnails are available, generate the paths
-	if image.HasThumbnailSmall {
-		// Path to the small thumbnail (original format)
-		smallThumbRelativePath := imageprocessor.GetImagePath(image, "", "small")
-		smallThumbPath = "/" + smallThumbRelativePath
-
-		if image.HasWebp {
-			smallThumbWebpRelativePath := imageprocessor.GetImagePath(image, "webp", "small")
-			smallThumbWebpPath = "/" + smallThumbWebpRelativePath
-		}
-
-		if image.HasAVIF {
-			smallThumbAvifRelativePath := imageprocessor.GetImagePath(image, "avif", "small")
-			smallThumbAvifPath = "/" + smallThumbAvifRelativePath
-		}
-	}
-
-	// Paths for medium thumbnails
-	mediumThumbWebpPath := ""
-	mediumThumbAvifPath := ""
-
-	// If medium thumbnails are available, generate the paths
-	if image.HasThumbnailMedium {
-		// Path to the medium thumbnail (WebP)
-		if image.HasWebp {
-			mediumThumbWebpRelativePath := imageprocessor.GetImagePath(image, "webp", "medium")
-			mediumThumbWebpPath = "/" + mediumThumbWebpRelativePath
-		}
-
-		// Path to the medium thumbnail (AVIF)
-		if image.HasAVIF {
-			mediumThumbAvifRelativePath := imageprocessor.GetImagePath(image, "avif", "medium")
-			mediumThumbAvifPath = "/" + mediumThumbAvifRelativePath
-		}
-	}
-
-	// Use the medium thumbnail for the preview
-	previewPath := filePathComplete
-	previewWebpPath := webpPath
-	previewAvifPath := avifPath
-
-	if image.HasThumbnailMedium {
-		// Set the paths for medium thumbnails, if available
-		if image.HasAVIF {
-			previewPath = mediumThumbAvifPath
-			previewAvifPath = mediumThumbAvifPath
-		}
-		// Set the WebP path independently of AVIF
-		if image.HasWebp {
-			if !image.HasAVIF { // Only change the main path if no AVIF is available
-				previewPath = mediumThumbWebpPath
-			}
-			previewWebpPath = mediumThumbWebpPath
-		}
-	} else if image.HasThumbnailSmall {
-		// Fallback to small thumbnail if medium is not available
-		if image.HasAVIF {
-			previewPath = smallThumbAvifPath
-			previewAvifPath = smallThumbAvifPath
-		}
-		// Set the WebP path independently of AVIF
-		if image.HasWebp {
-			if !image.HasAVIF { // Only change the main path if no AVIF is available
-				previewPath = smallThumbWebpPath
-			}
-			previewWebpPath = smallThumbWebpPath
-		} else if !image.HasAVIF && !image.HasWebp {
-			// Only if neither AVIF nor WebP is available
-			previewPath = smallThumbPath
-		}
-	}
-
-	// Get paths for optimized versions
-	optimizedWebpPath := ""
-	optimizedAvifPath := ""
-	if image.HasWebp {
-		optimizedWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "")
-	}
-	if image.HasAVIF {
-		optimizedAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "")
-	}
-
-	// Optimized version for direct links and embeddings (AVIF or WebP)
-	// Note: This variable is no longer needed, as optimization is done directly in the template
-	// through the use of hasAVIF, hasWebP, avifPath, and webpPath
-
-	// Prepare Open Graph meta tags
-	ogImage := ""
-	if image.HasThumbnailSmall {
-		// Use small thumbnail for OG tags
-		if image.HasAVIF {
-			ogImage = filepath.Join(domain, smallThumbAvifPath)
-		} else if image.HasWebp {
-			ogImage = filepath.Join(domain, smallThumbWebpPath)
-		}
-	} else {
-		// If no thumbnails are available, use the original
-		ogImage = filePathWithDomain
-	}
-
-	ogTitle := fmt.Sprintf("%s - %s", displayName, "PIXELFOX.cc")
-	ogDescription := "Image uploaded on PIXELFOX.cc - Free image hosting"
-
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
-
-	// Create the ImageViewModel
-	imageModel := viewmodel.Image{
-		Domain:             domain,
-		PreviewPath:        previewPath,
-		FilePathWithDomain: filePathWithDomain,
-		DisplayName:        displayName,
-		ShareURL:           shareURL,
-		HasWebP:            image.HasWebp,
-		HasAVIF:            image.HasAVIF,
-		PreviewWebPPath:    previewWebpPath,
-		PreviewAVIFPath:    previewAvifPath,
-		OptimizedWebPPath:  optimizedWebpPath,
-		OptimizedAVIFPath:  optimizedAvifPath,
-		OriginalPath:       filePathComplete,
-		Width:              image.Width,
-		Height:             image.Height,
-		UUID:               image.UUID,
-		IsProcessing:       true, // Mark as "in processing" by default
-	}
-
-	// Check if image processing is complete
-	isComplete := imageprocessor.IsImageProcessingComplete(image.UUID)
-	imageModel.IsProcessing = !isComplete
-
-	imageViewer := views.ImageViewer(imageModel)
-
-	ogViewModel := &viewmodel.OpenGraph{
-		URL:         shareURL,
-		Image:       ogImage,
-		ImageAlt:    ogTitle,
-		Title:       ogTitle,
-		Description: ogDescription,
-	}
-
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), imageViewer, isAdmin, ogViewModel)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-
-	return handler(c)
-}
-
-// HandleImageProcessingStatus checks the status of image processing and returns only the image element
-func HandleImageProcessingStatus(c *fiber.Ctx) error {
+// ImageView zeigt die Bildansicht an
+func ImageView(c *fiber.Ctx) error {
+	// UUID aus der URL holen
 	uuid := c.Params("uuid")
 	if uuid == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("UUID missing")
+		return c.Redirect("/")
 	}
 
-	// Check if image processing is complete
-	isComplete := imageprocessor.IsImageProcessingComplete(uuid)
-	if !isComplete {
-		// If not complete, return only a status element that updates itself
-		statusElement := views.ImageProcessingStatus(uuid)
-		handler := adaptor.HTTPHandler(templ.Handler(statusElement))
-		return handler(c)
-	}
-
-	// If complete, load the image and return the image element
+	// Bild aus der Datenbank holen
 	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, uuid)
+	var image models.Image
+	result := db.Where("uuid = ?", uuid).First(&image)
+	if result.Error != nil {
+		return c.Redirect("/")
+	}
+
+	// Benutzer laden
+	db.Model(&image).Association("User").Find(&image.User)
+
+	// Varianten laden
+	db.Model(&image).Association("Variants").Find(&image.Variants)
+
+	// Bild-Informationen vorbereiten
+	var imageInfo views.ImageInfoStruct
+
+	imageInfo.UUID = image.UUID
+	imageInfo.Filename = image.Filename
+	imageInfo.OriginalPath = "/image/serve/" + image.UUID
+
+	// Prüfe, ob WebP-Variante vorhanden ist
+	if image.HasWebP() {
+		imageInfo.WebPPath = imageprocessor.GetImagePathWithSize(&image, "webp", "")
+		imageInfo.HasWebP = true
+	}
+
+	// Prüfe, ob AVIF-Variante vorhanden ist
+	if image.HasAVIF() {
+		imageInfo.AVIFPath = imageprocessor.GetImagePathWithSize(&image, "avif", "")
+		imageInfo.HasAVIF = true
+	}
+
+	// Prüfe, ob kleine Thumbnail-Variante vorhanden ist
+	if image.HasThumbnailSmall() {
+		imageInfo.ThumbnailSmall = imageprocessor.GetImagePathWithSize(&image, "webp", "small")
+		imageInfo.HasThumbnailS = true
+	}
+
+	// Prüfe, ob mittlere Thumbnail-Variante vorhanden ist
+	if image.HasThumbnailMedium() {
+		imageInfo.ThumbnailMedium = imageprocessor.GetImagePathWithSize(&image, "webp", "medium")
+		imageInfo.HasThumbnailM = true
+	}
+
+	// Template rendern
+	component := views.ImageView(image, imageInfo)
+	return adaptor.HTTPHandler(templ.Handler(component))(c)
+}
+
+// HandleImageViewer ist der Handler für die Bildansicht
+func HandleImageViewer(c *fiber.Ctx) error {
+	return ImageView(c)
+}
+
+// HandleImageView handles the image view page
+func HandleImageView(c *fiber.Ctx) error {
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.Redirect("/")
+	}
+
+	// Bild aus der Datenbank holen
+	db := database.GetDB()
+	var image models.Image
+	result := db.Where("uuid = ?", uuid).First(&image)
+	if result.Error != nil {
+		log.Error("Bild nicht gefunden: " + result.Error.Error())
+		return c.Redirect("/")
+	}
+
+	// Benutzer laden
+	db.Model(&image).Association("User").Find(&image.User)
+
+	// Varianten laden
+	db.Model(&image).Association("Variants").Find(&image.Variants)
+
+	// Bild-Informationen vorbereiten
+	var imageInfo views.ImageInfoStruct
+
+	imageInfo.UUID = image.UUID
+	imageInfo.Filename = image.Filename
+	imageInfo.OriginalPath = "/image/serve/" + image.UUID
+
+	// Prüfe, ob WebP-Variante vorhanden ist
+	if image.HasWebP() {
+		imageInfo.WebPPath = imageprocessor.GetImagePathWithSize(&image, "webp", "")
+		imageInfo.HasWebP = true
+	}
+
+	// Prüfe, ob AVIF-Variante vorhanden ist
+	if image.HasAVIF() {
+		imageInfo.AVIFPath = imageprocessor.GetImagePathWithSize(&image, "avif", "")
+		imageInfo.HasAVIF = true
+	}
+
+	// Prüfe, ob kleine Thumbnail-Variante vorhanden ist
+	if image.HasThumbnailSmall() {
+		imageInfo.ThumbnailSmall = imageprocessor.GetImagePathWithSize(&image, "webp", "small")
+		imageInfo.HasThumbnailS = true
+	}
+
+	// Prüfe, ob mittlere Thumbnail-Variante vorhanden ist
+	if image.HasThumbnailMedium() {
+		imageInfo.ThumbnailMedium = imageprocessor.GetImagePathWithSize(&image, "webp", "medium")
+		imageInfo.HasThumbnailM = true
+	}
+
+	// Aufrufzähler erhöhen
+	image.IncrementViewCount(db)
+
+	// Template rendern
+	component := views.ImageView(image, imageInfo)
+	return adaptor.HTTPHandler(templ.Handler(component))(c)
+}
+
+// HandleShareLink handles the short URL for images
+func HandleShareLink(c *fiber.Ctx) error {
+	shareLink := c.Params("sharelink")
+	if shareLink == "" {
+		return c.Redirect("/")
+	}
+
+	// Get image ID from share link
+	imageID := shortener.DecodeID(shareLink)
+
+	// Get image from database
+	db := database.GetDB()
+	var image models.Image
+	result := db.Where("id = ?", imageID).First(&image)
+	if result.Error != nil {
+		log.Error(fmt.Sprintf("Error getting image: %v", result.Error))
+		return c.Redirect("/")
+	}
+
+	// Redirect to full image URL
+	return c.Redirect(fmt.Sprintf("/image/%s", image.UUID))
+}
+
+// HandleImageDownload handles the image download
+func HandleImageDownload(c *fiber.Ctx) error {
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.Redirect("/")
+	}
+
+	// Get image from database
+	db := database.GetDB()
+	var image models.Image
+	result := db.Preload("Variants").Where("uuid = ?", uuid).First(&image)
+	if result.Error != nil {
+		log.Error(fmt.Sprintf("Error getting image: %v", result.Error))
+		return c.Redirect("/")
+	}
+
+	// Increment download count
+	image.Downloads++
+	db.Save(&image)
+
+	// Get original image path
+	originalPath, err := imageprocessor.GetOriginalPath(&image)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString("Image not found")
+		log.Error(fmt.Sprintf("Error getting original path: %v", err))
+		return c.Redirect("/")
 	}
 
-	// Construct the image paths
-	// Note: We don't need the domain here, as we're using relative paths only
-	previewPath := ""
-	previewWebpPath := ""
-	previewAvifPath := ""
-	// Paths for optimized versions
-	optimizedWebpPath := ""
-	optimizedAvifPath := ""
+	// Return the file
+	return c.Download(originalPath, image.Filename)
+}
 
-	// Use the medium thumbnail for the preview
-	if image.HasThumbnailMedium {
-		previewPath = "/" + imageprocessor.GetImagePath(image, "", "medium")
-		if image.HasWebp {
-			previewWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "medium")
-		}
-		if image.HasAVIF {
-			previewAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "medium")
-		}
-	} else if image.HasThumbnailSmall {
-		previewPath = "/" + imageprocessor.GetImagePath(image, "", "small")
-		if image.HasWebp {
-			previewWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "small")
-		}
-		if image.HasAVIF {
-			previewAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "small")
-		}
+// HandleImageServe serves the image file
+func HandleImageServe(c *fiber.Ctx) error {
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	// Get image from database
+	db := database.GetDB()
+	var image models.Image
+	result := db.Preload("Variants").Where("uuid = ?", uuid).First(&image)
+	if result.Error != nil {
+		log.Error(fmt.Sprintf("Error getting image: %v", result.Error))
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	// Check if client supports WebP
+	acceptHeader := c.Get("Accept")
+	supportsWebP := strings.Contains(acceptHeader, "image/webp")
+
+	// Check if client supports AVIF
+	supportsAVIF := strings.Contains(acceptHeader, "image/avif")
+
+	// Determine which format to serve
+	var imagePath string
+	var err error
+
+	// Try to serve the best format based on client support
+	if supportsAVIF && imageprocessor.HasAVIF(&image) {
+		imagePath, err = imageprocessor.GetAVIFPath(&image)
+	} else if supportsWebP && imageprocessor.HasWebP(&image) {
+		imagePath, err = imageprocessor.GetWebPPath(&image)
 	} else {
-		// Use the original if no thumbnails are available
-		previewPath = "/" + imageprocessor.GetImagePath(image, "", "")
+		// Fallback to original
+		imagePath, err = imageprocessor.GetOriginalPath(&image)
 	}
 
-	// Set the paths for the optimized versions (for the lightbox)
-	if image.HasWebp {
-		optimizedWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "")
-	}
-	if image.HasAVIF {
-		optimizedAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "")
+	if err != nil {
+		log.Error(fmt.Sprintf("Error getting image path: %v", err))
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	// Original path for download
-	originalPath := "/" + imageprocessor.GetImagePath(image, "", "")
+	// Set cache headers
+	c.Set("Cache-Control", "public, max-age=31536000")
+	c.Set("Expires", "31536000")
 
-	// Create a simplified ViewModel for image display only
-	imageModel := viewmodel.Image{
-		PreviewPath:       previewPath,
-		PreviewWebPPath:   previewWebpPath,
-		PreviewAVIFPath:   previewAvifPath,
-		OptimizedWebPPath: optimizedWebpPath,
-		OptimizedAVIFPath: optimizedAvifPath,
-		OriginalPath:      originalPath,
-		DisplayName:       image.FileName,
-		HasWebP:           image.HasWebp,
-		HasAVIF:           image.HasAVIF,
-		IsProcessing:      false,
+	// Serve the file
+	return c.SendFile(imagePath)
+}
+
+// HandleThumbnailServe serves the thumbnail
+func HandleThumbnailServe(c *fiber.Ctx) error {
+	uuid := c.Params("uuid")
+	size := c.Params("size")
+
+	if uuid == "" || (size != "small" && size != "medium") {
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	// Return only the image element
-	imageElement := views.ProcessedImageElement(imageModel)
-	handler := adaptor.HTTPHandler(templ.Handler(imageElement))
-	return handler(c)
+	// Get image from database
+	db := database.GetDB()
+	var image models.Image
+	result := db.Preload("Variants").Where("uuid = ?", uuid).First(&image)
+	if result.Error != nil {
+		log.Error(fmt.Sprintf("Error getting image: %v", result.Error))
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	// Check if client supports WebP
+	acceptHeader := c.Get("Accept")
+	supportsWebP := strings.Contains(acceptHeader, "image/webp")
+
+	// Check if client supports AVIF
+	supportsAVIF := strings.Contains(acceptHeader, "image/avif")
+
+	// Determine which format to serve
+	var imagePath string
+	var err error
+
+	if size == "small" {
+		if supportsAVIF && imageprocessor.HasAVIF(&image) && imageprocessor.HasThumbnailSmall(&image) {
+			imagePath, err = imageprocessor.GetThumbnailSmallPath(&image)
+		} else if supportsWebP && imageprocessor.HasWebP(&image) && imageprocessor.HasThumbnailSmall(&image) {
+			imagePath, err = imageprocessor.GetThumbnailSmallPath(&image)
+		} else if imageprocessor.HasThumbnailSmall(&image) {
+			imagePath, err = imageprocessor.GetThumbnailSmallPath(&image)
+		} else {
+			// Fallback to original
+			imagePath, err = imageprocessor.GetOriginalPath(&image)
+		}
+	} else { // medium
+		if supportsAVIF && imageprocessor.HasAVIF(&image) && imageprocessor.HasThumbnailMedium(&image) {
+			imagePath, err = imageprocessor.GetThumbnailMediumPath(&image)
+		} else if supportsWebP && imageprocessor.HasWebP(&image) && imageprocessor.HasThumbnailMedium(&image) {
+			imagePath, err = imageprocessor.GetThumbnailMediumPath(&image)
+		} else if imageprocessor.HasThumbnailMedium(&image) {
+			imagePath, err = imageprocessor.GetThumbnailMediumPath(&image)
+		} else {
+			// Fallback to original
+			imagePath, err = imageprocessor.GetOriginalPath(&image)
+		}
+	}
+
+	if err != nil {
+		log.Error(fmt.Sprintf("Error getting thumbnail path: %v", err))
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	// Set cache headers
+	c.Set("Cache-Control", "public, max-age=31536000")
+	c.Set("Expires", "31536000")
+
+	// Serve the file
+	return c.SendFile(imagePath)
+}
+
+// HandleImageProcessingStatus gibt den Status der Bildverarbeitung zurück
+func HandleImageProcessingStatus(c *fiber.Ctx) error {
+	// UUID aus der URL holen
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "UUID fehlt",
+		})
+	}
+
+	// Bild aus der Datenbank holen
+	db := database.GetDB()
+	var image models.Image
+	result := db.Where("uuid = ?", uuid).First(&image)
+	if result.Error != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Bild nicht gefunden",
+		})
+	}
+
+	// Varianten laden
+	db.Model(&image).Association("Variants").Find(&image.Variants)
+
+	// Status der Bildverarbeitung ermitteln
+	status := imageprocessor.GetImageProcessingStatus(&image)
+
+	return c.JSON(fiber.Map{
+		"status": status,
+		"image": fiber.Map{
+			"uuid":               image.UUID,
+			"filename":           image.Filename,
+			"hasWebP":            image.HasWebP(),
+			"hasAVIF":            image.HasAVIF(),
+			"hasThumbnailSmall":  image.HasThumbnailSmall(),
+			"hasThumbnailMedium": image.HasThumbnailMedium(),
+		},
+	})
 }

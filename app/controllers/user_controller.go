@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"path/filepath"
 	"strconv"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
@@ -68,24 +67,17 @@ func HandleUserImages(c *fiber.Ctx) error {
 	// Bereite die Bilderpfade für die Galerie vor
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
-		previewPath := ""
-		if img.HasThumbnailSmall {
-			// Verwende WebP wenn verfügbar, sonst AVIF, sonst Original
-			if img.HasWebp {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
-			} else if img.HasAVIF {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
-			} else {
-				// Fallback zum Original
-				previewPath = filepath.Join("/", img.FilePath, img.FileName)
-			}
+		// Wähle das beste Format basierend auf Browser-Unterstützung
+		if img.HasAVIF() {
+			img.PreviewURL = imageprocessor.GetImagePathWithSize(&img, "avif", "")
+		} else if img.HasWebP() {
+			img.PreviewURL = imageprocessor.GetImagePathWithSize(&img, "webp", "")
 		} else {
-			// Wenn keine Thumbnails verfügbar sind, verwende das Original
-			previewPath = filepath.Join("/", img.FilePath, img.FileName)
+			img.PreviewURL = "/image/serve/" + img.UUID
 		}
 
 		// Titel bestimmen
-		title := img.FileName
+		title := img.Filename
 		if img.Title != "" {
 			title = img.Title
 		}
@@ -95,7 +87,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 			UUID:        img.UUID,
 			Title:       title,
 			ShareLink:   img.ShareLink,
-			PreviewPath: previewPath,
+			PreviewPath: img.PreviewURL,
 			CreatedAt:   img.CreatedAt.Format("02.01.2006 15:04"),
 		})
 	}
@@ -130,20 +122,16 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
-		previewPath := ""
-		if img.HasThumbnailSmall {
-			if img.HasWebp {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
-			} else if img.HasAVIF {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
-			} else {
-				previewPath = filepath.Join("/", img.FilePath, img.FileName)
-			}
+		// Wähle das beste Format basierend auf Browser-Unterstützung
+		if img.HasAVIF() {
+			img.PreviewURL = imageprocessor.GetImagePathWithSize(&img, "avif", "")
+		} else if img.HasWebP() {
+			img.PreviewURL = imageprocessor.GetImagePathWithSize(&img, "webp", "")
 		} else {
-			previewPath = filepath.Join("/", img.FilePath, img.FileName)
+			img.PreviewURL = "/image/serve/" + img.UUID
 		}
 
-		title := img.FileName
+		title := img.Filename
 		if img.Title != "" {
 			title = img.Title
 		}
@@ -153,7 +141,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			UUID:        img.UUID,
 			Title:       title,
 			ShareLink:   img.ShareLink,
-			PreviewPath: previewPath,
+			PreviewPath: img.PreviewURL,
 			CreatedAt:   img.CreatedAt.Format("02.01.2006 15:04"),
 		})
 	}

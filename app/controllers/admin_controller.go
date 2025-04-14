@@ -285,8 +285,38 @@ func HandleAdminImageEdit(c *fiber.Ctx) error {
 	// Preload user information
 	db.Model(image).Association("User").Find(&image.User)
 
+	// Bild-Informationen vorbereiten
+	var imageInfo admin_views.ImageInfoStruct
+	imageInfo.UUID = image.UUID
+	imageInfo.Filename = image.Filename
+	imageInfo.OriginalPath = "/image/serve/" + image.UUID
+
+	// Pru00fcfe, ob WebP-Variante vorhanden ist
+	if image.HasWebP() {
+		imageInfo.WebPPath = imageprocessor.GetImagePathWithSize(image, "webp", "")
+		imageInfo.HasWebP = true
+	}
+
+	// Pru00fcfe, ob AVIF-Variante vorhanden ist
+	if image.HasAVIF() {
+		imageInfo.AVIFPath = imageprocessor.GetImagePathWithSize(image, "avif", "")
+		imageInfo.HasAVIF = true
+	}
+
+	// Pru00fcfe, ob kleine Thumbnail-Variante vorhanden ist
+	if image.HasThumbnailSmall() {
+		imageInfo.ThumbnailSmall = imageprocessor.GetImagePathWithSize(image, "webp", "small")
+		imageInfo.HasThumbnailS = true
+	}
+
+	// Pru00fcfe, ob mittlere Thumbnail-Variante vorhanden ist
+	if image.HasThumbnailMedium() {
+		imageInfo.ThumbnailMedium = imageprocessor.GetImagePathWithSize(image, "webp", "medium")
+		imageInfo.HasThumbnailM = true
+	}
+
 	// Render image edit page
-	imageEdit := admin_views.ImageEdit(*image)
+	imageEdit := admin_views.ImageEditContent(*image, imageInfo)
 	home := views.Home(" | Edit Image", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -358,36 +388,36 @@ func HandleAdminImageDelete(c *fiber.Ctx) error {
 
 	// Delete image files
 	// First, get the original file path
-	originalPath := filepath.Join(image.FilePath, image.FileName)
+	originalPath := filepath.Join(image.FilePath, image.Filename)
 	// Delete the original file
 	os.Remove(originalPath)
 
 	// Delete optimized versions and thumbnails if they exist
-	if image.HasWebp {
-		webpPath := imageprocessor.GetImagePath(image, "webp", "")
+	if image.HasWebP() {
+		webpPath := imageprocessor.GetImagePathWithSize(image, "webp", "")
 		os.Remove(webpPath)
 	}
 
-	if image.HasAVIF {
-		avifPath := imageprocessor.GetImagePath(image, "avif", "")
+	if image.HasAVIF() {
+		avifPath := imageprocessor.GetImagePathWithSize(image, "avif", "")
 		os.Remove(avifPath)
 	}
 
-	if image.HasThumbnailSmall {
-		smallWebpPath := imageprocessor.GetImagePath(image, "webp", "small")
+	if image.HasThumbnailSmall() {
+		smallWebpPath := imageprocessor.GetImagePathWithSize(image, "webp", "small")
 		os.Remove(smallWebpPath)
 
 		// Also delete AVIF thumbnail if it exists
-		smallAvifPath := imageprocessor.GetImagePath(image, "avif", "small")
+		smallAvifPath := imageprocessor.GetImagePathWithSize(image, "avif", "small")
 		os.Remove(smallAvifPath)
 	}
 
-	if image.HasThumbnailMedium {
-		mediumWebpPath := imageprocessor.GetImagePath(image, "webp", "medium")
+	if image.HasThumbnailMedium() {
+		mediumWebpPath := imageprocessor.GetImagePathWithSize(image, "webp", "medium")
 		os.Remove(mediumWebpPath)
 
 		// Also delete AVIF thumbnail if it exists
-		mediumAvifPath := imageprocessor.GetImagePath(image, "avif", "medium")
+		mediumAvifPath := imageprocessor.GetImagePathWithSize(image, "avif", "medium")
 		os.Remove(mediumAvifPath)
 	}
 
@@ -443,7 +473,7 @@ func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 		"type":    "info",
 		"message": "Suchergebnisse für '" + query + "': " + strconv.Itoa(len(users)) + " Benutzer gefunden",
 	}
-	
+
 	flash.WithInfo(c, fm)
 
 	// Render user management page with search results
@@ -470,7 +500,7 @@ func handleImageSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 		"type":    "info",
 		"message": "Suchergebnisse für '" + query + "': " + strconv.Itoa(len(images)) + " Bilder gefunden",
 	}
-	
+
 	flash.WithInfo(c, fm)
 
 	// Render image management page with search results

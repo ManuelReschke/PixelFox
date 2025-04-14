@@ -2,6 +2,7 @@ package imageprocessor
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,13 +13,13 @@ import (
 
 // Cache key format for image processing status
 const (
-	ImageStatusKeyFormat = "image:status:%s" // Format: image:status:<uuid>
+	ImageStatusKeyFormat          = "image:status:%s"           // Format: image:status:<uuid>
 	ImageStatusTimestampKeyFormat = "image:status:timestamp:%s" // Format: image:status:timestamp:<uuid>
 )
 
 // Status constants for image processing
 const (
-	STATUS_PENDING   = "pending"   // Image is queued for processing
+	STATUS_PENDING    = "pending"    // Image is queued for processing
 	STATUS_PROCESSING = "processing" // Image is currently being processed
 	STATUS_COMPLETED  = "completed"  // Image processing is complete
 	STATUS_FAILED     = "failed"     // Image processing failed
@@ -89,7 +90,7 @@ func IsImageProcessingComplete(imageUUID string) bool {
 	}
 
 	// Check the file type to determine if optimization was skipped
-	fileExt := image.FileType
+	fileExt := filepath.Ext(image.Filename)
 	isGif := strings.ToLower(fileExt) == ".gif"
 	isWebP := strings.ToLower(fileExt) == ".webp"
 	isAVIF := strings.ToLower(fileExt) == ".avif"
@@ -99,12 +100,12 @@ func IsImageProcessingComplete(imageUUID string) bool {
 	// we only check if thumbnails were created
 	if skipOptimization {
 		// For these formats, only thumbnails are created, not optimized versions
-		if image.HasThumbnailSmall || image.HasThumbnailMedium {
+		if image.HasThumbnailSmall() || image.HasThumbnailMedium() {
 			// Since we know the image has been processed, we update the cache
 			SetImageStatus(imageUUID, STATUS_COMPLETED)
 			return true
 		}
-		
+
 		// Special case for old WebP/GIF/AVIF images without thumbnails:
 		// If the image is older than 5 minutes, we consider it processed
 		if time.Since(image.CreatedAt) > 5*time.Minute {
@@ -114,7 +115,7 @@ func IsImageProcessingComplete(imageUUID string) bool {
 		}
 	} else {
 		// For normal images, we check if optimized versions or thumbnails were created
-		if image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium {
+		if image.HasWebP() || image.HasAVIF() || image.HasThumbnailSmall() || image.HasThumbnailMedium() {
 			// Since we know the image has been processed, we update the cache
 			SetImageStatus(imageUUID, STATUS_COMPLETED)
 			return true
@@ -140,4 +141,26 @@ func IsImageProcessingComplete(imageUUID string) bool {
 	// If neither the cache nor the database indicate that the image has been processed,
 	// we assume it is still being processed
 	return false
+}
+
+// GetImageProcessingStatus ermittelt den Status der Bildverarbeitung
+func GetImageProcessingStatus(image *models.Image) string {
+	// Pru00fcfe, ob alle Varianten vorhanden sind
+	hasWebP := image.HasWebP()
+	hasAVIF := image.HasAVIF()
+	hasThumbnailSmall := image.HasThumbnailSmall()
+	hasThumbnailMedium := image.HasThumbnailMedium()
+
+	// Wenn alle Varianten vorhanden sind, ist die Verarbeitung abgeschlossen
+	if hasWebP && hasAVIF && hasThumbnailSmall && hasThumbnailMedium {
+		return "completed"
+	}
+
+	// Wenn mindestens eine Variante vorhanden ist, ist die Verarbeitung teilweise abgeschlossen
+	if hasWebP || hasAVIF || hasThumbnailSmall || hasThumbnailMedium {
+		return "processing"
+	}
+
+	// Wenn keine Variante vorhanden ist, ist die Verarbeitung noch nicht gestartet
+	return "pending"
 }
