@@ -3,6 +3,7 @@ package admin_views
 import (
 	"fmt"
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
 
 // Format file size to human-readable format
@@ -53,7 +54,7 @@ templ imageContent(images []models.Image, currentPage int, totalPages int) {
 								<div class="flex-shrink-0 h-20 w-20">
 									<a href={ templ.SafeURL("/image/" + image.UUID) } target="_blank">
 										<img class="h-20 w-20 object-cover rounded-md" 
-											src={ "/uploads/thumbnails/small/webp/" + fmt.Sprintf("%d/%02d/%02d", image.CreatedAt.Year(), image.CreatedAt.Month(), image.CreatedAt.Day()) + "/" + image.UUID + ".webp" } 
+											src={ "/" + imageprocessor.GetImagePath(&image, "webp", "small") } 
 											alt={ image.Title }/>
 									</a>
 								</div>

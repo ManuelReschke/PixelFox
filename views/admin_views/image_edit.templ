@@ -3,6 +3,7 @@ package admin_views
 import (
 	"fmt"
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
 
 templ imageEditContent(image models.Image) {
@@ -22,7 +23,7 @@ templ imageEditContent(image models.Image) {
 			<h2 class="text-lg font-semibold mb-4">Bildvorschau</h2>
 			<div class="flex justify-center">
 				<img class="max-w-full h-auto rounded-lg" 
-					src={ "/uploads/thumbnails/medium/webp/" + fmt.Sprintf("%d/%02d/%02d", image.CreatedAt.Year(), image.CreatedAt.Month(), image.CreatedAt.Day()) + "/" + image.UUID + ".webp" } 
+					src={ "/" + imageprocessor.GetImagePath(&image, "webp", "medium") } 
 					alt={ image.Title }/>
 			</div>
 			

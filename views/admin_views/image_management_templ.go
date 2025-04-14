@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
 
 // Format file size to human-readable format
@@ -77,9 +78,9 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("/uploads/thumbnails/small/webp/" + fmt.Sprintf("%d/%02d/%02d", image.CreatedAt.Year(), image.CreatedAt.Month(), image.CreatedAt.Day()) + "/" + image.UUID + ".webp")
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("/" + imageprocessor.GetImagePath(&image, "webp", "small"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 56, Col: 181}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 57, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -92,7 +93,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 57, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 58, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -105,7 +106,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 65, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 66, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -118,7 +119,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(image.UUID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 68, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 69, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -131,7 +132,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(image.FileType)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 71, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 72, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -144,7 +145,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(formatFileSize(image.FileSize))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 74, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 75, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -157,7 +158,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%dx%d", image.Width, image.Height))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 77, Col: 104}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 78, Col: 104}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -194,7 +195,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(image.ShareLink)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 89, Col: 131}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 90, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -207,7 +208,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ViewCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 96, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 97, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -220,7 +221,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.DownloadCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 99, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 100, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -233,7 +234,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(image.CreatedAt.Format("2006-01-02 15:04"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 102, Col: 96}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 103, Col: 96}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -246,7 +247,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(image.User.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 109, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 110, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -259,7 +260,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(image.User.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 112, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 113, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -339,7 +340,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 					var templ_7745c5c3_Var21 string
 					templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", i))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 156, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 157, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 					if templ_7745c5c3_Err != nil {
@@ -366,7 +367,7 @@ func imageContent(images []models.Image, currentPage int, totalPages int) templ.
 					var templ_7745c5c3_Var23 string
 					templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", i))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 160, Col: 29}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_management.templ`, Line: 161, Col: 29}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 					if templ_7745c5c3_Err != nil {
