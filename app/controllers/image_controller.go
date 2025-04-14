@@ -205,7 +205,7 @@ func HandleUpload(c *fiber.Ctx) error {
 	// Start image processing asynchronously with a semaphore to limit concurrent processing
 	go func() {
 		fiberlog.Info(fmt.Sprintf("[Upload] Starting asynchronous image processing for %s", image.UUID))
-		if err := imageprocessor.ProcessImage(&image, originalSavePath); err != nil {
+		if err := imageprocessor.ProcessImage(&image); err != nil {
 			fiberlog.Error(fmt.Sprintf("Error during image processing: %v", err))
 		}
 	}()
@@ -521,7 +521,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 
 	// Original path for download
-	originalPath := "/" + imageprocessor.GetImagePath(image, "", "")
+	// Erstelle den vollständigen Pfad zum Original (FilePath enthält nur das Verzeichnis, daher müssen wir den Dateinamen hinzufügen)
+	originalPath := "/" + filepath.Join(image.FilePath, image.FileName)
 
 	// Create a simplified ViewModel for image display only
 	imageModel := viewmodel.Image{
