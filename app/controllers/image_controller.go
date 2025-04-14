@@ -465,24 +465,38 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("UUID missing")
 	}
 
-	// Check if image processing is complete
+	// Check if the image is complete
 	isComplete := imageprocessor.IsImageProcessingComplete(uuid)
-	if !isComplete {
-		// If not complete, return only a status element that updates itself
-		statusElement := views.ImageProcessingStatus(uuid)
-		handler := adaptor.HTTPHandler(templ.Handler(statusElement))
-		return handler(c)
-	}
 
-	// If complete, load the image and return the image element
+	// Get the image from the database
 	db := database.GetDB()
 	image, err := models.FindImageByUUID(db, uuid)
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).SendString("Image not found")
+
+	// If the image is still processing but exists in the database,
+	// send a partial model with IsProcessing=true
+	if !isComplete && err == nil {
+		// Create a view model with preliminary data
+		imageModel := viewmodel.Image{
+			UUID:              uuid,
+			DisplayName:       image.FileName,
+			ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
+			Domain:            c.BaseURL(),
+			OriginalPath:      "/" + filepath.Join(image.FilePath, image.FileName),
+			IsProcessing:      true,
+		}
+
+		// Render the entire card with IsProcessing = true
+		return views.ImageViewer(imageModel).Render(c.Context(), c.Response().BodyWriter())
 	}
 
+	// If the image is not found or processing is not complete,
+	// send an error for better error handling in the frontend
+	if !isComplete || err != nil {
+		return c.Status(fiber.StatusNotFound).SendString("Image not found or still processing")
+	}
+
+	// The image is complete and exists in the database
 	// Construct the image paths
-	// Note: We don't need the domain here, as we're using relative paths only
 	previewPath := ""
 	previewWebpPath := ""
 	previewAvifPath := ""
@@ -521,10 +535,10 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 
 	// Original path for download
-	// Erstelle den vollständigen Pfad zum Original (FilePath enthält nur das Verzeichnis, daher müssen wir den Dateinamen hinzufügen)
+	// Create the full path to the original (FilePath only contains the directory, so we need to add the file name)
 	originalPath := "/" + filepath.Join(image.FilePath, image.FileName)
 
-	// Create a simplified ViewModel for image display only
+	// Create a simplified view model for image display only
 	imageModel := viewmodel.Image{
 		PreviewPath:       previewPath,
 		PreviewWebPPath:   previewWebpPath,
@@ -536,10 +550,11 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		HasWebP:           image.HasWebp,
 		HasAVIF:           image.HasAVIF,
 		IsProcessing:      false,
+		UUID:              image.UUID, // Ensure UUID is passed to the model
+		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink), // Set share URL with current domain
+		Domain:            c.BaseURL(), // Set domain for links
 	}
 
-	// Return only the image element
-	imageElement := views.ProcessedImageElement(imageModel)
-	handler := adaptor.HTTPHandler(templ.Handler(imageElement))
-	return handler(c)
+	// Render the entire card with the ImageViewer
+	return views.ImageViewer(imageModel).Render(c.Context(), c.Response().BodyWriter())
 }
