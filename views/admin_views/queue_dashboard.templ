@@ -1,0 +1,165 @@
+package admin_views
+
+import (
+	"fmt"
+	"time"
+	"strconv"
+	
+	"github.com/ManuelReschke/PixelFox/views/partials"
+)
+
+// QueueItem struct für die Anzeige
+type QueueItem struct {
+	Key       string
+	Value     string
+	Type      string
+	TTL       time.Duration
+	Size      int64
+	CreatedAt time.Time
+}
+
+// formatDuration formats a duration in a human-readable way in German
+func formatDuration(d time.Duration) string {
+	if d < 0 {
+		return "Unbegrenzt"
+	}
+	
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+	seconds := int(d.Seconds()) % 60
+	
+	if hours > 0 {
+		return fmt.Sprintf("%d Std %d Min %d Sek", hours, minutes, seconds)
+	} else if minutes > 0 {
+		return fmt.Sprintf("%d Min %d Sek", minutes, seconds)
+	}
+	return fmt.Sprintf("%d Sekunden", seconds)
+}
+
+// formatBytes formats bytes to human-readable format
+func formatBytes(size int64) string {
+	const unit = 1024
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "KMGTPE"[exp])
+}
+
+// QueueItem is the template for a single queue item in the list
+templ QueueItemView(item QueueItem) {
+	<tr class="hover">
+		<td>
+			<div class="flex items-center gap-3">
+				<div>
+					<div class="font-bold truncate max-w-xs">{item.Key}</div>
+					<div class="text-sm opacity-70">{time.Since(item.CreatedAt).Round(time.Second).String()}</div>
+				</div>
+			</div>
+		</td>
+		<td>
+			<span class="truncate max-w-xs block">{item.Value}</span>
+		</td>
+		<td>
+			<span class={"badge " + getBadgeClass(item.Type)}>{item.Type}</span>
+		</td>
+		<td>{formatDuration(item.TTL)}</td>
+		<td>{formatBytes(item.Size)}</td>
+	</tr>
+}
+
+// Helper function to get badge class based on type
+func getBadgeClass(itemType string) string {
+	switch itemType {
+	case "status":
+		return "badge-primary"
+	case "analytics":
+		return "badge-secondary"
+	case "session":
+		return "badge-accent"
+	default:
+		return "badge-ghost"
+	}
+}
+
+// QueueItemsTable ist der Teil, der per HTMX aktualisiert wird
+templ QueueItemsTable(items []QueueItem, currentTime time.Time) {
+	<div class="stats shadow mb-4">
+		<div class="stat">
+			<div class="stat-title">Aktuelle Einträge</div>
+			<div class="stat-value">{strconv.Itoa(len(items))}</div>
+			<div class="stat-desc">Letzte Aktualisierung: {currentTime.Format("15:04:05")}</div>
+		</div>
+	</div>
+	
+	<div class="overflow-x-auto">
+		<table class="table table-zebra">
+			<thead>
+				<tr>
+					<th>Schlüssel & Alter</th>
+					<th>Wert</th>
+					<th>Typ</th>
+					<th>TTL</th>
+					<th>Größe</th>
+				</tr>
+			</thead>
+			<tbody>
+				if len(items) == 0 {
+					<tr>
+						<td colspan="5" class="text-center py-4">Keine Cache-Einträge gefunden</td>
+					</tr>
+				} else {
+					for _, item := range items {
+						@QueueItemView(item)
+					}
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+// QueueItems is the template for the items table that will be refreshed via HTMX
+templ QueueItems(items []QueueItem, currentTime time.Time) {
+	<div class="container mx-auto px-4 py-4">
+		<!-- Admin Navigation -->
+		@partials.AdminNavbar()
+
+		<div class="p-4">
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold">Cache & Queue Monitor</h1>
+				<button 
+					class="btn btn-primary" 
+					hx-get="/admin/queues/data" 
+					hx-trigger="click, every 5s"
+					hx-target="#queue-items-table"
+					hx-indicator="#refresh-indicator"
+				>
+					<span id="refresh-indicator" class="loading loading-spinner loading-xs htmx-indicator"></span>
+					Aktualisieren
+				</button>
+			</div>
+			
+			<div class="mb-6">
+				<div class="alert alert-info shadow-lg">
+					<div>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+						<div>
+							<h3 class="font-bold">Hinweis</h3>
+							<div class="text-sm">Hier siehst du alle Einträge aus dem Redis/Dragonfly Cache in Echtzeit. Der Status aktualisiert sich alle 5 Sekunden automatisch.</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div id="queue-items-table">
+				@QueueItemsTable(items, currentTime)
+			</div>
+		</div>
+	</div>
+}

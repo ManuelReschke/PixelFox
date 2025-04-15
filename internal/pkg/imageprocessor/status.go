@@ -24,19 +24,62 @@ const (
 	STATUS_FAILED     = "failed"     // Image processing failed
 )
 
+// TTL für verschiedene Status
+const (
+	PENDING_TTL   = 30 * time.Minute  // Längere Zeit für unverarbeitete Bilder
+	PROCESSING_TTL = 30 * time.Minute  // Längere Zeit für Bilder in Verarbeitung
+	COMPLETED_TTL = 5 * time.Minute   // Kurze Zeit für erfolgreich verarbeitete Bilder
+	FAILED_TTL    = 1 * time.Hour     // Längere Zeit für fehlgeschlagene Bilder (für Fehleranalyse)
+)
+
 // SetImageStatus sets the processing status of an image in the cache
 func SetImageStatus(imageUUID string, status string) error {
 	key := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
 	// Setze auch den Zeitstempel
 	SetImageStatusTimestamp(imageUUID, time.Now())
-	return cache.Set(key, status, 24*time.Hour)
+	
+	// Bestimme TTL basierend auf dem Status
+	ttl := PENDING_TTL // Standard
+	switch status {
+	case STATUS_PENDING:
+		ttl = PENDING_TTL
+	case STATUS_PROCESSING:
+		ttl = PROCESSING_TTL
+	case STATUS_COMPLETED:
+		// Für erfolgreiche Verarbeitungen setzen wir ein kurzes TTL
+		// Das genügt für eventuelles Polling nach Verarbeitungsabschluss
+		ttl = COMPLETED_TTL
+	case STATUS_FAILED:
+		ttl = FAILED_TTL
+	}
+	
+	return cache.Set(key, status, ttl)
 }
 
 // SetImageStatusTimestamp sets the timestamp when the status was set
 func SetImageStatusTimestamp(imageUUID string, timestamp time.Time) error {
 	cacheKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
 	timestampStr := timestamp.Format(time.RFC3339)
-	return cache.Set(cacheKey, timestampStr, 24*time.Hour)
+	
+	// Zeitstempel mit gleichem TTL wie Status speichern
+	ttl := PENDING_TTL // Standard
+	
+	// Versuche, den aktuellen Status zu lesen, um das passende TTL zu verwenden
+	status, err := GetImageStatus(imageUUID)
+	if err == nil {
+		switch status {
+		case STATUS_PENDING:
+			ttl = PENDING_TTL
+		case STATUS_PROCESSING:
+			ttl = PROCESSING_TTL
+		case STATUS_COMPLETED:
+			ttl = COMPLETED_TTL
+		case STATUS_FAILED:
+			ttl = FAILED_TTL
+		}
+	}
+	
+	return cache.Set(cacheKey, timestampStr, ttl)
 }
 
 // GetImageStatus retrieves the processing status of an image from the cache
@@ -62,12 +105,36 @@ func GetImageStatusTimestamp(imageUUID string) (time.Time, error) {
 	return timestamp, nil
 }
 
+// DeleteImageStatus löscht alle Status-Einträge für ein Bild aus dem Cache
+func DeleteImageStatus(imageUUID string) error {
+	// Status-Key löschen
+	statusKey := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
+	err1 := cache.Delete(statusKey)
+	
+	// Timestamp-Key löschen
+	timestampKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
+	err2 := cache.Delete(timestampKey)
+	
+	// Wenn mindestens eine Löschung erfolgreich war, keinen Fehler zurückgeben
+	if err1 == nil || err2 == nil {
+		return nil
+	}
+	
+	// Sonst den ersten Fehler zurückgeben
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+
 // IsImageProcessingComplete checks if image processing is complete
 func IsImageProcessingComplete(imageUUID string) bool {
 	// First, we check the cache status
 	status, err := GetImageStatus(imageUUID)
 	if err == nil && status == STATUS_COMPLETED {
 		// If the cache status is COMPLETED, processing is definitely complete
+		// Lösche Status-Einträge, da die Verarbeitung abgeschlossen ist
+		go DeleteImageStatus(imageUUID)
 		return true
 	}
 

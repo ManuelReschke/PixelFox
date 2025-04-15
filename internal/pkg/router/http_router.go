@@ -51,6 +51,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/images/delete/:uuid", controllers.HandleAdminImageDelete)
 	// Admin Search Route
 	adminGroup.Get("/search", controllers.HandleAdminSearch)
+	// Admin Queue Monitor Route
+	adminGroup.Get("/queues", controllers.HandleAdminQueues)
+	adminGroup.Get("/queues/data", controllers.HandleAdminQueuesData)
 
 	csrfConf := csrf.Config{
 		KeyLookup:      "form:_csrf",
