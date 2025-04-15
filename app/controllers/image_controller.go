@@ -34,13 +34,13 @@ func HandleUpload(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	if err != nil {
 		fiberlog.Error(fmt.Sprintf("Error parsing multipart form: %v", err))
-		
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Hochladen: %s", err),
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusBadRequest).SendString(fmt.Sprintf("Fehler beim Hochladen: %s", err))
 		}
@@ -55,7 +55,7 @@ func HandleUpload(c *fiber.Ctx) error {
 			"message": "Keine Datei hochgeladen",
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusBadRequest).SendString("Keine Datei hochgeladen")
 		}
@@ -82,7 +82,7 @@ func HandleUpload(c *fiber.Ctx) error {
 			"message": "Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)",
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusBadRequest).SendString("Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)")
 		}
@@ -93,13 +93,13 @@ func HandleUpload(c *fiber.Ctx) error {
 	src, err := file.Open()
 	if err != nil {
 		fiberlog.Error(fmt.Sprintf("Error opening uploaded file: %v", err))
-		
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Öffnen der Datei: %s", err),
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Öffnen der Datei: %s", err))
 		}
@@ -122,13 +122,13 @@ func HandleUpload(c *fiber.Ctx) error {
 	// Make sure the directory exists
 	if err := os.MkdirAll(originalDirPath, 0755); err != nil {
 		fiberlog.Error(fmt.Sprintf("Error creating directory: %v", err))
-		
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": "Fehler beim Erstellen des Upload-Verzeichnisses",
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Erstellen des Upload-Verzeichnisses")
 		}
@@ -136,18 +136,18 @@ func HandleUpload(c *fiber.Ctx) error {
 	}
 
 	fiberlog.Info(fmt.Sprintf("[Upload] file: %s -> %s", file.Filename, originalSavePath))
-	
+
 	// Create the destination file
 	dst, err := os.Create(originalSavePath)
 	if err != nil {
 		fiberlog.Error(fmt.Sprintf("Error creating target file: %v", err))
-		
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err),
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err))
 		}
@@ -159,13 +159,13 @@ func HandleUpload(c *fiber.Ctx) error {
 	buffer := make([]byte, 1024*1024) // 1MB Buffer
 	if _, err = io.CopyBuffer(dst, src, buffer); err != nil {
 		fiberlog.Error(fmt.Sprintf("Error copying file: %v", err))
-		
+
 		fm := fiber.Map{
 			"type":    "error",
 			"message": fmt.Sprintf("Fehler beim Speichern der Datei: %s", err),
 		}
 		flash.WithError(c, fm)
-		
+
 		if c.Get("HX-Request") == "true" {
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Speichern der Datei: %s", err))
 		}
@@ -274,12 +274,6 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// Increase the view counter
 	image.IncrementViewCount(db)
-
-	// Use the original file name (title) for display, if available
-	displayName := image.FileName
-	if image.Title != "" {
-		displayName = image.Title
-	}
 
 	domain := env.GetEnv("PUBLIC_DOMAIN", "")
 
@@ -408,6 +402,12 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		ogImage = filePathWithDomain
 	}
 
+	// Use the original file name (title) for display, if available
+	displayName := image.FileName
+	if image.Title != "" {
+		displayName = image.Title
+	}
+
 	ogTitle := fmt.Sprintf("%s - %s", displayName, "PIXELFOX.cc")
 	ogDescription := "Image uploaded on PIXELFOX.cc - Free image hosting"
 
@@ -472,17 +472,21 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	db := database.GetDB()
 	image, err := models.FindImageByUUID(db, uuid)
 
-	// If the image is still processing but exists in the database,
+	// Use the original file name (title) for display, if available
+	displayName := image.FileName
+	if image.Title != "" {
+		displayName = image.Title
+	} // If the image is still processing but exists in the database,
 	// send a partial model with IsProcessing=true
 	if !isComplete && err == nil {
 		// Create a view model with preliminary data
 		imageModel := viewmodel.Image{
-			UUID:              uuid,
-			DisplayName:       image.FileName,
-			ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
-			Domain:            c.BaseURL(),
-			OriginalPath:      "/" + filepath.Join(image.FilePath, image.FileName),
-			IsProcessing:      true,
+			UUID:         uuid,
+			DisplayName:  displayName,
+			ShareURL:     fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
+			Domain:       c.BaseURL(),
+			OriginalPath: "/" + filepath.Join(image.FilePath, image.FileName),
+			IsProcessing: true,
 		}
 
 		// Render the entire card with IsProcessing = true
@@ -546,13 +550,13 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		OptimizedWebPPath: optimizedWebpPath,
 		OptimizedAVIFPath: optimizedAvifPath,
 		OriginalPath:      originalPath,
-		DisplayName:       image.FileName,
+		DisplayName:       displayName,
 		HasWebP:           image.HasWebp,
 		HasAVIF:           image.HasAVIF,
 		IsProcessing:      false,
-		UUID:              image.UUID, // Ensure UUID is passed to the model
+		UUID:              image.UUID,                                           // Ensure UUID is passed to the model
 		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink), // Set share URL with current domain
-		Domain:            c.BaseURL(), // Set domain for links
+		Domain:            c.BaseURL(),                                          // Set domain for links
 	}
 
 	// Render the entire card with the ImageViewer

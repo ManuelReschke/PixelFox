@@ -173,7 +173,7 @@ templ ImageOptions(model viewmodel.Image) {
 				</svg>
 				Original herunterladen
 			</a>
-			<a href="/" class="btn btn-primary btn-sm">Neues Bild hochladen</a>
+			<a href="/" hx-boost="false" hx-abort="all" class="btn btn-primary btn-sm">Neues Bild hochladen</a>
 		</div>
 	} else {
 		<!-- Laden-Hinweis für die Links-Boxen anzeigen, wenn das Bild noch verarbeitet wird -->
@@ -211,7 +211,7 @@ templ ImageOptions(model viewmodel.Image) {
 					<span class="loading loading-spinner loading-xs"></span>
 					Bild wird vorbereitet...
 				</button>
-				<a href="/" class="btn btn-primary btn-sm">Neues Bild hochladen</a>
+				<a href="/" hx-boost="false" hx-abort="all" class="btn btn-primary btn-sm">Neues Bild hochladen</a>
 			</div>
 		</div>
 	}
