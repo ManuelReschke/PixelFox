@@ -37,7 +37,7 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 
 	// Extract all metadata into a map for JSON storage
 	allMetadata := make(map[string]interface{})
-	
+
 	// Manually walk through common EXIF tags to avoid type issues
 	for _, tag := range []exif.FieldName{
 		exif.Model, exif.Make, exif.Software, exif.Artist,
@@ -48,16 +48,19 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		exif.GPSAltitude, exif.DateTime, exif.DateTimeOriginal,
 		exif.DateTimeDigitized, exif.SubjectArea, exif.ExposureMode,
 	} {
-		if val, err := x.Get(tag); err == nil {
-			allMetadata[string(tag)] = val.String()
+		if tagVal, err := x.Get(tag); err == nil {
+			raw := tagVal.String()
+			clean := strings.Trim(raw, `"`)
+			allMetadata[string(tag)] = clean
 		}
 	}
 
 	// Extract specific metadata fields
 
-	// 1. Camera Model
-	if model, err := x.Get(exif.Model); err == nil {
-		image.CameraModel = strings.TrimSpace(model.String())
+	// 1. Camera Model (strip quotes)
+	if m, err := x.Get(exif.Model); err == nil {
+		s := strings.Trim(m.String(), `"`)
+		image.CameraModel = strings.TrimSpace(s)
 	}
 
 	// 2. Date and Time
@@ -73,8 +76,8 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 
 	// 4. Exposure Time
 	if expTag, err := x.Get(exif.ExposureTime); err == nil {
-		// Exposure time is often stored as a rational like "1/100"
-		image.ExposureTime = expTag.String()
+		raw := expTag.String()
+		image.ExposureTime = strings.Trim(raw, `"`)
 	}
 
 	// 5. Aperture (F-Number)
@@ -84,7 +87,7 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		if err == nil {
 			image.Aperture = fmt.Sprintf("f/%.1f", floatVal)
 		} else {
-			image.Aperture = fTag.String()
+			image.Aperture = strings.Trim(fTag.String(), `"`)
 		}
 	}
 
@@ -103,7 +106,7 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		if err == nil {
 			image.FocalLength = fmt.Sprintf("%.1fmm", floatVal)
 		} else {
-			image.FocalLength = flTag.String()
+			image.FocalLength = strings.Trim(flTag.String(), `"`)
 		}
 	}
 

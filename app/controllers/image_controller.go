@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"strconv"
 	"time"
 
 	"github.com/a-h/templ"
@@ -434,12 +435,36 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		Width:              image.Width,
 		Height:             image.Height,
 		UUID:               image.UUID,
-		IsProcessing:       true, // Mark as "in processing" by default
+		IsProcessing:       true,
+		CameraModel:        image.CameraModel,
+		TakenAt: func() string {
+			if image.TakenAt != nil {
+				return image.TakenAt.Format("02.01.2006 15:04")
+			}
+			return ""
+		}(),
+		Latitude: func() string {
+			if image.Latitude != nil {
+				return fmt.Sprintf("%f", *image.Latitude)
+			}
+			return ""
+		}(),
+		Longitude: func() string {
+			if image.Longitude != nil {
+				return fmt.Sprintf("%f", *image.Longitude)
+			}
+			return ""
+		}(),
+		ExposureTime: image.ExposureTime,
+		Aperture:     image.Aperture,
+		ISO: func() string {
+			if image.ISO != nil {
+				return strconv.Itoa(*image.ISO)
+			}
+			return ""
+		}(),
+		FocalLength: image.FocalLength,
 	}
-
-	// Check if image processing is complete
-	isComplete := imageprocessor.IsImageProcessingComplete(image.UUID)
-	imageModel.IsProcessing = !isComplete
 
 	imageViewer := views.ImageViewer(imageModel)
 
@@ -487,6 +512,34 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 			Domain:       c.BaseURL(),
 			OriginalPath: "/" + filepath.Join(image.FilePath, image.FileName),
 			IsProcessing: true,
+			CameraModel:  image.CameraModel,
+			TakenAt: func() string {
+				if image.TakenAt != nil {
+					return image.TakenAt.Format("02.01.2006 15:04")
+				}
+				return ""
+			}(),
+			Latitude: func() string {
+				if image.Latitude != nil {
+					return fmt.Sprintf("%f", *image.Latitude)
+				}
+				return ""
+			}(),
+			Longitude: func() string {
+				if image.Longitude != nil {
+					return fmt.Sprintf("%f", *image.Longitude)
+				}
+				return ""
+			}(),
+			ExposureTime: image.ExposureTime,
+			Aperture:     image.Aperture,
+			ISO: func() string {
+				if image.ISO != nil {
+					return strconv.Itoa(*image.ISO)
+				}
+				return ""
+			}(),
+			FocalLength: image.FocalLength,
 		}
 
 		// Render the entire card with IsProcessing = true
@@ -554,9 +607,37 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		HasWebP:           image.HasWebp,
 		HasAVIF:           image.HasAVIF,
 		IsProcessing:      false,
-		UUID:              image.UUID,                                           // Ensure UUID is passed to the model
-		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink), // Set share URL with current domain
-		Domain:            c.BaseURL(),                                          // Set domain for links
+		UUID:              image.UUID,
+		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
+		Domain:            c.BaseURL(),
+		CameraModel:       image.CameraModel,
+		TakenAt: func() string {
+			if image.TakenAt != nil {
+				return image.TakenAt.Format("02.01.2006 15:04")
+			}
+			return ""
+		}(),
+		Latitude: func() string {
+			if image.Latitude != nil {
+				return fmt.Sprintf("%f", *image.Latitude)
+			}
+			return ""
+		}(),
+		Longitude: func() string {
+			if image.Longitude != nil {
+				return fmt.Sprintf("%f", *image.Longitude)
+			}
+			return ""
+		}(),
+		ExposureTime: image.ExposureTime,
+		Aperture:     image.Aperture,
+		ISO: func() string {
+			if image.ISO != nil {
+				return strconv.Itoa(*image.ISO)
+			}
+			return ""
+		}(),
+		FocalLength: image.FocalLength,
 	}
 
 	// Render the entire card with the ImageViewer

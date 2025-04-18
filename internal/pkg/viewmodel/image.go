@@ -41,4 +41,14 @@ type Image struct {
 
 	// Processing status flag
 	IsProcessing bool
+
+	// Metadata fields
+	CameraModel   string
+	TakenAt       string
+	Latitude      string
+	Longitude     string
+	ExposureTime  string
+	Aperture      string
+	ISO           string
+	FocalLength   string
 }

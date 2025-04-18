@@ -164,6 +164,24 @@ templ ImageOptions(model viewmodel.Image) {
 					</div>
 				</div>
 			</div>
+			<!-- Mehr Informationen toggle -->
+			<div class="flex justify-center mt-4">
+				<button type="button" id="toggle-meta" class="btn btn-sm btn-outline btn-secondary gap-2">
+					<svg xmlns="http://www.w3.org/2000/svg" id="toggle-meta-icon" class="w-4 h-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+					</svg>
+					Mehr Informationen
+				</button>
+			</div>
+			<div id="meta-info" class="hidden space-y-1 text-left text-xs mt-2">
+				<div><strong>Camera Model:</strong> {model.CameraModel}</div>
+				<div><strong>Taken At:</strong> {model.TakenAt}</div>
+				<div><strong>Location:</strong> <a class="link link-info" href={templ.URL("https://maps.google.com/?q=" + model.Latitude + "," + model.Longitude)} target="_blank">{model.Latitude}, {model.Longitude}</a></div>
+				<div><strong>Exposure Time:</strong> {model.ExposureTime}</div>
+				<div><strong>Aperture:</strong> {model.Aperture}</div>
+				<div><strong>ISO:</strong> {model.ISO}</div>
+				<div><strong>Focal Length:</strong> {model.FocalLength}</div>
+			</div>
 		</div>
 		
 		<div class="card-actions justify-center mt-4">
@@ -375,9 +393,24 @@ templ ImageViewer(model viewmodel.Image) {
 			}
 		}
 
+		// Toggle Meta-Info initialization
+		function initToggleMeta() {
+			const link = document.getElementById('toggle-meta');
+			if (link) {
+				link.addEventListener('click', function(e) {
+					e.preventDefault();
+					const info = document.getElementById('meta-info');
+					const icon = document.getElementById('toggle-meta-icon');
+					info.classList.toggle('hidden');
+					icon.classList.toggle('rotate-180');
+				});
+			}
+		}
+
 		// Initialize clipboard and event listeners when DOM is loaded
 		document.addEventListener('DOMContentLoaded', function() {
 			initializeEventListeners();
+			initToggleMeta();
 
 			// Initialize clipboard
 			var clipboard = new ClipboardJS('.copy-btn');
@@ -407,6 +440,8 @@ templ ImageViewer(model viewmodel.Image) {
 		// Handle HTMX after-swap event to reinitialize event listeners
 		document.body.addEventListener('htmx:afterSwap', function(event) {
 			initializeEventListeners();
+			initToggleMeta();
 		});
+		initToggleMeta();
 	</script>
 }

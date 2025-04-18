@@ -1,0 +1,3 @@
+- [X] Meta Information haben immer so ein komisches Anführungszeichen z.B. Camera Model: "OnePlus 13"
+- [X] Mehr Informationen Link auf der view Seite irgendwie hübscher und mittiger und Google Maps Links andere Farbe
+- 
