@@ -185,12 +185,6 @@ templ ImageOptions(model viewmodel.Image) {
 		</div>
 		
 		<div class="card-actions justify-center mt-4">
-			<a href={templ.URL(model.Domain + model.OriginalPath)} download={model.DisplayName} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm w-full">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 1 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-				</svg>
-				Original herunterladen
-			</a>
 			<a href="/" hx-boost="false" hx-abort="all" class="btn btn-primary btn-sm">Neues Bild hochladen</a>
 		</div>
 	} else {
@@ -246,7 +240,7 @@ templ ImageViewer(model viewmodel.Image) {
 				hx-swap="outerHTML"
 			}
 		>
-			<figure class="px-6 pt-3 pb-3 bg-base-200 bg-opacity-30 rounded-t-xl flex justify-center">
+			<figure class="relative px-6 pt-3 pb-3 bg-base-200 bg-opacity-30 rounded-t-xl flex justify-center">
 				<!-- Nur das Bild oder die Ladeanimation im figure-Bereich -->
 				if model.IsProcessing {
 					<div class="flex flex-col items-center justify-center py-8">
@@ -256,6 +250,11 @@ templ ImageViewer(model viewmodel.Image) {
 					</div>
 				} else {
 					@ProcessedImageElement(model)
+					<a href={templ.URL(model.Domain + model.OriginalPath)} download={model.DisplayName} target="_blank" class="btn btn-circle btn-ghost absolute bottom-2 right-2">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 1 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+						</svg>
+					</a>
 				}
 			</figure>
 			<div class="card-body bg-base-100">

@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/a-h/templ"
@@ -476,7 +476,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		Description: ogDescription,
 	}
 
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), imageViewer, isAdmin, ogViewModel)
+	home := views.Home(fmt.Sprintf("| Bild %s ansehen", imageModel.DisplayName), isLoggedIn(c), false, flash.Get(c), imageViewer, isAdmin, ogViewModel)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 

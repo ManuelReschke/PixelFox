@@ -1,6 +1,8 @@
 package models
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -8,17 +10,27 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	ROLE_USER       = "user"
+	ROLE_ADMIN      = "admin"
+	STATUS_ACTIVE   = "active"
+	STATUS_INACTIVE = "inactive"
+	STATUS_DISABLED = "disabled"
+)
+
 type User struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
-	Name        string         `gorm:"type:varchar(150)" json:"name" validate:"required,min=3,max=150"`
-	Email       string         `gorm:"uniqueIndex;type:varchar(150) CHARACTER SET utf8 COLLATE utf8_bin" json:"email" validate:"required,email,min=6,max=150"`
-	Password    string         `gorm:"type:text" json:"-" validate:"required,min=6"`
-	Role        string         `gorm:"type:varchar(50);default:'user'" json:"role" validate:"oneof=user admin"`
-	Status      string         `gorm:"type:varchar(50);default:'active'" json:"status" validate:"oneof=active inactive disabled"`
-	LastLoginAt *time.Time     `gorm:"type:timestamp;default:null" json:"last_login_at"`
-	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	Name             string         `gorm:"type:varchar(150)" json:"name" validate:"required,min=3,max=150"`
+	Email            string         `gorm:"uniqueIndex;type:varchar(150) CHARACTER SET utf8 COLLATE utf8_bin" json:"email" validate:"required,email,min=6,max=150"`
+	Password         string         `gorm:"type:text" json:"-" validate:"required,min=6"`
+	Role             string         `gorm:"type:varchar(50);default:'user'" json:"role" validate:"oneof=user admin"`
+	Status           string         `gorm:"type:varchar(50);default:'active'" json:"status" validate:"oneof=active inactive disabled"`
+	LastLoginAt      *time.Time     `gorm:"type:timestamp;default:null" json:"last_login_at"`
+	ActivationToken  string         `gorm:"type:varchar(100);index" json:"-"`     // Activation token for email verification
+	ActivationSentAt *time.Time     `gorm:"type:timestamp;default:null" json:"-"` // Timestamp when activation email was sent
+	CreatedAt        time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt        time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (u *User) Validate() error {
@@ -37,8 +49,8 @@ func CreateUser(username string, email string, password string) (*User, error) {
 		Name:     username,
 		Email:    email,
 		Password: pw,
-		Role:     "user",
-		Status:   "active",
+		Role:     ROLE_USER,
+		Status:   STATUS_INACTIVE,
 	}
 
 	err = u.Validate()
@@ -60,4 +72,21 @@ func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 
 	return err == nil
+}
+
+// GenerateActivationToken creates a random token and sets ActivationSentAt
+func (u *User) GenerateActivationToken() error {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return err
+	}
+	u.ActivationToken = hex.EncodeToString(b)
+	now := time.Now()
+	u.ActivationSentAt = &now
+	return nil
+}
+
+// IsActive reports whether the user status is active
+func (u *User) IsActive() bool {
+	return u.Status == STATUS_ACTIVE
 }

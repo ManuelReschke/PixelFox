@@ -36,14 +36,14 @@ func RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string)
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"card w-fit bg-base-200 shadow-xl mx-auto mb-8\"><div class=\"card-body pb-2\"><h1 class=\"card-title border-b border-b-slate-600 pb-[4px]\">Neues Konto erstellen</h1><form hx-swap=\"transition:true\" class=\"rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8\" action=\"\" method=\"post\" hx-on:htmx:after-swap=\"if(document.getElementById(&#39;hcaptcha-container&#39;)) { if(window.hcaptcha) { hcaptcha.reset(&#39;hcaptcha-container&#39;); hcaptcha.render(&#39;hcaptcha-container&#39;, { sitekey: document.getElementById(&#39;hcaptcha-container&#39;).getAttribute(&#39;data-sitekey&#39;), theme: &#39;light&#39; }); } }\"><!-- CSRF-Token als verstecktes Feld --><input type=\"hidden\" name=\"_csrf\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"card w-fit bg-base-200 shadow-xl mx-auto mb-8\"><div class=\"card-body pb-2\"><h1 class=\"card-title border-b border-b-slate-600 pb-[4px]\">Neues Konto erstellen</h1><!-- Activation email hint --><div class=\"alert alert-info shadow-lg\"><span>Nach der Registrierung erhältst du eine E-Mail, <br>mit einem Aktivierungslink. Bitte prüfe dein Postfach.</span></div><form hx-swap=\"transition:true\" class=\"rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8\" action=\"\" method=\"post\" hx-on:htmx:after-swap=\"if(document.getElementById(&#39;hcaptcha-container&#39;)) { if(window.hcaptcha) { hcaptcha.reset(&#39;hcaptcha-container&#39;); hcaptcha.render(&#39;hcaptcha-container&#39;, { sitekey: document.getElementById(&#39;hcaptcha-container&#39;).getAttribute(&#39;data-sitekey&#39;), theme: &#39;light&#39; }); } }\"><!-- CSRF-Token als verstecktes Feld --><input type=\"hidden\" name=\"_csrf\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 24, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 28, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -114,7 +114,7 @@ func RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string)
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(hcaptchaSitekey)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 87, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/auth/register.templ`, Line: 91, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {

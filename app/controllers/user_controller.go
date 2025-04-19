@@ -1,18 +1,21 @@
 package controllers
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
+
+	"github.com/a-h/templ"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/sujit-baniya/flash"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/views"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
-	"github.com/a-h/templ"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
-	"github.com/sujit-baniya/flash"
 )
 
 func HandleUserProfile(c *fiber.Ctx) error {
@@ -70,21 +73,17 @@ func HandleUserImages(c *fiber.Ctx) error {
 	for _, img := range images {
 		previewPath := ""
 		if img.HasThumbnailSmall {
-			// Verwende WebP wenn verfügbar, sonst AVIF, sonst Original
-			if img.HasWebp {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
-			} else if img.HasAVIF {
+			if img.HasAVIF {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
+			} else if img.HasWebp {
+				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else {
-				// Fallback zum Original
 				previewPath = filepath.Join("/", img.FilePath, img.FileName)
 			}
 		} else {
-			// Wenn keine Thumbnails verfügbar sind, verwende das Original
 			previewPath = filepath.Join("/", img.FilePath, img.FileName)
 		}
 
-		// Titel bestimmen
 		title := img.FileName
 		if img.Title != "" {
 			title = img.Title
@@ -119,7 +118,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 		page = 1
 	}
 
-	const imagesPerPage = 20
+	const imagesPerPage = 25
 	offset := (page - 1) * imagesPerPage
 
 	var images []models.Image
@@ -132,10 +131,10 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	for _, img := range images {
 		previewPath := ""
 		if img.HasThumbnailSmall {
-			if img.HasWebp {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
-			} else if img.HasAVIF {
+			if img.HasAVIF {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
+			} else if img.HasWebp {
+				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else {
 				previewPath = filepath.Join("/", img.FilePath, img.FileName)
 			}
@@ -159,4 +158,67 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	}
 
 	return user_views.GalleryItems(galleryImages, page).Render(c.Context(), c.Response().BodyWriter())
+}
+
+// HandleUserImageEdit allows users to edit their own images
+func HandleUserImageEdit(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.Redirect("/user/images")
+	}
+	db := database.GetDB()
+	image, err := models.FindImageByUUID(db, uuid)
+	if err != nil || image.UserID != userID {
+		flash.WithError(c, fiber.Map{"type": "error", "message": "Bild nicht gefunden"})
+		return c.Redirect("/user/images")
+	}
+	csrfToken := c.Locals("csrf").(string)
+	userEdit := user_views.UserImageEdit(*image, csrfToken)
+	page := views.Home(fmt.Sprintf("| Bild %s bearbeiten", image.Title), isLoggedIn(c), false, flash.Get(c), userEdit, sess.Get(USER_IS_ADMIN).(bool), nil)
+	handler := adaptor.HTTPHandler(templ.Handler(page))
+	return handler(c)
+}
+
+// HandleUserImageUpdate processes the edit form
+func HandleUserImageUpdate(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.Redirect("/user/images")
+	}
+	db := database.GetDB()
+	image, err := models.FindImageByUUID(db, uuid)
+	if err != nil || image.UserID != userID {
+		flash.WithError(c, fiber.Map{"type": "error", "message": "Bild nicht gefunden"})
+		return c.Redirect("/user/images")
+	}
+	title := c.FormValue("title")
+	description := c.FormValue("description")
+	image.Title = title
+	image.Description = description
+	db.Save(image)
+	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild aktualisiert"})
+	return c.Redirect("/user/images")
+}
+
+// HandleUserImageDelete removes user's image
+func HandleUserImageDelete(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+	uuid := c.Params("uuid")
+	if uuid == "" {
+		return c.Redirect("/user/images")
+	}
+	db := database.GetDB()
+	image, err := models.FindImageByUUID(db, uuid)
+	if err != nil || image.UserID != userID {
+		flash.WithError(c, fiber.Map{"type": "error", "message": "Bild nicht gefunden"})
+		return c.Redirect("/user/images")
+	}
+	db.Delete(image)
+	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild gelöscht"})
+	return c.Redirect("/user/images")
 }

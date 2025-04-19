@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"time"
 
 	"github.com/a-h/templ"
@@ -15,6 +18,8 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/hcaptcha"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
+	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	auth_views "github.com/ManuelReschke/PixelFox/views/auth"
 )
 
@@ -57,6 +62,12 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 		if models.CheckPasswordHash(c.FormValue("password"), user.Password) == false {
 			fm["message"] = "There is a problem with the login process"
 
+			return flash.WithError(c, fm).Redirect("/login")
+		}
+
+		// Prevent login if account is not activated
+		if !user.IsActive() {
+			fm["message"] = "Bitte aktiviere dein Konto per E-Mail"
 			return flash.WithError(c, fm).Redirect("/login")
 		}
 
@@ -170,6 +181,11 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/register")
 		}
 
+		// Generate activation token
+		if err := user.GenerateActivationToken(); err != nil {
+			return flash.WithError(c, fiber.Map{"type":"error","message":"Fehler beim Generieren des Aktivierungstokens"}).Redirect("/register")
+		}
+		// Save user with token
 		err = database.GetDB().Create(&user).Error
 		if err != nil {
 			fm := fiber.Map{
@@ -180,16 +196,39 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/register")
 		}
 
-		// Update statistics after registration
+		// Update statistics
 		go statistics.UpdateStatisticsCache()
-
-		fm := fiber.Map{
-			"type":    "success",
-			"message": "Mega! Du hast dich erfolgreich registriert!",
+		// Send activation email
+		domain := env.GetEnv("PUBLIC_DOMAIN", "")
+		activationURL := fmt.Sprintf("%s/activate?token=%s", domain, user.ActivationToken)
+		rec := httptest.NewRecorder()
+		templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL))).ServeHTTP(rec, &http.Request{})
+		body := rec.Body.String()
+		if err := mail.SendMail(user.Email, "Aktivierungslink PIXELFOX.cc", body); err != nil {
+			log.Printf("Activation email error: %v", err)
 		}
-
+		// Flash success and redirect
+		fm := fiber.Map{"type":"success","message":"Registrierung erfolgreich! Bitte prüfe dein Postfach für den Aktivierungslink."}
 		return flash.WithSuccess(c, fm).Redirect("/login")
 	}
 
 	return handler(c)
+}
+
+// HandleAuthActivate activates a user via token
+func HandleAuthActivate(c *fiber.Ctx) error {
+	token := c.Query("token", "")
+	var user models.User
+	db := database.GetDB()
+	if err := db.Where("activation_token = ?", token).First(&user).Error; err != nil {
+		return flash.WithError(c, fiber.Map{"type":"error","message":"Ungültiger Aktivierungslink."}).Redirect("/login")
+	}
+	user.Status = models.STATUS_ACTIVE
+	user.ActivationToken = ""
+	user.ActivationSentAt = nil
+	if err := db.Save(&user).Error; err != nil {
+		return flash.WithError(c, fiber.Map{"type":"error","message":"Aktivierung fehlgeschlagen."}).Redirect("/login")
+	}
+	fm := fiber.Map{"type":"success","message":"Konto aktiviert! Du kannst dich jetzt anmelden."}
+	return flash.WithSuccess(c, fm).Redirect("/login")
 }

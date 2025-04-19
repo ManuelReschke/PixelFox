@@ -16,13 +16,18 @@ services:
       - DB_NAME=${DB_NAME}
       - CACHE_HOST=cache
       - CACHE_PORT=6379
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_SENDER=${SMTP_SENDER}
     depends_on:
       - db
       - cache
     networks:
       - pxlfox-network
 
-  # MySQL Datenbank
+  # MySQL database
   db:
     image: mysql:8.4
     container_name: pxlfox-db
@@ -38,7 +43,7 @@ services:
     networks:
       - pxlfox-network
 
-  # Dragonfly Cache (Alternative zu Redis)
+  # Dragonfly Cache
   cache:
     image: docker.dragonflydb.io/dragonflydb/dragonfly
     container_name: pxlfox-cache
@@ -47,7 +52,7 @@ services:
     networks:
       - pxlfox-network
 
-  # Optional: PHPMyAdmin für Datenbankverwaltung
+  # Optional: PHPMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: pxlfox-phpmyadmin
@@ -58,6 +63,15 @@ services:
       - "8081:80"
     depends_on:
       - db
+    networks:
+      - pxlfox-network
+  # Optional: catch mails locally
+  mailhog:
+    image: mailhog/mailhog
+    container_name: pxlfox-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - pxlfox-network
 

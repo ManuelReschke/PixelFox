@@ -1,0 +1,25 @@
+package email_views
+
+
+templ ActivationEmail(email string, activationURL templ.SafeURL) {
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <title>Activate Your PIXELFOX.cc Account</title>
+        </head>
+        <body>
+            <!-- German section -->
+            <p>Hallo { email },</p>
+            <p>Vielen Dank für Ihre Registrierung bei PIXELFOX.cc. Um Ihr Konto zu aktivieren, klicken Sie bitte auf den folgenden Link:</p>
+            <p><a href={ activationURL } target="_blank">Konto aktivieren</a></p>
+            <hr/>
+            <!-- English section -->
+            <p>Hello { email },</p>
+            <p>Thank you for registering at PIXELFOX.cc. To activate your account, please click the link below:</p>
+            <p><a href={ activationURL } target="_blank">Activate Account</a></p>
+            <p>If you did not create an account, you can safely ignore this email.</p>
+            <p>Best regards,<br/>PIXELFOX.cc Team</p>
+        </body>
+    </html>
+}

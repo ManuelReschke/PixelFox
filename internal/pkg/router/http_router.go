@@ -71,10 +71,14 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Post("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Get("/register", loggedInMiddleware, controllers.HandleAuthRegister)
 	group.Post("/register", loggedInMiddleware, controllers.HandleAuthRegister)
+	group.Get("/activate", loggedInMiddleware, controllers.HandleAuthActivate)
 	group.Get("/user/profile", requireAuthMiddleware, controllers.HandleUserProfile)
 	group.Get("/user/settings", requireAuthMiddleware, controllers.HandleUserSettings)
 	group.Get("/user/images", requireAuthMiddleware, controllers.HandleUserImages)
 	group.Get("/user/images/load", requireAuthMiddleware, controllers.HandleLoadMoreImages)
+	group.Get("/user/images/edit/:uuid", requireAuthMiddleware, controllers.HandleUserImageEdit)
+	group.Post("/user/images/update/:uuid", requireAuthMiddleware, controllers.HandleUserImageUpdate)
+	group.Get("/user/images/delete/:uuid", requireAuthMiddleware, controllers.HandleUserImageDelete)
 }
 
 func NewHttpRouter() *HttpRouter {

@@ -13,6 +13,10 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 			<h1 class="card-title border-b border-b-slate-600 pb-[4px]">
 				Neues Konto erstellen
 			</h1>
+			<!-- Activation email hint -->
+			<div class="alert alert-info shadow-lg">
+				<span>Nach der Registrierung erhältst du eine E-Mail, <br/>mit einem Aktivierungslink. Bitte prüfe dein Postfach.</span>
+			</div>
 			<form
 				hx-swap="transition:true"
 				class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8"
