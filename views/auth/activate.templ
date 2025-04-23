@@ -1,0 +1,58 @@
+package auth_views
+
+import (
+    "github.com/ManuelReschke/PixelFox/views"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+
+    "github.com/gofiber/fiber/v2"
+)
+
+// Activation form page
+templ ActivateIndex(fromProtected bool, csrfToken string) {
+    <section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
+        <div class="card-body pb-2">
+            <h1 class="card-title border-b border-b-slate-600 pb-[4px]">
+                Konto aktivieren
+            </h1>
+            <!-- Activation email hint -->
+            <div class="alert alert-info shadow-lg">
+                <span>Nach der Registrierung erhältst du eine E-Mail, <br/>mit einem Aktivierungslink. Bitte prüfe dein Postfach.</span>
+            </div>
+            <form hx-swap="transition:true" class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8" action="" method="post">
+                <input type="hidden" name="_csrf" value={csrfToken}>
+                <label class="flex flex-col justify-start gap-2">
+                    Activation Token:
+                    <input class="input input-bordered bg-gray-200" type="text" name="token" required />
+                </label>
+                <footer class="card-actions justify-end">
+                    <button class="btn badge-primary px-6 py-4 hover:scale-[1.05]" disabled?={fromProtected}>
+                        Aktivieren
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </section>
+}
+
+// Wrapper for activation page
+templ Activate(
+    page string,
+    fromProtected bool,
+    isError bool,
+    msg fiber.Map,
+    username string,
+    cmp templ.Component,
+    isAdmin bool,
+) {
+    @views.Layout(viewmodel.Layout{
+        Page:          page,
+        FromProtected: fromProtected,
+        IsError:       isError,
+        Msg:           msg,
+        Username:      username,
+        IsAdmin:       isAdmin,
+        OGViewModel:   nil,
+    }) {
+        @cmp
+    }
+}

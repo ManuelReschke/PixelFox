@@ -1,6 +1,10 @@
 package controllers
 
 import (
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,8 +19,11 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
@@ -99,13 +106,29 @@ func getLastSevenDaysStats(db *gorm.DB, statsType string) []models.DailyStats {
 
 // HandleAdminUsers renders the user management page
 func HandleAdminUsers(c *fiber.Ctx) error {
-	// Get all users
+	// Pagination for user management
 	db := database.GetDB()
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	perPage := 20
+	offset := (page - 1) * perPage
+	// Count total users
+	var totalUsers int64
+	db.Model(&models.User{}).Count(&totalUsers)
+	// Fetch users for current page
 	var users []models.User
-	db.Order("created_at DESC").Find(&users)
+	db.Order("created_at DESC").Offset(offset).Limit(perPage).Find(&users)
+	// Generate pages slice
+	totalPages := int(totalUsers) / perPage
+	if int(totalUsers)%perPage > 0 {
+		totalPages++
+	}
+	pages := make([]int, totalPages)
+	for i := range pages {
+		pages[i] = i + 1
+	}
 
 	// Render user management page
-	userManagement := admin_views.UserManagement(users)
+	userManagement := admin_views.UserManagement(users, page, pages)
 	home := views.Home(" | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -228,6 +251,36 @@ func HandleAdminUserDelete(c *fiber.Ctx) error {
 	}
 
 	return flash.WithSuccess(c, fm).Redirect("/admin/users")
+}
+
+// HandleAdminResendActivation resends activation email to the user
+func HandleAdminResendActivation(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Redirect("/admin/users")
+	}
+	db := database.GetDB()
+	var user models.User
+	if err := db.First(&user, id).Error; err != nil {
+		return flash.WithError(c, fiber.Map{"type":"error","message":"Benutzer nicht gefunden"}).Redirect("/admin/users")
+	}
+	// generate new token
+	if err := user.GenerateActivationToken(); err != nil {
+		log.Printf("Error generating activation token: %v", err)
+	}
+	if err := db.Save(&user).Error; err != nil {
+		log.Printf("Error saving activation token: %v", err)
+	}
+	// send email
+	domain := env.GetEnv("PUBLIC_DOMAIN", "")
+	activationURL := fmt.Sprintf("%s/activate?token=%s", domain, user.ActivationToken)
+	rec := httptest.NewRecorder()
+	templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL), user.ActivationToken)).ServeHTTP(rec, &http.Request{})
+	if err := mail.SendMail(user.Email, "Aktivierungslink PIXELFOX.cc", rec.Body.String()); err != nil {
+		log.Printf("Activation email error: %v", err)
+		return flash.WithError(c, fiber.Map{"type":"error","message":"Aktivierungs-Mail konnte nicht gesendet werden"}).Redirect("/admin/users")
+	}
+	return flash.WithSuccess(c, fiber.Map{"type":"success","message":"Aktivierungs-Mail wurde erneut versendet"}).Redirect("/admin/users")
 }
 
 // HandleAdminImages renders the image management page
@@ -446,8 +499,11 @@ func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 	
 	flash.WithInfo(c, fm)
 
+	// Default pagination for search results
+	currentPage := 1
+	pages := []int{1}
 	// Render user management page with search results
-	userManagement := admin_views.UserManagement(users)
+	userManagement := admin_views.UserManagement(users, currentPage, pages)
 	home := views.Home(" | Benutzersuche", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))

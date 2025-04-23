@@ -11,7 +11,7 @@ func formatTime(t time.Time) string {
 	return t.Format("2006-01-02 15:04")
 }
 
-templ userManagementContent(users []models.User) {
+templ userManagementContent(users []models.User, currentPage int, pages []int) {
 	<div class="mb-6">
 		<div>
 			<h1 class="text-3xl font-bold text-gray-800 mb-2">Benutzerverwaltung</h1>
@@ -88,8 +88,29 @@ templ userManagementContent(users []models.User) {
 								}
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-								<a href={ templ.SafeURL("/admin/users/edit/" + strconv.FormatUint(uint64(user.ID), 10)) } class="text-blue-600 hover:text-blue-900 mr-3">Bearbeiten</a>
-								<a href={ templ.SafeURL("/admin/users/delete/" + strconv.FormatUint(uint64(user.ID), 10)) } class="text-red-600 hover:text-red-900" onclick="return confirm('Bist du sicher, dass du diesen Benutzer löschen möchtest?');">Löschen</a>
+								<div class="flex items-center justify-end space-x-3">
+									if user.Status == "inactive" {
+										<form action={ templ.SafeURL("/admin/users/resend-activation/" + strconv.FormatUint(uint64(user.ID), 10)) } method="POST" class="inline-block">
+											<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Aktivierungs-E-Mail erneut senden?', icon:'question', showCancelButton:true, confirmButtonText:'Ja', cancelButtonText:'Nein'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"} } class="inline-flex items-center">
+												<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 hover:text-yellow-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m0 0v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8m18 0l-9 6-9-6" />
+												</svg>
+											</button>
+										</form>
+									}
+									<a href={ templ.SafeURL("/admin/users/edit/" + strconv.FormatUint(uint64(user.ID), 10)) } class="inline-flex items-center">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 hover:text-blue-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.828-9.828a1 1 0 000-1.414L14 3.586a1 1 0 00-1.414 0L3.758 12.414A1 1 0 003.465 13.12V18a2 2 0 002 2z" />
+										</svg>
+									</a>
+									<form action={ templ.SafeURL("/admin/users/delete/" + strconv.FormatUint(uint64(user.ID), 10)) } method="GET" class="inline-block">
+										<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Benutzer wirklich löschen?', icon:'warning', showCancelButton:true, confirmButtonText:'Ja, löschen', cancelButtonText:'Abbrechen'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"} } class="inline-flex items-center text-red-600 hover:text-red-900">
+											<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</form>
+								</div>
 							</td>
 						</tr>
 					}
@@ -97,8 +118,53 @@ templ userManagementContent(users []models.User) {
 			</tbody>
 		</table>
 	</div>
+
+	<!-- Pagination -->
+	if len(pages) > 1 {
+		<div class="flex justify-center mt-6">
+			<nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+				if currentPage > 1 {
+					<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(currentPage-1)) } class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+						<span class="sr-only">Zurück</span>
+						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+						</svg>
+					</a>
+				} else {
+					<span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400">
+						<span class="sr-only">Zurück</span>
+						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+						</svg>
+					</span>
+				}
+				for _, p := range pages {
+					if p == currentPage {
+						<span class="relative inline-flex items-center px-4 py-2 border border-indigo-500 bg-indigo-50 text-sm font-medium text-indigo-600">{ strconv.Itoa(p) }</span>
+					} else {
+						<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(p)) } class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{ strconv.Itoa(p) }</a>
+					}
+				}
+				if currentPage < len(pages) {
+					<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(currentPage+1)) } class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+						<span class="sr-only">Weiter</span>
+						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+						</svg>
+					</a>
+				} else {
+					<span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400">
+						<span class="sr-only">Weiter</span>
+						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+						</svg>
+					</span>
+				}
+			</nav>
+		</div>
+	}
 }
 
-templ UserManagement(users []models.User) {
-	@AdminLayout(userManagementContent(users))
+templ UserManagement(users []models.User, currentPage int, pages []int) {
+	@AdminLayout(userManagementContent(users, currentPage, pages))
 }

@@ -1,7 +1,7 @@
 package email_views
 
 
-templ ActivationEmail(email string, activationURL templ.SafeURL) {
+templ ActivationEmail(email string, activationURL templ.SafeURL, token string) {
     <!DOCTYPE html>
     <html lang="en">
         <head>
@@ -13,11 +13,13 @@ templ ActivationEmail(email string, activationURL templ.SafeURL) {
             <p>Hallo { email },</p>
             <p>Vielen Dank für Ihre Registrierung bei PIXELFOX.cc. Um Ihr Konto zu aktivieren, klicken Sie bitte auf den folgenden Link:</p>
             <p><a href={ activationURL } target="_blank">Konto aktivieren</a></p>
+            <p>Oder kopiere diesen Code manuell: <code>{ token }</code></p>
             <hr/>
             <!-- English section -->
             <p>Hello { email },</p>
             <p>Thank you for registering at PIXELFOX.cc. To activate your account, please click the link below:</p>
             <p><a href={ activationURL } target="_blank">Activate Account</a></p>
+            <p>Or copy this code manually: <code>{ token }</code></p>
             <p>If you did not create an account, you can safely ignore this email.</p>
             <p>Best regards,<br/>PIXELFOX.cc Team</p>
         </body>

@@ -202,32 +202,47 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 		domain := env.GetEnv("PUBLIC_DOMAIN", "")
 		activationURL := fmt.Sprintf("%s/activate?token=%s", domain, user.ActivationToken)
 		rec := httptest.NewRecorder()
-		templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL))).ServeHTTP(rec, &http.Request{})
+		templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL), user.ActivationToken)).ServeHTTP(rec, &http.Request{})
 		body := rec.Body.String()
 		if err := mail.SendMail(user.Email, "Aktivierungslink PIXELFOX.cc", body); err != nil {
 			log.Printf("Activation email error: %v", err)
 		}
 		// Flash success and redirect
 		fm := fiber.Map{"type":"success","message":"Registrierung erfolgreich! Bitte prüfe dein Postfach für den Aktivierungslink."}
-		return flash.WithSuccess(c, fm).Redirect("/login")
+		return flash.WithSuccess(c, fm).Redirect("/activate")
 	}
 
 	return handler(c)
 }
 
-// HandleAuthActivate activates a user via token
+// HandleAuthActivate handles activation form display and token submission
 func HandleAuthActivate(c *fiber.Ctx) error {
-	token := c.Query("token", "")
+	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	csrfToken := c.Locals("csrf").(string)
+	// determine token from form or query
+	var token string
+	if c.Method() == fiber.MethodPost {
+		token = c.FormValue("token")
+	} else {
+		token = c.Query("token", "")
+	}
+	if token == "" {
+		// render activation form
+		aindex := auth_views.ActivateIndex(fromProtected, csrfToken)
+		activate := auth_views.Activate(" | Aktivieren", fromProtected, false, flash.Get(c), "", aindex, false)
+		return adaptor.HTTPHandler(templ.Handler(activate))(c)
+	}
+	// activation logic
 	var user models.User
 	db := database.GetDB()
 	if err := db.Where("activation_token = ?", token).First(&user).Error; err != nil {
-		return flash.WithError(c, fiber.Map{"type":"error","message":"Ungültiger Aktivierungslink."}).Redirect("/login")
+		return flash.WithError(c, fiber.Map{"type":"error","message":"Ungültiger Aktivierungslink."}).Redirect("/activate")
 	}
 	user.Status = models.STATUS_ACTIVE
 	user.ActivationToken = ""
 	user.ActivationSentAt = nil
 	if err := db.Save(&user).Error; err != nil {
-		return flash.WithError(c, fiber.Map{"type":"error","message":"Aktivierung fehlgeschlagen."}).Redirect("/login")
+		return flash.WithError(c, fiber.Map{"type":"error","message":"Aktivierung fehlgeschlagen."}).Redirect("/activate")
 	}
 	fm := fiber.Map{"type":"success","message":"Konto aktiviert! Du kannst dich jetzt anmelden."}
 	return flash.WithSuccess(c, fm).Redirect("/login")
