@@ -21,9 +21,13 @@ type Image struct {
 	HasWebP bool
 	HasAVIF bool
 
-	// Paths for optimized preview formats (thumbnails)
+	// Paths for optimized preview formats (medium thumbnails)
 	PreviewWebPPath string
 	PreviewAVIFPath string
+
+	// Paths for small thumbnails (nur WebP und AVIF existieren)
+	SmallWebPPath  string
+	SmallAVIFPath  string
 
 	// Paths for optimized full-size versions
 	OptimizedWebPPath string
@@ -43,12 +47,12 @@ type Image struct {
 	IsProcessing bool
 
 	// Metadata fields
-	CameraModel   string
-	TakenAt       string
-	Latitude      string
-	Longitude     string
-	ExposureTime  string
-	Aperture      string
-	ISO           string
-	FocalLength   string
+	CameraModel  string
+	TakenAt      string
+	Latitude     string
+	Longitude    string
+	ExposureTime string
+	Aperture     string
+	ISO          string
+	FocalLength  string
 }

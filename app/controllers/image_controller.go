@@ -288,7 +288,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	// Paths for optimized image formats
 	webpPath := ""
 	avifPath := ""
-	smallThumbPath := ""
+	// Nur WebP und AVIF Small-Thumbnails existieren
 	smallThumbWebpPath := ""
 	smallThumbAvifPath := ""
 
@@ -305,10 +305,6 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// If thumbnails are available, generate the paths
 	if image.HasThumbnailSmall {
-		// Path to the small thumbnail (original format)
-		smallThumbRelativePath := imageprocessor.GetImagePath(image, "", "small")
-		smallThumbPath = "/" + smallThumbRelativePath
-
 		if image.HasWebp {
 			smallThumbWebpRelativePath := imageprocessor.GetImagePath(image, "webp", "small")
 			smallThumbWebpPath = "/" + smallThumbWebpRelativePath
@@ -369,9 +365,6 @@ func HandleImageViewer(c *fiber.Ctx) error {
 				previewPath = smallThumbWebpPath
 			}
 			previewWebpPath = smallThumbWebpPath
-		} else if !image.HasAVIF && !image.HasWebp {
-			// Only if neither AVIF nor WebP is available
-			previewPath = smallThumbPath
 		}
 	}
 
@@ -420,22 +413,25 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// Create the ImageViewModel
 	imageModel := viewmodel.Image{
-		Domain:             domain,
+		Domain:            domain,
 		PreviewPath:        previewPath,
 		FilePathWithDomain: filePathWithDomain,
 		DisplayName:        displayName,
 		ShareURL:           shareURL,
 		HasWebP:            image.HasWebp,
 		HasAVIF:            image.HasAVIF,
-		PreviewWebPPath:    previewWebpPath,
-		PreviewAVIFPath:    previewAvifPath,
-		OptimizedWebPPath:  optimizedWebpPath,
-		OptimizedAVIFPath:  optimizedAvifPath,
+		PreviewWebPPath:     previewWebpPath,
+		PreviewAVIFPath:     previewAvifPath,
+		// Kein SmallPath mehr, da es nur WebP und AVIF Small-Thumbnails gibt
+		SmallWebPPath:       smallThumbWebpPath,
+		SmallAVIFPath:       smallThumbAvifPath,
+		OptimizedWebPPath:   optimizedWebpPath,
+		OptimizedAVIFPath:   optimizedAvifPath,
 		OriginalPath:       filePathComplete,
 		Width:              image.Width,
 		Height:             image.Height,
 		UUID:               image.UUID,
-		IsProcessing:       true,
+		IsProcessing:       true, // Wird später geprüft
 		CameraModel:        image.CameraModel,
 		TakenAt: func() string {
 			if image.TakenAt != nil {
@@ -600,6 +596,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		PreviewPath:       previewPath,
 		PreviewWebPPath:   previewWebpPath,
 		PreviewAVIFPath:   previewAvifPath,
+		SmallWebPPath:     "/" + imageprocessor.GetImagePath(image, "webp", "small"),
+		SmallAVIFPath:     "/" + imageprocessor.GetImagePath(image, "avif", "small"),
 		OptimizedWebPPath: optimizedWebpPath,
 		OptimizedAVIFPath: optimizedAvifPath,
 		OriginalPath:      originalPath,
