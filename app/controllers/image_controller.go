@@ -271,15 +271,14 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	}
 
 	// The FilePath contains the relative path within the uploads folder
-	imagePath := fmt.Sprintf("/%s", image.FilePath)
+	domain := env.GetEnv("PUBLIC_DOMAIN", "")
 
 	// Increase the view counter
 	image.IncrementViewCount(db)
 
-	domain := env.GetEnv("PUBLIC_DOMAIN", "")
-
-	// Build the full path to the image /uploads/Year/Month/Day/UUID.ext
-	filePathComplete := filepath.Join(imagePath, identifier) + image.FileType
+	// Korrekte Pfadkonstruktion für das Original-Bild mit GetImagePath
+	filePathComplete := "/" + imageprocessor.GetImagePath(image, "original", "")
+	fiberlog.Debugf("[ImageController] Original-Pfad: %s", filePathComplete)
 	filePathWithDomain := filepath.Join(domain, filePathComplete)
 
 	// Generate the share link URL with the domain and the new /i/ path
@@ -291,6 +290,9 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	// Nur WebP und AVIF Small-Thumbnails existieren
 	smallThumbWebpPath := ""
 	smallThumbAvifPath := ""
+
+	// Check if any optimized versions are available
+	hasOptimizedVersions := image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium
 
 	// If optimized formats are available, generate the paths
 	if image.HasWebp {
@@ -413,20 +415,19 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// Create the ImageViewModel
 	imageModel := viewmodel.Image{
-		Domain:            domain,
+		Domain:             domain,
 		PreviewPath:        previewPath,
 		FilePathWithDomain: filePathWithDomain,
 		DisplayName:        displayName,
 		ShareURL:           shareURL,
 		HasWebP:            image.HasWebp,
 		HasAVIF:            image.HasAVIF,
-		PreviewWebPPath:     previewWebpPath,
-		PreviewAVIFPath:     previewAvifPath,
-		// Kein SmallPath mehr, da es nur WebP und AVIF Small-Thumbnails gibt
-		SmallWebPPath:       smallThumbWebpPath,
-		SmallAVIFPath:       smallThumbAvifPath,
-		OptimizedWebPPath:   optimizedWebpPath,
-		OptimizedAVIFPath:   optimizedAvifPath,
+		PreviewWebPPath:    previewWebpPath,
+		PreviewAVIFPath:    previewAvifPath,
+		SmallWebPPath:      smallThumbWebpPath,
+		SmallAVIFPath:      smallThumbAvifPath,
+		OptimizedWebPPath:  optimizedWebpPath,
+		OptimizedAVIFPath:  optimizedAvifPath,
 		OriginalPath:       filePathComplete,
 		Width:              image.Width,
 		Height:             image.Height,
@@ -459,7 +460,8 @@ func HandleImageViewer(c *fiber.Ctx) error {
 			}
 			return ""
 		}(),
-		FocalLength: image.FocalLength,
+		FocalLength:          image.FocalLength,
+		HasOptimizedVersions: hasOptimizedVersions,
 	}
 
 	imageViewer := views.ImageViewer(imageModel)
@@ -492,6 +494,13 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	// Get the image from the database
 	db := database.GetDB()
 	image, err := models.FindImageByUUID(db, uuid)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.Status(fiber.StatusNotFound).SendString("Image not found")
+	}
+
+	// Check if any optimized versions are available
+	hasOptimizedVersions := image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium
 
 	// Use the original file name (title) for display, if available
 	displayName := image.FileName
@@ -576,7 +585,7 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		}
 	} else {
 		// Use the original if no thumbnails are available
-		previewPath = "/" + imageprocessor.GetImagePath(image, "", "")
+		previewPath = "/" + imageprocessor.GetImagePath(image, "original", "")
 	}
 
 	// Set the paths for the optimized versions (for the lightbox)
@@ -604,6 +613,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		DisplayName:       displayName,
 		HasWebP:           image.HasWebp,
 		HasAVIF:           image.HasAVIF,
+		Width:             image.Width,
+		Height:            image.Height,
 		IsProcessing:      false,
 		UUID:              image.UUID,
 		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
@@ -635,7 +646,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 			}
 			return ""
 		}(),
-		FocalLength: image.FocalLength,
+		FocalLength:          image.FocalLength,
+		HasOptimizedVersions: hasOptimizedVersions,
 	}
 
 	// Render the entire card with the ImageViewer

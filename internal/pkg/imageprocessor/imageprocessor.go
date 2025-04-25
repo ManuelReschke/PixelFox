@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -244,6 +245,94 @@ func processImage(imageModel *models.Image) error {
 	if err != nil {
 		log.Errorf("[ImageProcessor] Failed to read image bytes for %s: %v", imageModel.UUID, err)
 		return fmt.Errorf("failed to read image bytes: %w", err)
+	}
+
+	// Prüfe auf AVIF-Format anhand des Filetyps und Dateinamens
+	lowerFilePath := strings.ToLower(originalFilePath)
+	lowerFileType := strings.ToLower(imageModel.FileType)
+	isAVIF := strings.HasSuffix(lowerFilePath, ".avif") || lowerFileType == ".avif"
+
+	log.Debugf("[ImageProcessor] Prüfe auf AVIF: %s (Pfad: %s, Typ: %s) => isAVIF=%v",
+		imageModel.UUID, originalFilePath, imageModel.FileType, isAVIF)
+
+	if isAVIF {
+		log.Infof("[ImageProcessor] AVIF-Datei erkannt: %s (Typ: %s)", imageModel.UUID, imageModel.FileType)
+
+		// Prüfe, ob ffprobe verfügbar ist
+		if !isFFmpegAvailable {
+			log.Errorf("[ImageProcessor] ffmpeg ist nicht verfügbar, kann AVIF-Bild %s nicht verarbeiten", imageModel.UUID)
+			SetImageStatus(imageModel.UUID, STATUS_FAILED)
+			return fmt.Errorf("ffmpeg not available for processing AVIF image")
+		}
+
+		log.Infof("[ImageProcessor] Versuche Dimensionen mit ffprobe zu ermitteln für: %s", originalFilePath)
+
+		// Versuche mit ffprobe die Dimensionen zu ermitteln
+		width, height, ffprobeErr := getImageDimensionsWithFFprobe(originalFilePath)
+		if ffprobeErr != nil {
+			log.Errorf("[ImageProcessor] Fehler bei der Ermittlung der AVIF-Dimensionen für %s: %v",
+				imageModel.UUID, ffprobeErr)
+			SetImageStatus(imageModel.UUID, STATUS_FAILED)
+			return fmt.Errorf("failed to get AVIF dimensions: %w", ffprobeErr)
+		}
+
+		// Dimensionen erfolgreich ermittelt
+		log.Infof("[ImageProcessor] AVIF-Dimensionen erfolgreich ermittelt: %dx%d für %s",
+			width, height, imageModel.UUID)
+
+		// AVIF wird als Original verwendet, keine Thumbnails
+		hasWebp = false
+		hasAvif = false
+		hasThumbnailSmall = false
+		hasThumbnailMedium = false
+
+		log.Infof("[ImageProcessor] AVIF-Bild %s erfolgreich mit ffprobe verarbeitet (%dx%d)",
+			imageModel.UUID, width, height)
+
+		// Aktualisiere Datenbank
+		db := database.GetDB()
+		updateData := map[string]interface{}{
+			"has_webp":             hasWebp,
+			"has_avif":             hasAvif,
+			"has_thumbnail_small":  hasThumbnailSmall,
+			"has_thumbnail_medium": hasThumbnailMedium,
+			"width":                width,
+			"height":               height,
+			// Metadata
+			"camera_model":  imageModel.CameraModel,
+			"exposure_time": imageModel.ExposureTime,
+			"aperture":      imageModel.Aperture,
+			"focal_length":  imageModel.FocalLength,
+			"metadata":      imageModel.Metadata,
+		}
+
+		// ISO ist ein Pointer, nur wenn nicht nil
+		if imageModel.ISO != nil {
+			updateData["iso"] = *imageModel.ISO
+		}
+
+		// Latitude & Longitude sind Pointer
+		if imageModel.Latitude != nil {
+			updateData["latitude"] = *imageModel.Latitude
+		}
+
+		if imageModel.Longitude != nil {
+			updateData["longitude"] = *imageModel.Longitude
+		}
+
+		// TakenAt ist ein Pointer
+		if imageModel.TakenAt != nil && !imageModel.TakenAt.IsZero() {
+			updateData["taken_at"] = imageModel.TakenAt
+		}
+
+		if err := db.Model(imageModel).Updates(updateData).Error; err != nil {
+			log.Errorf("[ImageProcessor] Fehler beim Aktualisieren des AVIF-Bildes %s in der Datenbank: %v", imageModel.UUID, err)
+			return fmt.Errorf("failed to update AVIF image in database: %w", err)
+		}
+
+		// AVIF-Verarbeitung erfolgreich abgeschlossen
+		SetImageStatus(imageModel.UUID, STATUS_COMPLETED)
+		return nil
 	}
 
 	// Try to decode the image, with auto-orientation
@@ -531,6 +620,65 @@ func convertToAVIF(img image.Image, outputPath string) error {
 	return nil
 }
 
+// getImageDimensionsWithFFprobe returns the dimensions of an image using ffprobe
+func getImageDimensionsWithFFprobe(filePath string) (int, int, error) {
+	if !isFFmpegAvailable {
+		return 0, 0, fmt.Errorf("ffmpeg is not available")
+	}
+
+	cmd := exec.Command("ffprobe",
+		"-v", "error", // Only show errors
+		"-show_entries", "stream=width,height", // Only show width and height
+		"-of", "csv=s=,:p=0", // Output format: CSV with comma separator and no header
+		"-i", filePath,
+	)
+
+	// Capture stdout for output
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	// Capture stderr for better error diagnosis
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	// Run the ffprobe command
+	runErr := cmd.Run()
+
+	// Output für Debugging
+	output := stdout.String()
+	log.Debugf("[ImageProcessor] ffprobe-Output für %s: '%s'", filePath, output)
+	if stderr.Len() > 0 {
+		log.Debugf("[ImageProcessor] ffprobe-Stderr: '%s'", stderr.String())
+	}
+
+	// Check for errors
+	if runErr != nil {
+		return 0, 0, fmt.Errorf("ffprobe command failed: %w", runErr)
+	}
+
+	// Trim whitespace
+	output = strings.TrimSpace(output)
+
+	// Parse the output - erwartet Format mit Komma: "900,564"
+	parts := strings.Split(output, ",")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid output format: %s", output)
+	}
+
+	// Convert to integers
+	width, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse width: %w", err)
+	}
+
+	height, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse height: %w", err)
+	}
+
+	return width, height, nil
+}
+
 // saveWebP saves an image in WebP format
 func saveWebP(img image.Image, outputPath string) error {
 	// Ensure directory exists
@@ -575,22 +723,22 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 
 	// Debug original path to identify the issue
 	log.Debugf("[GetImagePath] Original path: %s", imageModel.FilePath)
-	
+
 	// Original path is stored in image.FilePath (e.g., uploads/original/2025/04/14)
 	// Extract relative path part (e.g., 2025/04/14) directly
-	
+
 	// PROBLEM: filepath.Dir interpretiert den letzten Teil (Tag) als Dateinamen
 	// und entfernt ihn, wenn es kein abschließender Schrägstrich vorhanden ist
 	// LÖSUNG: Wir verwenden direkt den Teil nach OriginalDir ohne filepath.Dir
-	
+
 	// Ensure path doesn't have a trailing slash
 	originalPath := strings.TrimSuffix(imageModel.FilePath, string(filepath.Separator))
-	
+
 	// Extract relative path after the OriginalDir part
 	relativePath := strings.TrimPrefix(originalPath, OriginalDir)
 	// Remove any leading path separator
 	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-	
+
 	log.Debugf("[GetImagePath] Extracted relative path: %s", relativePath)
 
 	// Base filename without extension is the UUID
@@ -627,8 +775,8 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 			ext = ".avif"
 		}
 	case "original":
-		// Special case to get the original path
-		return imageModel.FilePath
+		// Special case to get the original path - needs full path with filename and extension
+		return filepath.Join(imageModel.FilePath, imageModel.UUID + imageModel.FileType)
 	default:
 		log.Warnf("GetImagePath called with unknown format: '%s' for image %s", format, imageModel.UUID)
 		// Fallback to original for unknown format?
@@ -645,7 +793,7 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 	// Construct the full path within the VariantsDir
 	variantFileName := baseFileName + variantPart + ext
 	variantPath := filepath.Join(VariantsDir, relativePath, variantFileName)
-	
+
 	log.Debugf("[GetImagePath] Final variant path: %s", variantPath)
 
 	return variantPath

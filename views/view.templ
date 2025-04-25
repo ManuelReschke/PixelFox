@@ -1,6 +1,7 @@
 package views
 
 import (
+	"strconv"
 	"fmt"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 )
@@ -78,10 +79,14 @@ templ ImageOptions(model viewmodel.Image) {
 			<div class="divider my-1"></div>
 			
 			<!-- DaisyUI Tabs für verschiedene Bildgrößen -->
-			<div role="tablist" class="tabs tabs-border">
-				<a role="tab" class="tab tab-active" id="tab-medium" data-size="medium">Medium</a>
-				<a role="tab" class="tab" id="tab-small" data-size="small">Small</a>
-				<a role="tab" class="tab" id="tab-optimized" data-size="optimized">Original Optimiert</a>
+			<div role="tablist" class="tabs tabs-border justify-center">
+				if model.HasOptimizedVersions {
+					<a role="tab" class="tab tab-active" id="tab-medium" data-size="medium">Mittel (500 px)</a>
+					<a role="tab" class="tab" id="tab-small" data-size="small">Klein (200 px)</a>
+					<a role="tab" class="tab" id="tab-optimized" data-size="optimized">Optimiert ({strconv.Itoa(model.Width)} px)</a>
+				} else {
+					<a role="tab" class="tab tab-active" id="tab-original" data-size="original">Original</a>
+				}
 			</div>
 			
 			<!-- Tab-Inhalte -->
@@ -425,21 +430,14 @@ templ ImageOptions(model viewmodel.Image) {
 						optimized: document.getElementById('tab-content-optimized')
 					};
 					
-					// Debugging: Prüfe, ob die Elemente existieren
-					console.log('Tab Elements:', tabs);
-					console.log('Content Elements:', contents);
-					
 					// Abbruch, wenn nicht alle Elemente gefunden wurden
 					if (!tabs.medium || !tabs.small || !tabs.optimized || 
 					    !contents.medium || !contents.small || !contents.optimized) {
-						console.error('Nicht alle Tab-Elemente gefunden!');
 						return;
 					}
 					
 					// Aktiviere einen Tab
 					function activateTab(tabName) {
-						console.log('Aktiviere Tab:', tabName);
-						
 						// Deaktiviere alle Tabs
 						Object.values(tabs).forEach(tab => tab.classList.remove('tab-active'));
 						
@@ -455,8 +453,6 @@ templ ImageOptions(model viewmodel.Image) {
 						// Zeige den ausgewählten Inhalt
 						contents[tabName].classList.remove('hidden');
 						contents[tabName].style.display = 'block';
-						
-						console.log('Tab aktiviert:', tabName);
 					}
 					
 					// Event-Listener für Tabs
@@ -466,12 +462,6 @@ templ ImageOptions(model viewmodel.Image) {
 					
 					// Initial Medium-Tab aktivieren
 					activateTab('medium');
-					
-					// ClipboardJS initialisieren
-					if (typeof ClipboardJS !== 'undefined') {
-						console.log('ClipboardJS initialisiert');
-						new ClipboardJS('.copy-btn');
-					}
 				}
 				
 				// Bei Seitenladung initialisieren
@@ -479,10 +469,6 @@ templ ImageOptions(model viewmodel.Image) {
 				
 				// Nach HTMX-Swaps initialisieren
 				document.body.addEventListener('htmx:afterSwap', initializeTabs);
-				
-				// Sofort initialisieren
-				console.log('Tab-Script wird geladen...');
-				initializeTabs();
 			</script>
 		</div>
 	} else {
@@ -633,14 +619,16 @@ templ ImageViewer(model viewmodel.Image) {
 			
 			// Determine which optimized format to use
 			let imageSrc = "";
-			if (window.pixelFoxImagePaths.hasAvif) {
+			// Check if AVIF is available and the path is valid
+			if (window.pixelFoxImagePaths.hasAvif && window.pixelFoxImagePaths.avif && window.pixelFoxImagePaths.avif.trim() !== "") {
 				// Use AVIF if available
 				imageSrc = window.pixelFoxImagePaths.avif;
 				const avifSource = document.createElement('source');
 				avifSource.srcset = window.pixelFoxImagePaths.avif;
 				avifSource.type = 'image/avif';
 				picture.insertBefore(avifSource, img);
-			} else if (window.pixelFoxImagePaths.hasWebp) {
+			// Check if WebP is available and the path is valid
+			} else if (window.pixelFoxImagePaths.hasWebp && window.pixelFoxImagePaths.webp && window.pixelFoxImagePaths.webp.trim() !== "") {
 				// Use WebP if AVIF not available
 				imageSrc = window.pixelFoxImagePaths.webp;
 				const webpSource = document.createElement('source');
@@ -648,7 +636,7 @@ templ ImageViewer(model viewmodel.Image) {
 				webpSource.type = 'image/webp';
 				picture.insertBefore(webpSource, img);
 			} else {
-				// Fallback to original only if no optimized version exists
+				// Fallback to original only if no optimized version exists or paths are invalid
 				imageSrc = window.pixelFoxImagePaths.original;
 			}
 			

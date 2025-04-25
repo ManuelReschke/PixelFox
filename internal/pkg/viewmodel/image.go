@@ -21,6 +21,9 @@ type Image struct {
 	HasWebP bool
 	HasAVIF bool
 
+	// Flag indicating if any optimized versions (Medium, Small, WebP, AVIF) are available
+	HasOptimizedVersions bool
+
 	// Paths for optimized preview formats (medium thumbnails)
 	PreviewWebPPath string
 	PreviewAVIFPath string
