@@ -173,6 +173,9 @@ func HandleUpload(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
+	// Erfassen der IP-Adresse des Nutzers mit der gemeinsamen Hilfsfunktion
+	ipv4, ipv6 := GetClientIP(c)
+	
 	image := models.Image{
 		UUID:     imageUUID,
 		UserID:   c.Locals(USER_ID).(uint),
@@ -181,6 +184,8 @@ func HandleUpload(c *fiber.Ctx) error {
 		FileSize: file.Size,
 		FileType: fileExt,
 		Title:    file.Filename,
+		IPv4:     ipv4,
+		IPv6:     ipv6,
 	}
 
 	db := database.GetDB()
@@ -433,7 +438,12 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		Height:             image.Height,
 		UUID:               image.UUID,
 		IsProcessing:       true, // Wird später geprüft
-		CameraModel:        image.CameraModel,
+		CameraModel: func() string {
+			if image.CameraModel != nil {
+				return *image.CameraModel
+			}
+			return ""
+		}(),
 		TakenAt: func() string {
 			if image.TakenAt != nil {
 				return image.TakenAt.Format("02.01.2006 15:04")
@@ -452,15 +462,30 @@ func HandleImageViewer(c *fiber.Ctx) error {
 			}
 			return ""
 		}(),
-		ExposureTime: image.ExposureTime,
-		Aperture:     image.Aperture,
+		ExposureTime: func() string {
+			if image.ExposureTime != nil {
+				return *image.ExposureTime
+			}
+			return ""
+		}(),
+		Aperture: func() string {
+			if image.Aperture != nil {
+				return *image.Aperture
+			}
+			return ""
+		}(),
 		ISO: func() string {
 			if image.ISO != nil {
 				return strconv.Itoa(*image.ISO)
 			}
 			return ""
 		}(),
-		FocalLength:          image.FocalLength,
+		FocalLength: func() string {
+			if image.FocalLength != nil {
+				return *image.FocalLength
+			}
+			return ""
+		}(),
 		HasOptimizedVersions: hasOptimizedVersions,
 	}
 
@@ -517,7 +542,12 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 			Domain:       c.BaseURL(),
 			OriginalPath: "/" + filepath.Join(image.FilePath, image.FileName),
 			IsProcessing: true,
-			CameraModel:  image.CameraModel,
+			CameraModel: func() string {
+				if image.CameraModel != nil {
+					return *image.CameraModel
+				}
+				return ""
+			}(),
 			TakenAt: func() string {
 				if image.TakenAt != nil {
 					return image.TakenAt.Format("02.01.2006 15:04")
@@ -536,15 +566,30 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 				}
 				return ""
 			}(),
-			ExposureTime: image.ExposureTime,
-			Aperture:     image.Aperture,
+			ExposureTime: func() string {
+				if image.ExposureTime != nil {
+					return *image.ExposureTime
+				}
+				return ""
+			}(),
+			Aperture: func() string {
+				if image.Aperture != nil {
+					return *image.Aperture
+				}
+				return ""
+			}(),
 			ISO: func() string {
 				if image.ISO != nil {
 					return strconv.Itoa(*image.ISO)
 				}
 				return ""
 			}(),
-			FocalLength: image.FocalLength,
+			FocalLength: func() string {
+				if image.FocalLength != nil {
+					return *image.FocalLength
+				}
+				return ""
+			}(),
 		}
 
 		// Render the entire card with IsProcessing = true
@@ -619,7 +664,12 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		UUID:              image.UUID,
 		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
 		Domain:            c.BaseURL(),
-		CameraModel:       image.CameraModel,
+		CameraModel: func() string {
+			if image.CameraModel != nil {
+				return *image.CameraModel
+			}
+			return ""
+		}(),
 		TakenAt: func() string {
 			if image.TakenAt != nil {
 				return image.TakenAt.Format("02.01.2006 15:04")
@@ -638,15 +688,30 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 			}
 			return ""
 		}(),
-		ExposureTime: image.ExposureTime,
-		Aperture:     image.Aperture,
+		ExposureTime: func() string {
+			if image.ExposureTime != nil {
+				return *image.ExposureTime
+			}
+			return ""
+		}(),
+		Aperture: func() string {
+			if image.Aperture != nil {
+				return *image.Aperture
+			}
+			return ""
+		}(),
 		ISO: func() string {
 			if image.ISO != nil {
 				return strconv.Itoa(*image.ISO)
 			}
 			return ""
 		}(),
-		FocalLength:          image.FocalLength,
+		FocalLength: func() string {
+			if image.FocalLength != nil {
+				return *image.FocalLength
+			}
+			return ""
+		}(),
 		HasOptimizedVersions: hasOptimizedVersions,
 	}
 

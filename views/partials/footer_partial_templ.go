@@ -9,6 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/ManuelReschke/PixelFox/internal/pkg/env"
+import "time"
+import "strconv"
 
 func Footer() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -31,7 +33,20 @@ func Footer() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright © 2024 - Alle Rechte vorbehalten - Erstellt und Betrieben mit ❤ von MR-IT</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright &copy; 2024-")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var2 string
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(time.Now().Year()))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/footer_partial.templ`, Line: 18, Col: 70}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - Alle Rechte vorbehalten - Erstellt und Betrieben mit ❤ von MR-IT</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -39,7 +54,7 @@ func Footer() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</aside></footer>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</aside></footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -63,13 +78,13 @@ func DevNote() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var2 == nil {
-			templ_7745c5c3_Var2 = templ.NopComponent
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if env.IsDev() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"navbar-center text-white text-center bg-red-500\">DEV MODE</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"navbar-center text-white text-center bg-red-500\">DEV MODE</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

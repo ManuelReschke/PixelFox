@@ -28,6 +28,8 @@ type User struct {
 	LastLoginAt      *time.Time     `gorm:"type:timestamp;default:null" json:"last_login_at"`
 	ActivationToken  string         `gorm:"type:varchar(100);index" json:"-"`     // Activation token for email verification
 	ActivationSentAt *time.Time     `gorm:"type:timestamp;default:null" json:"-"` // Timestamp when activation email was sent
+	IPv4             string         `gorm:"type:varchar(15);default:null" json:"-"` // IPv4 address of the user
+	IPv6             string         `gorm:"type:varchar(45);default:null" json:"-"` // IPv6 address of the user
 	CreatedAt        time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt        time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`

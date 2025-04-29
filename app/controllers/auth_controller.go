@@ -16,11 +16,11 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/hcaptcha"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
-	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	auth_views "github.com/ManuelReschke/PixelFox/views/auth"
+	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 )
 
 const (
@@ -162,7 +162,7 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 				// Fehler loggen
 				fmt.Printf("hCaptcha validation error: %v\n", err)
 			}
-			
+
 			fm := fiber.Map{
 				"type":    "error",
 				"message": errorMsg,
@@ -181,9 +181,13 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/register")
 		}
 
+		ipv4, ipv6 := GetClientIP(c)
+		user.IPv4 = ipv4
+		user.IPv6 = ipv6
+
 		// Generate activation token
 		if err := user.GenerateActivationToken(); err != nil {
-			return flash.WithError(c, fiber.Map{"type":"error","message":"Fehler beim Generieren des Aktivierungstokens"}).Redirect("/register")
+			return flash.WithError(c, fiber.Map{"type": "error", "message": "Fehler beim Generieren des Aktivierungstokens"}).Redirect("/register")
 		}
 		// Save user with token
 		err = database.GetDB().Create(&user).Error
@@ -208,7 +212,7 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 			log.Printf("Activation email error: %v", err)
 		}
 		// Flash success and redirect
-		fm := fiber.Map{"type":"success","message":"Registrierung erfolgreich! Bitte prüfe dein Postfach für den Aktivierungslink."}
+		fm := fiber.Map{"type": "success", "message": "Registrierung erfolgreich! Bitte prüfe dein Postfach für den Aktivierungslink."}
 		return flash.WithSuccess(c, fm).Redirect("/activate")
 	}
 
@@ -236,14 +240,14 @@ func HandleAuthActivate(c *fiber.Ctx) error {
 	var user models.User
 	db := database.GetDB()
 	if err := db.Where("activation_token = ?", token).First(&user).Error; err != nil {
-		return flash.WithError(c, fiber.Map{"type":"error","message":"Ungültiger Aktivierungslink."}).Redirect("/activate")
+		return flash.WithError(c, fiber.Map{"type": "error", "message": "Ungültiger Aktivierungslink."}).Redirect("/activate")
 	}
 	user.Status = models.STATUS_ACTIVE
 	user.ActivationToken = ""
 	user.ActivationSentAt = nil
 	if err := db.Save(&user).Error; err != nil {
-		return flash.WithError(c, fiber.Map{"type":"error","message":"Aktivierung fehlgeschlagen."}).Redirect("/activate")
+		return flash.WithError(c, fiber.Map{"type": "error", "message": "Aktivierung fehlgeschlagen."}).Redirect("/activate")
 	}
-	fm := fiber.Map{"type":"success","message":"Konto aktiviert! Du kannst dich jetzt anmelden."}
+	fm := fiber.Map{"type": "success", "message": "Konto aktiviert! Du kannst dich jetzt anmelden."}
 	return flash.WithSuccess(c, fm).Redirect("/login")
 }
