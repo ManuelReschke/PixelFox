@@ -1,8 +1,0 @@
-CREATE TABLE IF NOT EXISTS image_tags (
-    image_id BIGINT UNSIGNED NOT NULL,
-    tag_id BIGINT UNSIGNED NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (image_id, tag_id),
-    FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-);
