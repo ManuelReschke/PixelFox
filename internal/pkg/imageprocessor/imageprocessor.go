@@ -9,12 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/gofiber/fiber/v2/log"
@@ -78,7 +76,6 @@ func GetProcessor() *ImageProcessor {
 			jobs:           make(chan *ProcessJob, 100),
 			memoryThrottle: make(chan struct{}, MaxWorkers), // Begrenze auf MaxWorkers gleichzeitige Verarbeitungen
 		}
-		processor.Start()
 	})
 	return processor
 }
@@ -86,128 +83,167 @@ func GetProcessor() *ImageProcessor {
 // Start initializes the worker pool
 func (p *ImageProcessor) Start() {
 	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
 	if p.started {
+		p.mutex.Unlock()
 		return
 	}
-
 	p.started = true
+	p.mutex.Unlock()
+
+	p.wg.Add(MaxWorkers)
 	for i := 0; i < MaxWorkers; i++ {
-		p.wg.Add(1)
 		go p.worker(i)
 	}
-
 	log.Info("[ImageProcessor] Started worker pool with ", MaxWorkers, " workers")
 }
 
 // Stop gracefully shuts down the worker pool
 func (p *ImageProcessor) Stop() {
 	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
 	if !p.started {
+		p.mutex.Unlock()
 		return
 	}
-
+	log.Info("[ImageProcessor] Stopping worker pool...")
 	close(p.jobs)
-	p.wg.Wait()
 	p.started = false
+	p.mutex.Unlock()
+	p.wg.Wait()
 	log.Info("[ImageProcessor] Worker pool stopped")
 }
 
 // worker processes jobs from the queue
 func (p *ImageProcessor) worker(id int) {
 	defer p.wg.Done()
-	log.Info(fmt.Sprintf("[ImageProcessor] Worker %d started", id))
+	log.Infof("[ImageProcessor] Worker %d started", id)
 
 	for job := range p.jobs {
-		// Wait for a free slot in the memory semaphore
-		p.memoryThrottle <- struct{}{}
-
-		// Increase active processes counter
-		atomic.AddInt32(&p.activeProcesses, 1)
-
-		log.Info(fmt.Sprintf("[ImageProcessor] Worker %d processing image %s (Active: %d)",
-			id, job.Image.UUID, atomic.LoadInt32(&p.activeProcesses)))
-
-		err := processImage(job.Image)
-
-		// Free up the memory semaphore slot
-		<-p.memoryThrottle
-
-		// Decrease active processes counter
-		atomic.AddInt32(&p.activeProcesses, -1)
-
-		if err != nil {
-			log.Error(fmt.Sprintf("[ImageProcessor] Worker %d failed to process image %s: %v", id, job.Image.UUID, err))
-			// Set failed status
-			SetImageStatus(job.Image.UUID, STATUS_FAILED)
-		} else {
-			log.Info(fmt.Sprintf("[ImageProcessor] Worker %d completed processing image %s", id, job.Image.UUID))
-			// Set completed status
-			SetImageStatus(job.Image.UUID, STATUS_COMPLETED)
+		if job == nil || job.Image == nil {
+			log.Warnf("[ImageProcessor] Worker %d received nil job, skipping", id)
+			continue
 		}
 
-		// Explicitly promote garbage collection after processing large images
-		// and create a short pause to give GC time to work
-		job = nil    // Explicitly release job reference
-		runtime.GC() // Force garbage collection
-		time.Sleep(100 * time.Millisecond)
-	}
+		p.memoryThrottle <- struct{}{}
+		log.Debugf("[ImageProcessor] Worker %d acquired throttle for image %s", id, job.Image.UUID)
+		currentActive := atomic.AddInt32(&p.activeProcesses, 1)
+		log.Infof("[ImageProcessor] Worker %d processing image %s (Active: %d)", id, job.Image.UUID, currentActive)
 
-	log.Info(fmt.Sprintf("[ImageProcessor] Worker %d stopped", id))
+		// Process the image - processImage handles status updates internally now using cache
+		err := processImage(job.Image)
+
+		atomic.AddInt32(&p.activeProcesses, -1)
+		<-p.memoryThrottle
+		log.Debugf("[ImageProcessor] Worker %d released throttle for image %s", id, job.Image.UUID)
+
+		if err != nil {
+			log.Errorf("[ImageProcessor] Worker %d finished processing image %s with error", id, job.Image.UUID)
+			// Status FAILED is set within processImage's defer block using SetImageStatus (cache)
+		} else {
+			log.Infof("[ImageProcessor] Worker %d completed processing image %s successfully", id, job.Image.UUID)
+			// Status COMPLETED is set at the end of processImage using SetImageStatus (cache)
+		}
+		job = nil
+	}
+	log.Infof("[ImageProcessor] Worker %d stopped", id)
 }
 
 // EnqueueImage adds an image to the processing queue
-func (p *ImageProcessor) EnqueueImage(image *models.Image) {
-	if !p.started {
-		p.Start()
+func (p *ImageProcessor) EnqueueImage(image *models.Image) error {
+	if image == nil || image.UUID == "" {
+		return fmt.Errorf("cannot enqueue invalid image data")
+	}
+	proc := GetProcessor()
+
+	proc.mutex.Lock()
+	if !proc.started {
+		proc.mutex.Unlock()
+		proc.Start()
+	} else {
+		proc.mutex.Unlock()
 	}
 
-	p.jobs <- &ProcessJob{
-		Image: image,
+	job := &ProcessJob{Image: image}
+
+	select {
+	case proc.jobs <- job:
+		log.Infof("[ImageProcessor] Enqueued image %s for processing", image.UUID)
+		return nil
+	default:
+		log.Errorf("[ImageProcessor] Failed to enqueue image %s: job channel likely full or closed.", image.UUID)
+		// Use the new SetImageStatus (cache) on enqueue failure
+		if err := SetImageStatus(image.UUID, STATUS_FAILED); err != nil {
+			log.Errorf("[ImageProcessor] Additionally failed to set FAILED status in cache for %s: %v", image.UUID, err)
+		}
+		return fmt.Errorf("failed to enqueue image %s: job channel busy or closed", image.UUID)
 	}
-	log.Info(fmt.Sprintf("[ImageProcessor] Enqueued image %s for processing", image.UUID))
 }
 
-// ProcessImage queues an image for processing
+// ProcessImage queues an image for processing (convenience function)
 func ProcessImage(image *models.Image) error {
-	SetImageStatus(image.UUID, STATUS_PENDING)
-	GetProcessor().EnqueueImage(image)
-	return nil
+	if image == nil || image.UUID == "" {
+		return fmt.Errorf("cannot process invalid image data")
+	}
+	// Set initial status to PENDING using the new cache function
+	if err := SetImageStatus(image.UUID, STATUS_PENDING); err != nil {
+		log.Errorf("[ImageProcessor] Failed to set initial PENDING status in cache for %s: %v", image.UUID, err)
+		// Decide if we should still enqueue or return error
+		// Let's return error here, as setting initial state failed
+		return fmt.Errorf("failed to set initial pending status for %s: %w", image.UUID, err)
+	}
+	return GetProcessor().EnqueueImage(image)
 }
 
 // processImage handles the actual image processing
-func processImage(imageModel *models.Image) error {
+func processImage(imageModel *models.Image) (errResult error) {
 	log.Debugf("[ImageProcessor] Processing image: %s", imageModel.UUID)
-	SetImageStatus(imageModel.UUID, STATUS_PROCESSING)
 
-	// Validation
-	if imageModel == nil || imageModel.UUID == "" || imageModel.FilePath == "" {
-		log.Error("[ImageProcessor] Invalid image data")
-		return fmt.Errorf("invalid image data")
+	// Defer function to handle panics and ensure status is set to FAILED in cache on any error exit.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("[ImageProcessor] PANIC while processing image %s: %v", imageModel.UUID, r)
+			errResult = fmt.Errorf("panic occurred during processing: %v", r)
+		}
+		if errResult != nil {
+			log.Errorf("[ImageProcessor] Final Error for image %s: %v", imageModel.UUID, errResult)
+			// Use the new SetImageStatus (cache)
+			if statusErr := SetImageStatus(imageModel.UUID, STATUS_FAILED); statusErr != nil {
+				log.Errorf("[ImageProcessor] Additionally failed to set FAILED status in cache for %s: %v", imageModel.UUID, statusErr)
+			}
+		}
+	}()
+
+	// Set status to PROCESSING in cache at the beginning of actual work
+	if err := SetImageStatus(imageModel.UUID, STATUS_PROCESSING); err != nil {
+		log.Errorf("[ImageProcessor] Failed to set PROCESSING status in cache for %s: %v", imageModel.UUID, err)
+		// Continue processing, but return this error if nothing else fails
+		errResult = fmt.Errorf("failed to set processing status: %w", err)
 	}
 
-	// Extract path components
+	// Validation
+	if imageModel == nil || imageModel.UUID == "" || imageModel.FilePath == "" || imageModel.FileName == "" {
+		return fmt.Errorf("invalid image data provided") // Assign to errResult implicitly
+	}
+
 	originalFilePath := filepath.Join(imageModel.FilePath, imageModel.FileName)
+	log.Debugf("[ImageProcessor] Original file path: %s", originalFilePath)
 
-	// The rest of the file remains the same, but we'll use originalFilePath instead of imageModel.FilePath
-	dirPath := filepath.Dir(originalFilePath)
-	baseFileName := imageModel.UUID
-	relativePath := strings.TrimPrefix(dirPath, OriginalDir)
+	if _, err := os.Stat(originalFilePath); os.IsNotExist(err) {
+		return fmt.Errorf("original file not found: %s", originalFilePath)
+	} else if err != nil {
+		return fmt.Errorf("error accessing original file '%s': %w", originalFilePath, err)
+	}
+
+	relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
 	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+	log.Debugf("[ImageProcessor] Relative path for variants: %s", relativePath)
 
-	// Setup paths
 	variantsBaseDir := filepath.Join(VariantsDir, relativePath)
+	baseFileName := imageModel.UUID
 
-	// Ensure variants directory exists
 	if err := os.MkdirAll(variantsBaseDir, 0755); err != nil {
-		log.Errorf("[ImageProcessor] Failed to create variants directory for %s: %v", imageModel.UUID, err)
 		return fmt.Errorf("failed to create variants directory: %w", err)
 	}
 
-	// Prepare paths for variants
 	optimizedWebPPath := filepath.Join(variantsBaseDir, baseFileName+".webp")
 	optimizedAVIFPath := filepath.Join(variantsBaseDir, baseFileName+".avif")
 	smallThumbWebPPath := filepath.Join(variantsBaseDir, baseFileName+"_small.webp")
@@ -215,230 +251,140 @@ func processImage(imageModel *models.Image) error {
 	mediumThumbWebPPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.webp")
 	mediumThumbAVIFPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.avif")
 
-	// Flags to track successful operations
 	var hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium bool
-	// Image metadata
 	var width, height int
+	var smallThumb image.Image
+	var mediumThumb image.Image
+	defer func() {
+		smallThumb = nil
+		mediumThumb = nil
+		log.Debugf("[ImageProcessor] Cleared thumbnail references for %s", imageModel.UUID)
+	}()
 
-	// Track generated thumbnails
-	var smallThumb, mediumThumb image.Image
-
-	// Extract metadata from the original image before any processing
-	// This should happen early to ensure we capture all original image metadata
 	if err := ExtractMetadata(imageModel, originalFilePath); err != nil {
 		log.Warnf("[ImageProcessor] Could not extract metadata for %s: %v. Processing continues.", imageModel.UUID, err)
-		// Continue processing even if metadata extraction fails
 	} else {
 		log.Debugf("[ImageProcessor] Successfully extracted metadata for %s", imageModel.UUID)
 	}
 
-	// Read file and detect image type
-	imgFile, err := os.Open(originalFilePath)
-	if err != nil {
-		log.Errorf("[ImageProcessor] Failed to open image %s: %v", imageModel.UUID, err)
-		return fmt.Errorf("failed to open image: %w", err)
-	}
-	defer imgFile.Close()
-
-	// Read image bytes - minimizes file handle usage
-	imgBytes, err := io.ReadAll(imgFile)
-	if err != nil {
-		log.Errorf("[ImageProcessor] Failed to read image bytes for %s: %v", imageModel.UUID, err)
-		return fmt.Errorf("failed to read image bytes: %w", err)
-	}
-
-	// Prüfe auf AVIF-Format anhand des Filetyps und Dateinamens
 	lowerFilePath := strings.ToLower(originalFilePath)
-	lowerFileType := strings.ToLower(imageModel.FileType)
-	isAVIF := strings.HasSuffix(lowerFilePath, ".avif") || lowerFileType == ".avif"
+	lowerFileType := strings.ToLower(strings.TrimPrefix(imageModel.FileType, "."))
+	isAVIF := strings.HasSuffix(lowerFilePath, ".avif") || lowerFileType == "avif"
 
-	log.Debugf("[ImageProcessor] Prüfe auf AVIF: %s (Pfad: %s, Typ: %s) => isAVIF=%v",
+	log.Debugf("[ImageProcessor] Checking AVIF input: %s (Path: %s, Type: %s) => isAVIF=%v",
 		imageModel.UUID, originalFilePath, imageModel.FileType, isAVIF)
 
+	// --- Special Handling for AVIF input ---
 	if isAVIF {
-		log.Infof("[ImageProcessor] AVIF-Datei erkannt: %s (Typ: %s)", imageModel.UUID, imageModel.FileType)
-
-		// Prüfe, ob ffprobe verfügbar ist
+		log.Infof("[ImageProcessor] AVIF input file detected: %s", imageModel.UUID)
 		if !isFFmpegAvailable {
-			log.Errorf("[ImageProcessor] ffmpeg ist nicht verfügbar, kann AVIF-Bild %s nicht verarbeiten", imageModel.UUID)
-			SetImageStatus(imageModel.UUID, STATUS_FAILED)
-			return fmt.Errorf("ffmpeg not available for processing AVIF image")
+			return fmt.Errorf("ffmpeg/ffprobe not available for processing AVIF input")
 		}
-
-		log.Infof("[ImageProcessor] Versuche Dimensionen mit ffprobe zu ermitteln für: %s", originalFilePath)
-
-		// Versuche mit ffprobe die Dimensionen zu ermitteln
-		width, height, ffprobeErr := getImageDimensionsWithFFprobe(originalFilePath)
+		var ffprobeErr error
+		width, height, ffprobeErr = getImageDimensionsWithFFprobe(originalFilePath)
 		if ffprobeErr != nil {
-			log.Errorf("[ImageProcessor] Fehler bei der Ermittlung der AVIF-Dimensionen für %s: %v",
-				imageModel.UUID, ffprobeErr)
-			SetImageStatus(imageModel.UUID, STATUS_FAILED)
 			return fmt.Errorf("failed to get AVIF dimensions: %w", ffprobeErr)
 		}
+		log.Infof("[ImageProcessor] AVIF dimensions successfully retrieved: %dx%d for %s", width, height, imageModel.UUID)
+		hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium = false, false, false, false
 
-		// Dimensionen erfolgreich ermittelt
-		log.Infof("[ImageProcessor] AVIF-Dimensionen erfolgreich ermittelt: %dx%d für %s",
-			width, height, imageModel.UUID)
-
-		// AVIF wird als Original verwendet, keine Thumbnails
-		hasWebp = false
-		hasAvif = false
-		hasThumbnailSmall = false
-		hasThumbnailMedium = false
-
-		log.Infof("[ImageProcessor] AVIF-Bild %s erfolgreich mit ffprobe verarbeitet (%dx%d)",
-			imageModel.UUID, width, height)
-
-		// Aktualisiere Datenbank
-		db := database.GetDB()
-		updateData := map[string]interface{}{
-			"has_webp":             hasWebp,
-			"has_avif":             hasAvif,
-			"has_thumbnail_small":  hasThumbnailSmall,
-			"has_thumbnail_medium": hasThumbnailMedium,
-			"width":                width,
-			"height":               height,
-			// Metadata
-			"camera_model":  imageModel.CameraModel,
-			"exposure_time": imageModel.ExposureTime,
-			"aperture":      imageModel.Aperture,
-			"focal_length":  imageModel.FocalLength,
-			"metadata":      imageModel.Metadata,
+		// Update Database record (flags, dimensions, metadata)
+		if err := updateImageRecord(imageModel, width, height, hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium); err != nil {
+			return err // Return DB update error
 		}
+		log.Infof("[ImageProcessor] AVIF input file %s processed successfully (DB updated).", imageModel.UUID)
 
-		// ISO ist ein Pointer, nur wenn nicht nil
-		if imageModel.ISO != nil {
-			updateData["iso"] = *imageModel.ISO
+		// Set completed status in cache
+		if err := SetImageStatus(imageModel.UUID, STATUS_COMPLETED); err != nil {
+			log.Errorf("[ImageProcessor] Failed to set COMPLETED status in cache for AVIF input %s: %v", imageModel.UUID, err)
+			return fmt.Errorf("failed to set final status for AVIF input: %w", err)
 		}
-
-		// Latitude & Longitude sind Pointer
-		if imageModel.Latitude != nil {
-			updateData["latitude"] = *imageModel.Latitude
-		}
-
-		if imageModel.Longitude != nil {
-			updateData["longitude"] = *imageModel.Longitude
-		}
-
-		// TakenAt ist ein Pointer
-		if imageModel.TakenAt != nil && !imageModel.TakenAt.IsZero() {
-			updateData["taken_at"] = imageModel.TakenAt
-		}
-
-		if err := db.Model(imageModel).Updates(updateData).Error; err != nil {
-			log.Errorf("[ImageProcessor] Fehler beim Aktualisieren des AVIF-Bildes %s in der Datenbank: %v", imageModel.UUID, err)
-			return fmt.Errorf("failed to update AVIF image in database: %w", err)
-		}
-
-		// AVIF-Verarbeitung erfolgreich abgeschlossen
-		SetImageStatus(imageModel.UUID, STATUS_COMPLETED)
-		return nil
+		return nil // Success for AVIF handling
 	}
 
-	// Try to decode the image, with auto-orientation
-	imgDecoded, err := imaging.Decode(bytes.NewReader(imgBytes), imaging.AutoOrientation(true))
+	// --- Handling for non-AVIF input (e.g., JPEG, PNG, GIF, WebP) ---
+	log.Debugf("[ImageProcessor] Opening and decoding image using imaging.Open: %s", originalFilePath)
+	imgDecoded, err := imaging.Open(originalFilePath, imaging.AutoOrientation(true))
 	if err != nil {
-		// Fallback if decode fails
-		log.Warnf("[ImageProcessor] Decode failed for %s, trying direct open: %v", imageModel.UUID, err)
-		imgDecoded, err = imaging.Open(originalFilePath, imaging.AutoOrientation(true))
-		if err != nil {
-			SetImageStatus(imageModel.UUID, STATUS_FAILED)
-			log.Errorf("[ImageProcessor] Failed to decode image %s: %v", imageModel.UUID, err)
-			return fmt.Errorf("failed to decode image: %w", err)
-		}
+		return fmt.Errorf("failed to open/decode image '%s': %w", originalFilePath, err)
 	}
+	defer func() {
+		imgDecoded = nil
+		log.Debugf("[ImageProcessor] Cleared main decoded image reference for %s", imageModel.UUID)
+	}()
+	log.Debugf("[ImageProcessor] Successfully decoded image: %s", imageModel.UUID)
 
-	// Extract and store dimensions
-	width = imgDecoded.Bounds().Dx()
-	height = imgDecoded.Bounds().Dy()
+	bounds := imgDecoded.Bounds()
+	width = bounds.Dx()
+	height = bounds.Dy()
 	log.Infof("[ImageProcessor] Processing image %s (%dx%d)", imageModel.UUID, width, height)
 
-	// Detect if it's a GIF - special handling for animated images
 	isGif := strings.HasSuffix(strings.ToLower(originalFilePath), ".gif")
 
-	// Different processing workflow for GIF vs other image types
+	// --- GIF Handling ---
 	if isGif {
-		// --- GIF Handling ---
-		// For GIFs we only create thumbnails, not optimized versions
-		log.Debugf("[ImageProcessor] GIF detected, creating thumbnails for %s", imageModel.UUID)
-
-		// Small WebP Thumbnail
+		log.Debugf("[ImageProcessor] GIF detected, creating WebP/AVIF thumbnails for %s", imageModel.UUID)
+		// Small Thumbnail
 		smallThumb = imaging.Resize(imgDecoded, SmallThumbnailSize, 0, imaging.Lanczos)
 		if err := saveWebP(smallThumb, smallThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save small WebP thumbnail for GIF %s: %v", imageModel.UUID, err)
-			smallThumb = nil // Free memory if save failed
 		} else {
 			hasThumbnailSmall = true
 			log.Debugf("[ImageProcessor] Saved small WebP thumbnail for GIF %s", imageModel.UUID)
+			if isFFmpegAvailable {
+				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
+					log.Errorf("[ImageProcessor] Failed to create small AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
+				} else {
+					log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for GIF %s", smallThumbAVIFPath)
+				}
+			}
 		}
-
-		// Medium WebP Thumbnail
+		smallThumb = nil
+		// Medium Thumbnail
 		mediumThumb = imaging.Resize(imgDecoded, MediumThumbnailSize, 0, imaging.Lanczos)
 		if err := saveWebP(mediumThumb, mediumThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save medium WebP thumbnail for GIF %s: %v", imageModel.UUID, err)
-			mediumThumb = nil // Free memory if save failed
 		} else {
 			hasThumbnailMedium = true
 			log.Debugf("[ImageProcessor] Saved medium WebP thumbnail for GIF %s", imageModel.UUID)
-		}
-
-		// If ffmpeg is available, create AVIF thumbnails
-		if isFFmpegAvailable {
-			// Small AVIF thumbnail
-			if smallThumb != nil { // Check if small webp thumbnail was created
-				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
-					log.Errorf("Error creating small AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
-				} else {
-					log.Debugf("[ImageProcessor] Small AVIF thumbnail created for GIF: %s", smallThumbAVIFPath)
-					// hasThumbnailSmall already true from WebP
-				}
-			}
-
-			// Medium AVIF thumbnail
-			if mediumThumb != nil { // Check if medium webp thumbnail was created
+			if isFFmpegAvailable {
 				if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
-					log.Errorf("Error creating medium AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
+					log.Errorf("[ImageProcessor] Failed to create medium AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
 				} else {
-					log.Debugf("[ImageProcessor] Medium AVIF thumbnail created for GIF: %s", mediumThumbAVIFPath)
-					// hasThumbnailMedium already true from WebP
+					log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for GIF %s", mediumThumbAVIFPath)
 				}
 			}
 		}
+		mediumThumb = nil
 	} else {
-		// --- Standard Image Handling (non-GIF) ---
-		// Create Optimized WebP version
+		// --- Standard Image Handling ---
+		log.Debugf("[ImageProcessor] Standard image detected, creating optimized WebP/AVIF and thumbnails for %s", imageModel.UUID)
+		// Optimized WebP
 		if err := saveWebP(imgDecoded, optimizedWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to create optimized WebP for %s: %v", imageModel.UUID, err)
-			// Continue processing even if WebP fails
 		} else {
-			hasWebp = true // Set flag on success
+			hasWebp = true
 			log.Debugf("[ImageProcessor] Saved optimized WebP for %s", imageModel.UUID)
 		}
-
-		// Create Optimized AVIF version
+		// Optimized AVIF
 		if isFFmpegAvailable {
 			if err := convertToAVIF(imgDecoded, optimizedAVIFPath); err != nil {
-				log.Errorf("[ImageProcessor] Failed to convert to AVIF for %s: %v", imageModel.UUID, err)
+				log.Errorf("[ImageProcessor] Failed to convert to optimized AVIF for %s: %v", imageModel.UUID, err)
 			} else {
-				hasAvif = true // Set flag on success
-				log.Debug(fmt.Sprintf("[ImageProcessor] Converted to AVIF for %s", imageModel.UUID))
+				hasAvif = true
+				log.Debugf("[ImageProcessor] Saved optimized AVIF for %s", imageModel.UUID)
 			}
 		} else {
-			log.Warnf("[ImageProcessor] Skipping AVIF conversion for %s: ffmpeg not found.", imageModel.UUID)
+			log.Warnf("[ImageProcessor] Skipping optimized AVIF conversion for %s: ffmpeg not found.", imageModel.UUID)
 		}
-
-		// --- Generate Thumbnails ---
-
 		// Small Thumbnail
 		smallThumb = imaging.Resize(imgDecoded, SmallThumbnailSize, 0, imaging.Lanczos)
 		if err := saveWebP(smallThumb, smallThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save small WebP thumbnail for %s: %v", imageModel.UUID, err)
-			// Continue processing, but flag will remain false
 		} else {
-			hasThumbnailSmall = true // Set flag on success
+			hasThumbnailSmall = true
 			log.Debugf("[ImageProcessor] Saved small WebP thumbnail for %s", imageModel.UUID)
-			// --- Generate Small AVIF Thumbnail ---
-			if isFFmpegAvailable && smallThumb != nil {
+			if isFFmpegAvailable {
 				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
 					log.Errorf("[ImageProcessor] Failed to save small AVIF thumbnail for %s: %v", imageModel.UUID, err)
 				} else {
@@ -446,17 +392,15 @@ func processImage(imageModel *models.Image) error {
 				}
 			}
 		}
-
+		smallThumb = nil
 		// Medium Thumbnail
 		mediumThumb = imaging.Resize(imgDecoded, MediumThumbnailSize, 0, imaging.Lanczos)
 		if err := saveWebP(mediumThumb, mediumThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save medium WebP thumbnail for %s: %v", imageModel.UUID, err)
-			// Continue processing, but flag will remain false
 		} else {
-			hasThumbnailMedium = true // Set flag on success
+			hasThumbnailMedium = true
 			log.Debugf("[ImageProcessor] Saved medium WebP thumbnail for %s", imageModel.UUID)
-			// --- Generate Medium AVIF Thumbnail ---
-			if isFFmpegAvailable && mediumThumb != nil {
+			if isFFmpegAvailable {
 				if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
 					log.Errorf("[ImageProcessor] Failed to save medium AVIF thumbnail for %s: %v", imageModel.UUID, err)
 				} else {
@@ -464,337 +408,289 @@ func processImage(imageModel *models.Image) error {
 				}
 			}
 		}
-
-		// Release image data from memory as soon as possible
-		imgDecoded = nil
-		smallThumb = nil
 		mediumThumb = nil
+		imgDecoded = nil // Release main image memory
+		log.Debugf("[ImageProcessor] Released main decoded image reference after standard processing: %s", imageModel.UUID)
 	}
 
-	// Update database
+	// --- Database Update ---
+	if err := updateImageRecord(imageModel, width, height, hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium); err != nil {
+		return err // Return DB update error
+	}
+
+	// If we reached here, processing was successful (or errors were logged but didn't stop processing)
+	log.Infof("[ImageProcessor] Successfully processed image %s (DB updated).", imageModel.UUID)
+
+	// Set final status to COMPLETED in cache
+	if err := SetImageStatus(imageModel.UUID, STATUS_COMPLETED); err != nil {
+		log.Errorf("[ImageProcessor] Failed to set final COMPLETED status in cache for %s: %v", imageModel.UUID, err)
+		return fmt.Errorf("failed to set final status: %w", err)
+	}
+
+	// Check if errResult was set earlier (e.g., failed to set PROCESSING status)
+	if errResult != nil {
+		log.Warnf("[ImageProcessor] Process finished for %s, but encountered non-fatal error earlier: %v", imageModel.UUID, errResult)
+		// Decide whether to return the earlier non-fatal error or nil
+		// Returning nil because the main processing succeeded and COMPLETED status was set.
+		return nil
+	}
+
+	return nil // Indicate success
+}
+
+// updateImageRecord updates the database record for the image.
+func updateImageRecord(imageModel *models.Image, width, height int, hasWebp, hasAvif, hasThumbSmall, hasThumbMedium bool) error {
 	db := database.GetDB()
-	// Use a map for updates to handle potential zero values correctly (like lat/lon)
+	if db == nil {
+		log.Error("[ImageProcessor] Database connection is nil, cannot update image record.")
+		return fmt.Errorf("database connection is nil")
+	}
 	updateData := map[string]interface{}{
-		"has_webp":             hasWebp,            // Use flag variable
-		"has_avif":             hasAvif,            // Use flag variable
-		"has_thumbnail_small":  hasThumbnailSmall,  // Use flag variable
-		"has_thumbnail_medium": hasThumbnailMedium, // Use flag variable
+		"has_webp":             hasWebp,
+		"has_avif":             hasAvif,
+		"has_thumbnail_small":  hasThumbSmall,
+		"has_thumbnail_medium": hasThumbMedium,
 		"width":                width,
 		"height":               height,
-		// Include metadata fields
-		"camera_model":  imageModel.CameraModel,
-		"exposure_time": imageModel.ExposureTime,
-		"aperture":      imageModel.Aperture,
-		"focal_length":  imageModel.FocalLength,
-		"metadata":      imageModel.Metadata,
+		"camera_model":         imageModel.CameraModel,
+		"exposure_time":        imageModel.ExposureTime,
+		"aperture":             imageModel.Aperture,
+		"focal_length":         imageModel.FocalLength,
+		"metadata":             imageModel.Metadata,
 	}
-
-	// ISO is a pointer, so only include if not nil
 	if imageModel.ISO != nil {
 		updateData["iso"] = *imageModel.ISO
 	}
-
-	// Latitude & Longitude are pointers, so only include if not nil
 	if imageModel.Latitude != nil {
 		updateData["latitude"] = *imageModel.Latitude
 	}
-
 	if imageModel.Longitude != nil {
 		updateData["longitude"] = *imageModel.Longitude
 	}
-
-	// TakenAt is a pointer, only include if not nil and not zero value
 	if imageModel.TakenAt != nil && !imageModel.TakenAt.IsZero() {
-		updateData["taken_at"] = imageModel.TakenAt
+		updateData["taken_at"] = *imageModel.TakenAt
 	}
 
-	if err := db.Model(imageModel).Updates(updateData).Error; err != nil {
+	log.Debugf("[ImageProcessor] Updating database record for %s with data: %+v", imageModel.UUID, updateData)
+	if err := db.Model(&models.Image{}).Where("uuid = ?", imageModel.UUID).Updates(updateData).Error; err != nil {
 		log.Errorf("[ImageProcessor] Failed to update image %s in database: %v", imageModel.UUID, err)
 		return fmt.Errorf("failed to update image in database: %w", err)
 	}
-
+	log.Infof("[ImageProcessor] Successfully updated database record for image %s", imageModel.UUID)
 	return nil
 }
 
-// convertToAVIF converts an image (provided as image.Image) to AVIF format using ffmpeg, reading from stdin pipe.
+// convertToAVIF converts an image (provided as image.Image) to AVIF format using ffmpeg.
 func convertToAVIF(img image.Image, outputPath string) error {
-	if !isFFmpegAvailable { // Use the global variable check
-		return fmt.Errorf("ffmpeg is not available")
+	if !isFFmpegAvailable {
+		return fmt.Errorf("ffmpeg is not available for AVIF conversion")
 	}
 	if img == nil {
-		return fmt.Errorf("input image is nil")
+		return fmt.Errorf("input image for AVIF conversion is nil")
 	}
-
-	// Create parent directories if they don't exist
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for AVIF output %s: %w", outputPath, err)
 	}
 
-	// Get image dimensions
 	bounds := img.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
-
-	// Check if dimensions are even (required for YUV420 color space in AVIF)
-	hasOddDimensions := width%2 != 0 || height%2 != 0
-
-	// If dimensions are odd, create a new image with even dimensions by adding padding
-	if hasOddDimensions {
-		log.Debugf("[ImageProcessor] Image has odd dimensions (%dx%d), adjusting for AVIF conversion", width, height)
-
-		// Calculate new dimensions (make them even)
-		newWidth := width
-		newHeight := height
-
-		if width%2 != 0 {
-			newWidth++
-		}
-
-		if height%2 != 0 {
-			newHeight++
-		}
-
-		// Create a new image with even dimensions
+	imgToEncode := img
+	if width%2 != 0 || height%2 != 0 {
+		log.Debugf("[ImageProcessor] Image %s has odd dimensions (%dx%d), adjusting for AVIF conversion to %s", filepath.Base(outputPath), width, height, outputPath)
+		newWidth := width + (width % 2)
+		newHeight := height + (height % 2)
 		newImg := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
-
-		// Copy original image data
 		for y := 0; y < height; y++ {
 			for x := 0; x < width; x++ {
 				newImg.Set(x, y, img.At(x+bounds.Min.X, y+bounds.Min.Y))
 			}
 		}
-
-		// Use the adjusted image
-		img = newImg
+		imgToEncode = newImg
+		log.Debugf("[ImageProcessor] Adjusted dimensions to %dx%d for AVIF", newWidth, newHeight)
 	}
 
-	// Create a pipe to stream PNG data to ffmpeg
 	r, w := io.Pipe()
+	defer r.Close()
 
-	// Improved AVIF encoding parameters for better compression/quality balance
-	cmd := exec.Command("ffmpeg",
-		"-f", "image2pipe", // Input format from pipe
-		"-vcodec", "png", // Specify the codec of the piped data
-		"-i", "pipe:0", // Read from stdin (pipe)
-		"-c:v", "libsvtav1", // Use the SVT-AV1 encoder (typically more efficient)
-		"-crf", "35", // Higher CRF = smaller file size, lower quality (30-40 is good for thumbnails)
-		"-preset", "8", // Higher = faster encoding but lower compression (0-12)
-		"-pix_fmt", "yuv420p", // Standard pixel format for web compatibility
-		"-y", // Overwrite output file without asking
-		outputPath,
-	)
-
-	// Set the command's standard input to the reader end of the pipe
+	cmd := exec.Command("ffmpeg", "-f", "image2pipe", "-vcodec", "png", "-i", "pipe:0", "-c:v", "libsvtav1", "-crf", "35", "-preset", "8", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-y", outputPath)
 	cmd.Stdin = r
-
-	// Capture stderr for error messages
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-
-	// Start a goroutine to encode the image as PNG and write it to the pipe
-	encodeErrChan := make(chan error, 1) // Buffered channel to avoid blocking
-	go func() {
-		defer w.Close() // IMPORTANT: Close the writer when done to signal EOF to ffmpeg
-		err := png.Encode(w, img)
-		encodeErrChan <- err
-	}()
-
-	// Run the ffmpeg command
-	runErr := cmd.Run()
-
-	// Wait for the encoding goroutine to finish and check for errors
-	encodeErr := <-encodeErrChan
-
-	// Help GC by explicitly releasing the image reference
-	img = nil
-
-	if encodeErr != nil {
-		return fmt.Errorf("failed to encode image to pipe: %w", encodeErr)
-	}
-
-	if runErr != nil {
-		// Try to remove potentially corrupted output file on failure
-		_ = os.Remove(outputPath)
-		return fmt.Errorf("ffmpeg command failed: %w\nStderr: %s", runErr, stderr.String())
-	}
-
-	return nil
-}
-
-// getImageDimensionsWithFFprobe returns the dimensions of an image using ffprobe
-func getImageDimensionsWithFFprobe(filePath string) (int, int, error) {
-	if !isFFmpegAvailable {
-		return 0, 0, fmt.Errorf("ffmpeg is not available")
-	}
-
-	cmd := exec.Command("ffprobe",
-		"-v", "error", // Only show errors
-		"-show_entries", "stream=width,height", // Only show width and height
-		"-of", "csv=s=,:p=0", // Output format: CSV with comma separator and no header
-		"-i", filePath,
-	)
-
-	// Capture stdout for output
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-
-	// Capture stderr for better error diagnosis
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	// Run the ffprobe command
+	encodeErrChan := make(chan error, 1)
+	go func() {
+		defer w.Close()
+		log.Debugf("[ImageProcessor] Starting PNG encode to pipe for %s", outputPath)
+		err := png.Encode(w, imgToEncode)
+		if err == nil {
+			log.Debugf("[ImageProcessor] Finished PNG encode to pipe for %s", outputPath)
+		} else {
+			log.Errorf("[ImageProcessor] Error during PNG encode to pipe for %s: %v", outputPath, err)
+		}
+		encodeErrChan <- err
+	}()
+
+	log.Debugf("[ImageProcessor] Starting ffmpeg command for %s", outputPath)
 	runErr := cmd.Run()
+	log.Debugf("[ImageProcessor] Finished ffmpeg command for %s", outputPath)
+	encodeErr := <-encodeErrChan
 
-	// Output für Debugging
-	output := stdout.String()
-	log.Debugf("[ImageProcessor] ffprobe-Output für %s: '%s'", filePath, output)
-	if stderr.Len() > 0 {
-		log.Debugf("[ImageProcessor] ffprobe-Stderr: '%s'", stderr.String())
+	if encodeErr != nil {
+		return fmt.Errorf("failed to encode image to pipe for %s: %w", outputPath, encodeErr)
 	}
-
-	// Check for errors
 	if runErr != nil {
-		return 0, 0, fmt.Errorf("ffprobe command failed: %w", runErr)
+		_ = os.Remove(outputPath)
+		return fmt.Errorf("ffmpeg command failed for %s: %w\nStderr: %s", outputPath, runErr, stderr.String())
 	}
-
-	// Trim whitespace
-	output = strings.TrimSpace(output)
-
-	// Parse the output - erwartet Format mit Komma: "900,564"
-	parts := strings.Split(output, ",")
-	if len(parts) != 2 {
-		return 0, 0, fmt.Errorf("invalid output format: %s", output)
-	}
-
-	// Convert to integers
-	width, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to parse width: %w", err)
-	}
-
-	height, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to parse height: %w", err)
-	}
-
-	return width, height, nil
-}
-
-// saveWebP saves an image in WebP format
-func saveWebP(img image.Image, outputPath string) error {
-	// Ensure directory exists
-	outputDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("error creating directory: %w", err)
-	}
-
-	// Open output file
-	output, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("error creating WebP file: %w", err)
-	}
-	defer output.Close()
-
-	// Configure WebP encoder
-	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 85)
-	if err != nil {
-		return fmt.Errorf("error creating encoder options: %w", err)
-	}
-
-	// Convert and save image
-	if err := webp.Encode(output, img, options); err != nil {
-		return fmt.Errorf("error encoding WebP image: %w", err)
-	}
-
+	log.Debugf("[ImageProcessor] Successfully created AVIF: %s", outputPath)
 	return nil
 }
 
-// checkFfmpegAvailable checks if ffmpeg is available
-func checkFfmpegAvailable() bool {
-	_, err := exec.LookPath("ffmpeg")
-	return err == nil
+// getImageDimensionsWithFFprobe returns the dimensions of an image using ffprobe.
+func getImageDimensionsWithFFprobe(filePath string) (int, int, error) {
+	if !isFFmpegAvailable {
+		return 0, 0, fmt.Errorf("ffprobe (part of ffmpeg) is not available")
+	}
+	log.Debugf("[ImageProcessor] Running ffprobe for dimensions: %s", filePath)
+	cmd := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", filePath)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	output := strings.TrimSpace(stdout.String())
+	stderrOutput := strings.TrimSpace(stderr.String())
+	if err != nil {
+		log.Errorf("[ImageProcessor] ffprobe command failed for %s. Error: %v, Stderr: %s", filePath, err, stderrOutput)
+		return 0, 0, fmt.Errorf("ffprobe command failed for '%s': %w, stderr: %s", filePath, err, stderrOutput)
+	}
+	log.Debugf("[ImageProcessor] ffprobe output for %s: '%s'", filePath, output)
+	if stderrOutput != "" {
+		log.Warnf("[ImageProcessor] ffprobe stderr for %s: '%s'", filePath, stderrOutput)
+	}
+	parts := strings.Split(output, "x")
+	if len(parts) != 2 {
+		log.Errorf("[ImageProcessor] Unexpected ffprobe output format for %s: '%s'", filePath, output)
+		return 0, 0, fmt.Errorf("invalid ffprobe output format: %s", output)
+	}
+	width, errW := strconv.Atoi(parts[0])
+	height, errH := strconv.Atoi(parts[1])
+	if errW != nil || errH != nil {
+		log.Errorf("[ImageProcessor] Failed to parse ffprobe dimensions for %s from output '%s': W_err=%v, H_err=%v", filePath, output, errW, errH)
+		return 0, 0, fmt.Errorf("failed to parse dimensions from ffprobe output '%s'", output)
+	}
+	log.Debugf("[ImageProcessor] Parsed dimensions from ffprobe for %s: %dx%d", filePath, width, height)
+	return width, height, nil
 }
 
-// GetImagePath returns the path to a specific image version based on the new structure
+// saveWebP saves an image in WebP format using the go-webp library.
+func saveWebP(img image.Image, outputPath string) error {
+	if img == nil {
+		return fmt.Errorf("input image for WebP saving is nil")
+	}
+	outputDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("error creating directory '%s' for WebP: %w", outputDir, err)
+	}
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("error creating WebP file '%s': %w", outputPath, err)
+	}
+	defer outputFile.Close()
+	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 85)
+	if err != nil {
+		log.Errorf("[ImageProcessor] Failed to create WebP encoder options: %v", err)
+		return fmt.Errorf("error creating webp encoder options: %w", err)
+	}
+	log.Debugf("[ImageProcessor] Encoding WebP to %s", outputPath)
+	if err := webp.Encode(outputFile, img, options); err != nil {
+		_ = outputFile.Close()
+		_ = os.Remove(outputPath)
+		log.Errorf("[ImageProcessor] Failed to encode WebP image to %s: %v", outputPath, err)
+		return fmt.Errorf("error encoding WebP image to '%s': %w", outputPath, err)
+	}
+	log.Debugf("[ImageProcessor] Successfully saved WebP: %s", outputPath)
+	return nil
+}
+
+// checkFfmpegAvailable checks if the ffmpeg command is available in the system's PATH.
+func checkFfmpegAvailable() bool {
+	_, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		log.Warnf("[ImageProcessor] checkFfmpegAvailable: 'ffmpeg' command not found in PATH: %v", err)
+		return false
+	}
+	return true
+}
+
+// GetImagePath returns the path to a specific image variant based on format and size.
 func GetImagePath(imageModel *models.Image, format string, size string) string {
-	if imageModel == nil || imageModel.FilePath == "" || imageModel.UUID == "" {
-		log.Warn("GetImagePath called with invalid image data")
-		return "" // Return empty if image or essential data is invalid
+	if imageModel == nil || imageModel.UUID == "" || imageModel.FilePath == "" {
+		log.Warn("[GetImagePath] Called with invalid image data (nil model, empty UUID or FilePath)")
+		return ""
 	}
-
-	// Debug original path to identify the issue
-	log.Debugf("[GetImagePath] Original path: %s", imageModel.FilePath)
-
-	// Original path is stored in image.FilePath (e.g., uploads/original/2025/04/14)
-	// Extract relative path part (e.g., 2025/04/14) directly
-
-	// PROBLEM: filepath.Dir interpretiert den letzten Teil (Tag) als Dateinamen
-	// und entfernt ihn, wenn es kein abschließender Schrägstrich vorhanden ist
-	// LÖSUNG: Wir verwenden direkt den Teil nach OriginalDir ohne filepath.Dir
-
-	// Ensure path doesn't have a trailing slash
-	originalPath := strings.TrimSuffix(imageModel.FilePath, string(filepath.Separator))
-
-	// Extract relative path after the OriginalDir part
-	relativePath := strings.TrimPrefix(originalPath, OriginalDir)
-	// Remove any leading path separator
+	originalPathDir := imageModel.FilePath
+	relativePath := strings.TrimPrefix(originalPathDir, OriginalDir)
 	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-
-	log.Debugf("[GetImagePath] Extracted relative path: %s", relativePath)
-
-	// Base filename without extension is the UUID
 	baseFileName := imageModel.UUID
-
-	// Construct variant filename part
-	variantPart := ""
-	switch strings.ToLower(size) {
+	variantSuffix := ""
+	lowerSize := strings.ToLower(size)
+	switch lowerSize {
 	case "small":
-		variantPart = "_small"
+		variantSuffix = "_small"
 	case "medium":
-		variantPart = "_medium"
+		variantSuffix = "_medium"
 	case "":
-		// No size suffix for optimized full size
+		variantSuffix = ""
+	case "original":
+		if imageModel.FileName == "" {
+			log.Warnf("[GetImagePath] Cannot get original path for %s: FileName is empty", imageModel.UUID)
+			return ""
+		}
+		return filepath.Join(imageModel.FilePath, imageModel.FileName)
 	default:
-		log.Warnf("GetImagePath called with unknown size: '%s' for image %s", size, imageModel.UUID)
-		// Fallback to original for unknown size?
-		// Let's return original path as a safer fallback for unknown sizes.
-		return imageModel.FilePath // Fallback to original
+		log.Warnf("[GetImagePath] Unknown size requested: '%s' for image %s. Returning empty path.", size, imageModel.UUID)
+		return ""
 	}
 
-	// Determine file extension based on format and availability
-	ext := ""
-	switch strings.ToLower(format) {
+	var finalExt string
+	requestedFormat := strings.ToLower(format)
+	isThumbnail := lowerSize == "small" || lowerSize == "medium"
+	fileExt := strings.ToLower(strings.TrimPrefix(imageModel.FileType, "."))
+	isGifInput := fileExt == "gif"
+
+	switch requestedFormat {
 	case "webp":
-		// Always return path for WebP thumbnails for GIFs
-		// For non-GIFs, check if WebP version exists.
-		if (imageModel.FileType == ".gif" && size != "") || imageModel.HasWebp {
-			ext = ".webp"
+		if isThumbnail && imageModel.HasThumbnailSmall {
+			finalExt = ".webp"
+		} else if !isThumbnail && imageModel.HasWebp {
+			finalExt = ".webp"
+		} else if isGifInput && isThumbnail {
+			if lowerSize == "small" && imageModel.HasThumbnailSmall {
+				finalExt = ".webp"
+			} else if lowerSize == "medium" && imageModel.HasThumbnailMedium {
+				finalExt = ".webp"
+			}
 		}
 	case "avif":
-		// Only return path if AVIF version exists (HasAvif flag)
-		if imageModel.HasAVIF {
-			ext = ".avif"
+		// AVIF Thumbnails depend on WebP thumbnails existing AND ffmpeg being available
+		canHaveAvifThumb := (lowerSize == "small" && imageModel.HasThumbnailSmall) || (lowerSize == "medium" && imageModel.HasThumbnailMedium)
+		if isThumbnail && canHaveAvifThumb && isFFmpegAvailable {
+			finalExt = ".avif"
+		} else if !isThumbnail && imageModel.HasAVIF {
+			finalExt = ".avif"
 		}
-	case "original":
-		// Special case to get the original path - needs full path with filename and extension
-		return filepath.Join(imageModel.FilePath, imageModel.UUID + imageModel.FileType)
 	default:
-		log.Warnf("GetImagePath called with unknown format: '%s' for image %s", format, imageModel.UUID)
-		// Fallback to original for unknown format?
-		return imageModel.FilePath // Fallback to original
+		log.Warnf("[GetImagePath] Unknown format requested: '%s' for image %s. Returning empty path.", format, imageModel.UUID)
+		return ""
 	}
 
-	// If no valid extension determined (e.g., AVIF requested but not available),
-	// fallback to the original image path.
-	if ext == "" {
-		log.Debugf("GetImagePath: Format '%s' (size '%s') not available for image %s, falling back to original.", format, size, imageModel.UUID)
-		return imageModel.FilePath
+	if finalExt == "" {
+		log.Debugf("[GetImagePath] Format '%s' (size '%s') not available or flags indicate missing for image %s. Returning empty path.", format, size, imageModel.UUID)
+		return ""
 	}
 
-	// Construct the full path within the VariantsDir
-	variantFileName := baseFileName + variantPart + ext
+	variantFileName := baseFileName + variantSuffix + finalExt
 	variantPath := filepath.Join(VariantsDir, relativePath, variantFileName)
-
-	log.Debugf("[GetImagePath] Final variant path: %s", variantPath)
-
+	log.Debugf("[GetImagePath] Constructed variant path for %s (Format: %s, Size: %s): %s", imageModel.UUID, format, size, variantPath)
 	return variantPath
 }

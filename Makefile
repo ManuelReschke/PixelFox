@@ -38,6 +38,7 @@ prepare-env-prod:
 .PHONY: start
 start: prepare-env-dev
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
+	mkdir -p tmp
 	cd $(PROJECT_ROOT) && docker-compose up -d
 
 .PHONY: start-build

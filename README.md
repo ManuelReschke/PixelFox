@@ -5,10 +5,12 @@ This project is more of a feasibility study and is intended for learning purpose
 
 PixelFox is an image sharing platform. Its build with the following technologies:
 
-* Tech Stack:
-  * Docker
-  * GoLang
-  * MySQL
+## Tech Stack
+
+* Infrastructure:
+  * Docker v27.3
+  * GoLang v1.23
+  * MySQL v8.4
   * Dragonfly Cache
 * Backend:
   * Framework [GoFiber](https://github.com/gofiber/fiber)

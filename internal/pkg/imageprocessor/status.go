@@ -2,6 +2,7 @@ package imageprocessor
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2/log"
 	"strings"
 	"time"
 
@@ -12,13 +13,13 @@ import (
 
 // Cache key format for image processing status
 const (
-	ImageStatusKeyFormat = "image:status:%s" // Format: image:status:<uuid>
+	ImageStatusKeyFormat          = "image:status:%s"           // Format: image:status:<uuid>
 	ImageStatusTimestampKeyFormat = "image:status:timestamp:%s" // Format: image:status:timestamp:<uuid>
 )
 
 // Status constants for image processing
 const (
-	STATUS_PENDING   = "pending"   // Image is queued for processing
+	STATUS_PENDING    = "pending"    // Image is queued for processing
 	STATUS_PROCESSING = "processing" // Image is currently being processed
 	STATUS_COMPLETED  = "completed"  // Image processing is complete
 	STATUS_FAILED     = "failed"     // Image processing failed
@@ -26,185 +27,242 @@ const (
 
 // TTL für verschiedene Status
 const (
-	PENDING_TTL   = 30 * time.Minute  // Längere Zeit für unverarbeitete Bilder
-	PROCESSING_TTL = 30 * time.Minute  // Längere Zeit für Bilder in Verarbeitung
-	COMPLETED_TTL = 5 * time.Minute   // Kurze Zeit für erfolgreich verarbeitete Bilder
-	FAILED_TTL    = 1 * time.Hour     // Längere Zeit für fehlgeschlagene Bilder (für Fehleranalyse)
+	PENDING_TTL    = 30 * time.Minute // Längere Zeit für unverarbeitete Bilder
+	PROCESSING_TTL = 30 * time.Minute // Längere Zeit für Bilder in Verarbeitung
+	COMPLETED_TTL  = 5 * time.Minute  // Kurze Zeit für erfolgreich verarbeitete Bilder
+	FAILED_TTL     = 1 * time.Hour    // Längere Zeit für fehlgeschlagene Bilder (für Fehleranalyse)
 )
 
 // SetImageStatus sets the processing status of an image in the cache
 func SetImageStatus(imageUUID string, status string) error {
+	if imageUUID == "" || status == "" {
+		log.Errorf("[ImageProcessor] Invalid arguments for SetImageStatus (UUID: %s, Status: %s)", imageUUID, status)
+		return fmt.Errorf("invalid UUID or status for setting image status")
+	}
 	key := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
-	// Setze auch den Zeitstempel
-	SetImageStatusTimestamp(imageUUID, time.Now())
-	
-	// Bestimme TTL basierend auf dem Status
-	ttl := PENDING_TTL // Standard
+	log.Debugf("[ImageProcessor] Setting cache status for %s to %s", imageUUID, status)
+
+	// Set timestamp as well
+	if err := SetImageStatusTimestamp(imageUUID, time.Now(), status); err != nil {
+		// Log the error but continue setting the main status
+		log.Warnf("[ImageProcessor] Failed to set status timestamp for %s while setting status %s: %v", imageUUID, status, err)
+	}
+
+	// Determine TTL based on the status
+	ttl := PENDING_TTL // Default
 	switch status {
 	case STATUS_PENDING:
 		ttl = PENDING_TTL
 	case STATUS_PROCESSING:
 		ttl = PROCESSING_TTL
 	case STATUS_COMPLETED:
-		// Für erfolgreiche Verarbeitungen setzen wir ein kurzes TTL
-		// Das genügt für eventuelles Polling nach Verarbeitungsabschluss
 		ttl = COMPLETED_TTL
 	case STATUS_FAILED:
 		ttl = FAILED_TTL
+	default:
+		log.Warnf("[ImageProcessor] Unknown status '%s' encountered when setting TTL for %s. Using default TTL.", status, imageUUID)
 	}
-	
-	return cache.Set(key, status, ttl)
+
+	log.Debugf("[ImageProcessor] Setting cache key '%s' with status '%s' and TTL %v", key, status, ttl)
+	err := cache.Set(key, status, ttl)
+	if err != nil {
+		log.Errorf("[ImageProcessor] Failed to set cache status for %s: %v", imageUUID, err)
+	}
+	return err
 }
 
-// SetImageStatusTimestamp sets the timestamp when the status was set
-func SetImageStatusTimestamp(imageUUID string, timestamp time.Time) error {
+// SetImageStatusTimestamp sets the timestamp when the status was set, using TTL appropriate for the *current* status being set.
+func SetImageStatusTimestamp(imageUUID string, timestamp time.Time, currentStatus string) error {
 	cacheKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
 	timestampStr := timestamp.Format(time.RFC3339)
-	
-	// Zeitstempel mit gleichem TTL wie Status speichern
-	ttl := PENDING_TTL // Standard
-	
-	// Versuche, den aktuellen Status zu lesen, um das passende TTL zu verwenden
-	status, err := GetImageStatus(imageUUID)
-	if err == nil {
-		switch status {
-		case STATUS_PENDING:
-			ttl = PENDING_TTL
-		case STATUS_PROCESSING:
-			ttl = PROCESSING_TTL
-		case STATUS_COMPLETED:
-			ttl = COMPLETED_TTL
-		case STATUS_FAILED:
-			ttl = FAILED_TTL
-		}
+
+	// Determine TTL based on the *current* status being set
+	ttl := PENDING_TTL // Default
+	switch currentStatus {
+	case STATUS_PENDING:
+		ttl = PENDING_TTL
+	case STATUS_PROCESSING:
+		ttl = PROCESSING_TTL
+	case STATUS_COMPLETED:
+		ttl = COMPLETED_TTL
+	case STATUS_FAILED:
+		ttl = FAILED_TTL
+	default:
+		log.Warnf("[ImageProcessor] Unknown status '%s' encountered when setting timestamp TTL for %s. Using default TTL.", currentStatus, imageUUID)
 	}
-	
-	return cache.Set(cacheKey, timestampStr, ttl)
+
+	log.Debugf("[ImageProcessor] Setting cache timestamp key '%s' with value '%s' and TTL %v", cacheKey, timestampStr, ttl)
+	err := cache.Set(cacheKey, timestampStr, ttl)
+	if err != nil {
+		log.Errorf("[ImageProcessor] Failed to set cache timestamp for %s: %v", imageUUID, err)
+	}
+	return err
 }
 
 // GetImageStatus retrieves the processing status of an image from the cache
 func GetImageStatus(imageUUID string) (string, error) {
+	if imageUUID == "" {
+		return "", fmt.Errorf("image UUID is empty")
+	}
 	key := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
-	return cache.Get(key)
+	status, err := cache.Get(key)
+	// Don't log error here, as cache miss is a normal scenario (handled by caller)
+	// Log only unexpected errors if cache.Get provides them
+	if err != nil && err.Error() != "cache: key not found" { // Adjust error check based on your cache library
+		log.Errorf("[ImageProcessor] Error retrieving cache status for %s: %v", imageUUID, err)
+	}
+	return status, err
 }
 
 // GetImageStatusTimestamp gets the timestamp when the status was set
 func GetImageStatusTimestamp(imageUUID string) (time.Time, error) {
+	if imageUUID == "" {
+		return time.Time{}, fmt.Errorf("image UUID is empty")
+	}
 	cacheKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
 	timestampStr, err := cache.Get(cacheKey)
 	if err != nil {
+		// Don't log error here, cache miss is normal
+		if err.Error() != "cache: key not found" { // Adjust error check
+			log.Errorf("[ImageProcessor] Error retrieving cache timestamp for %s: %v", imageUUID, err)
+		}
 		return time.Time{}, err
 	}
 
-	// Parse the timestamp
 	timestamp, err := time.Parse(time.RFC3339, timestampStr)
 	if err != nil {
+		log.Errorf("[ImageProcessor] Failed to parse timestamp '%s' from cache for %s: %v", timestampStr, imageUUID, err)
 		return time.Time{}, err
 	}
-
 	return timestamp, nil
 }
 
-// DeleteImageStatus löscht alle Status-Einträge für ein Bild aus dem Cache
+// DeleteImageStatus deletes all status entries for an image from the cache
 func DeleteImageStatus(imageUUID string) error {
-	// Status-Key löschen
-	statusKey := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
-	err1 := cache.Delete(statusKey)
-	
-	// Timestamp-Key löschen
-	timestampKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
-	err2 := cache.Delete(timestampKey)
-	
-	// Wenn mindestens eine Löschung erfolgreich war, keinen Fehler zurückgeben
-	if err1 == nil || err2 == nil {
-		return nil
+	if imageUUID == "" {
+		return fmt.Errorf("image UUID is empty")
 	}
-	
-	// Sonst den ersten Fehler zurückgeben
+	statusKey := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
+	timestampKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
+
+	log.Debugf("[ImageProcessor] Deleting cache keys: %s, %s", statusKey, timestampKey)
+
+	err1 := cache.Delete(statusKey)
+	err2 := cache.Delete(timestampKey)
+
+	// Combine errors if necessary, but often logging is sufficient
+	if err1 != nil {
+		log.Warnf("[ImageProcessor] Failed to delete status cache key %s: %v", statusKey, err1)
+	}
+	if err2 != nil {
+		log.Warnf("[ImageProcessor] Failed to delete timestamp cache key %s: %v", timestampKey, err2)
+	}
+
+	// Return the first error encountered, or nil if both succeed
 	if err1 != nil {
 		return err1
 	}
-	return err2
+	return err2 // Returns nil if err1 was nil and err2 is nil
 }
 
-// IsImageProcessingComplete checks if image processing is complete
+// IsImageProcessingComplete checks if image processing is complete using cache and DB fallback.
 func IsImageProcessingComplete(imageUUID string) bool {
-	// First, we check the cache status
+	if imageUUID == "" {
+		return false
+	} // Cannot check status without UUID
+
+	// 1. Check Cache Status
 	status, err := GetImageStatus(imageUUID)
-	if err == nil && status == STATUS_COMPLETED {
-		// If the cache status is COMPLETED, processing is definitely complete
-		// Lösche Status-Einträge, da die Verarbeitung abgeschlossen ist
-		go DeleteImageStatus(imageUUID)
-		return true
+	if err == nil { // Cache hit
+		if status == STATUS_COMPLETED {
+			log.Debugf("[ImageProcessor] Cache status for %s is COMPLETED.", imageUUID)
+			// Optional: Consider deleting the cache entry now or rely on TTL
+			// go DeleteImageStatus(imageUUID) // Maybe too aggressive? TTL might be better.
+			return true
+		}
+		if status == STATUS_FAILED {
+			log.Debugf("[ImageProcessor] Cache status for %s is FAILED. Considered 'complete' for polling purposes.", imageUUID)
+			// Treat FAILED as complete in terms of stopping polling, though processing failed.
+			return true
+		}
+		// If status is PENDING or PROCESSING, check timestamp below
+	} else {
+		// Log only unexpected errors, not cache misses
+		if err.Error() != "cache: key not found" { // Adjust error check based on your cache library
+			log.Errorf("[ImageProcessor] Error checking cache status for %s: %v", imageUUID, err)
+			// If cache check fails unexpectedly, maybe fallback to DB? Or return false?
+			// Let's fallback to DB check for robustness.
+		} else {
+			log.Debugf("[ImageProcessor] Cache miss for status %s.", imageUUID)
+		}
 	}
 
-	// If there is no cache status or it is not COMPLETED,
-	// we check the database to see if the image already has optimized versions
+	// 2. Check Database Flags (if cache miss or status is PENDING/PROCESSING)
 	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, imageUUID)
-	if err != nil {
-		// If we can't find the image, we assume it hasn't been processed
+	if db == nil {
+		log.Error("[ImageProcessor] DB connection nil in IsImageProcessingComplete for %s.", imageUUID)
+		return false // Cannot check DB, assume not complete
+	}
+	image, dbErr := models.FindImageByUUID(db, imageUUID)
+	if dbErr != nil {
+		log.Warnf("[ImageProcessor] Could not find image %s in DB for status check: %v", imageUUID, dbErr)
+		// If not found in DB and no cache status, it's likely not processed or doesn't exist.
 		return false
 	}
 
-	// For old images: If there is no status in the cache and the image is older than 5 minutes,
-	// we consider it processed (regardless of whether it has thumbnails or not)
-	if status == "" && time.Since(image.CreatedAt) > 5*time.Minute {
-		// Set the status to COMPLETED so that the original image is displayed
-		SetImageStatus(imageUUID, STATUS_COMPLETED)
+	// Determine if optimization was expected based on file type
+	fileExt := strings.ToLower(strings.TrimPrefix(image.FileType, "."))
+	isGif := fileExt == "gif"
+	// isWebP := fileExt == "webp" // <-- Removed unused variable
+	isAVIFInput := fileExt == "avif" // Check if the *input* was AVIF
+	// Optimization is skipped if input is GIF or AVIF. WebP input might still generate thumbnails.
+	optimizationSkipped := isGif || isAVIFInput
+
+	dbIndicatesComplete := false
+	if optimizationSkipped {
+		// For GIF/AVIF input, completion means thumbnails exist (or it's old)
+		dbIndicatesComplete = image.HasThumbnailSmall || image.HasThumbnailMedium
+	} else {
+		// For other types, completion means optimized versions OR thumbnails exist
+		dbIndicatesComplete = image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium
+	}
+
+	if dbIndicatesComplete {
+		log.Debugf("[ImageProcessor] DB flags indicate completion for %s. Updating cache.", imageUUID)
+		// Update cache to COMPLETED as DB confirms processing happened
+		_ = SetImageStatus(imageUUID, STATUS_COMPLETED) // Ignore error here, main goal is return true
 		return true
 	}
 
-	// Check the file type to determine if optimization was skipped
-	fileExt := image.FileType
-	isGif := strings.ToLower(fileExt) == ".gif"
-	isWebP := strings.ToLower(fileExt) == ".webp"
-	isAVIF := strings.ToLower(fileExt) == ".avif"
-	skipOptimization := isGif || isWebP || isAVIF
+	// 3. Check Age / Timeout (if cache miss or status is PENDING/PROCESSING and DB doesn't show completion)
 
-	// For images where optimization is skipped (GIF, WebP, AVIF),
-	// we only check if thumbnails were created
-	if skipOptimization {
-		// For these formats, only thumbnails are created, not optimized versions
-		if image.HasThumbnailSmall || image.HasThumbnailMedium {
-			// Since we know the image has been processed, we update the cache
-			SetImageStatus(imageUUID, STATUS_COMPLETED)
-			return true
-		}
-		
-		// Special case for old WebP/GIF/AVIF images without thumbnails:
-		// If the image is older than 5 minutes, we consider it processed
-		if time.Since(image.CreatedAt) > 5*time.Minute {
-			// Set the status to COMPLETED so that the original image is displayed
-			SetImageStatus(imageUUID, STATUS_COMPLETED)
-			return true
-		}
-	} else {
-		// For normal images, we check if optimized versions or thumbnails were created
-		if image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium {
-			// Since we know the image has been processed, we update the cache
-			SetImageStatus(imageUUID, STATUS_COMPLETED)
-			return true
-		}
+	// Check for old images without cache status (fallback)
+	if status == "" && time.Since(image.CreatedAt) > 5*time.Minute {
+		log.Warnf("[ImageProcessor] Image %s has no cache status but is older than 5 mins. Assuming completed.", imageUUID)
+		_ = SetImageStatus(imageUUID, STATUS_COMPLETED) // Set cache status
+		return true
 	}
 
-	// Check if processing is taking too long or has failed
-	// If the status is PENDING or PROCESSING, we check how long it has been in this status
+	// Check for PENDING/PROCESSING timeout
 	if status == STATUS_PENDING || status == STATUS_PROCESSING {
-		// Get the timestamp when the status was set
-		timestamp, err := GetImageStatusTimestamp(imageUUID)
-		if err == nil {
-			// If the status was set more than 60 seconds ago, we assume
-			// that processing has failed or is taking too long
-			if time.Since(timestamp) > 60*time.Second {
-				// Set the status to COMPLETED so that the original image is displayed
-				SetImageStatus(imageUUID, STATUS_COMPLETED)
-				return true
+		timestamp, tsErr := GetImageStatusTimestamp(imageUUID)
+		if tsErr == nil {
+			// Use a longer timeout than 60s, maybe closer to PENDING_TTL/2 ?
+			processingTimeout := 15 * time.Minute
+			if time.Since(timestamp) > processingTimeout {
+				log.Warnf("[ImageProcessor] Image %s status is %s for over %v. Assuming failed/stuck.", imageUUID, status, processingTimeout)
+				_ = SetImageStatus(imageUUID, STATUS_FAILED) // Mark as failed in cache
+				return true                                  // Treat as 'complete' for polling purposes
+			} else {
+				log.Debugf("[ImageProcessor] Image %s is %s, but within timeout (%v).", imageUUID, status, processingTimeout)
 			}
+		} else {
+			// No timestamp found, cannot check timeout reliably. Assume not complete yet.
+			log.Warnf("[ImageProcessor] Image %s is %s but timestamp missing. Cannot check timeout.", imageUUID, status)
 		}
 	}
 
-	// If neither the cache nor the database indicate that the image has been processed,
-	// we assume it is still being processed
+	// 4. Default: Not Complete
+	log.Debugf("[ImageProcessor] Image %s processing is not considered complete yet.", imageUUID)
 	return false
 }
