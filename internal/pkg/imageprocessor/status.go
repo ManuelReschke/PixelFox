@@ -106,8 +106,6 @@ func GetImageStatus(imageUUID string) (string, error) {
 	}
 	key := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
 	status, err := cache.Get(key)
-	// Don't log error here, as cache miss is a normal scenario (handled by caller)
-	// Log only unexpected errors if cache.Get provides them
 	if err != nil && err.Error() != "cache: key not found" { // Adjust error check based on your cache library
 		log.Errorf("[ImageProcessor] Error retrieving cache status for %s: %v", imageUUID, err)
 	}
@@ -187,11 +185,8 @@ func IsImageProcessingComplete(imageUUID string) bool {
 		}
 		// If status is PENDING or PROCESSING, check timestamp below
 	} else {
-		// Log only unexpected errors, not cache misses
 		if err.Error() != "cache: key not found" { // Adjust error check based on your cache library
 			log.Errorf("[ImageProcessor] Error checking cache status for %s: %v", imageUUID, err)
-			// If cache check fails unexpectedly, maybe fallback to DB? Or return false?
-			// Let's fallback to DB check for robustness.
 		} else {
 			log.Debugf("[ImageProcessor] Cache miss for status %s.", imageUUID)
 		}

@@ -36,14 +36,14 @@ const (
 	MaxWorkers  = 3
 )
 
-// Global variables
-var isFFmpegAvailable bool
+// IsFFmpegAvailable Global variables
+var IsFFmpegAvailable bool
 
 // init initializes global variables and settings
 func init() {
 	// Check if ffmpeg is available once at startup
-	isFFmpegAvailable = checkFfmpegAvailable()
-	if !isFFmpegAvailable {
+	IsFFmpegAvailable = checkFfmpegAvailable()
+	if !IsFFmpegAvailable {
 		log.Warn("[ImageProcessor] ffmpeg not found in PATH. AVIF conversion will be disabled.")
 	} else {
 		log.Info("[ImageProcessor] ffmpeg found, AVIF conversion enabled.")
@@ -277,7 +277,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 	// --- Special Handling for AVIF input ---
 	if isAVIF {
 		log.Infof("[ImageProcessor] AVIF input file detected: %s", imageModel.UUID)
-		if !isFFmpegAvailable {
+		if !IsFFmpegAvailable {
 			return fmt.Errorf("ffmpeg/ffprobe not available for processing AVIF input")
 		}
 		var ffprobeErr error
@@ -331,7 +331,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 		} else {
 			hasThumbnailSmall = true
 			log.Debugf("[ImageProcessor] Saved small WebP thumbnail for GIF %s", imageModel.UUID)
-			if isFFmpegAvailable {
+			if IsFFmpegAvailable {
 				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
 					log.Errorf("[ImageProcessor] Failed to create small AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
 				} else {
@@ -347,7 +347,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 		} else {
 			hasThumbnailMedium = true
 			log.Debugf("[ImageProcessor] Saved medium WebP thumbnail for GIF %s", imageModel.UUID)
-			if isFFmpegAvailable {
+			if IsFFmpegAvailable {
 				if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
 					log.Errorf("[ImageProcessor] Failed to create medium AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
 				} else {
@@ -367,7 +367,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 			log.Debugf("[ImageProcessor] Saved optimized WebP for %s", imageModel.UUID)
 		}
 		// Optimized AVIF
-		if isFFmpegAvailable {
+		if IsFFmpegAvailable {
 			if err := convertToAVIF(imgDecoded, optimizedAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to convert to optimized AVIF for %s: %v", imageModel.UUID, err)
 			} else {
@@ -384,7 +384,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 		} else {
 			hasThumbnailSmall = true
 			log.Debugf("[ImageProcessor] Saved small WebP thumbnail for %s", imageModel.UUID)
-			if isFFmpegAvailable {
+			if IsFFmpegAvailable {
 				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
 					log.Errorf("[ImageProcessor] Failed to save small AVIF thumbnail for %s: %v", imageModel.UUID, err)
 				} else {
@@ -400,7 +400,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 		} else {
 			hasThumbnailMedium = true
 			log.Debugf("[ImageProcessor] Saved medium WebP thumbnail for %s", imageModel.UUID)
-			if isFFmpegAvailable {
+			if IsFFmpegAvailable {
 				if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
 					log.Errorf("[ImageProcessor] Failed to save medium AVIF thumbnail for %s: %v", imageModel.UUID, err)
 				} else {
@@ -482,7 +482,7 @@ func updateImageRecord(imageModel *models.Image, width, height int, hasWebp, has
 
 // convertToAVIF converts an image (provided as image.Image) to AVIF format using ffmpeg.
 func convertToAVIF(img image.Image, outputPath string) error {
-	if !isFFmpegAvailable {
+	if !IsFFmpegAvailable {
 		return fmt.Errorf("ffmpeg is not available for AVIF conversion")
 	}
 	if img == nil {
@@ -548,7 +548,7 @@ func convertToAVIF(img image.Image, outputPath string) error {
 
 // getImageDimensionsWithFFprobe returns the dimensions of an image using ffprobe.
 func getImageDimensionsWithFFprobe(filePath string) (int, int, error) {
-	if !isFFmpegAvailable {
+	if !IsFFmpegAvailable {
 		return 0, 0, fmt.Errorf("ffprobe (part of ffmpeg) is not available")
 	}
 	log.Debugf("[ImageProcessor] Running ffprobe for dimensions: %s", filePath)
@@ -674,7 +674,7 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 	case "avif":
 		// AVIF Thumbnails depend on WebP thumbnails existing AND ffmpeg being available
 		canHaveAvifThumb := (lowerSize == "small" && imageModel.HasThumbnailSmall) || (lowerSize == "medium" && imageModel.HasThumbnailMedium)
-		if isThumbnail && canHaveAvifThumb && isFFmpegAvailable {
+		if isThumbnail && canHaveAvifThumb && IsFFmpegAvailable {
 			finalExt = ".avif"
 		} else if !isThumbnail && imageModel.HasAVIF {
 			finalExt = ".avif"

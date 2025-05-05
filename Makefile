@@ -76,10 +76,22 @@ restart:
 	cd $(PROJECT_ROOT) && docker-compose restart
 
 # Golang Tests ausführen
-.PHONY: test
-test:
+.PHONY: test-local
+test-local:
 	@echo "🧪 Führe Tests aus..."
 	cd $(PROJECT_ROOT) && go test ./...
+
+# Golang Tests ausführen
+.PHONY: test-in-docker
+test-in-docker:
+	@echo "🧪 Führe Tests in Docker aus..."
+	cd $(PROJECT_ROOT) && docker-compose exec -T app go test -v ./...
+
+# Golang Tests ausführen
+.PHONY: test-in-docker-internal
+test-in-docker-internal:
+	@echo "🧪 Führe Internal pkg Tests aus..."
+	cd $(PROJECT_ROOT) && docker-compose exec -T app go test -v ./internal/pkg/...
 
 # Migrationen ausführen
 .PHONY: migrate-up
@@ -134,6 +146,8 @@ help:
 	@echo "  make stop               - Stopppe Docker Container"
 	@echo "  make restart            - Neustarten der Container"
 	@echo "  make test               - Führe Tests aus"
+	@echo "  make test-in-docker     - Führe Tests im Docker Container aus"
+	@echo "  make test-in-docker-internal - Führe Tests im Docker Container aus nur für Internal pkg"
 	@echo "  make migrate-up         - Führe alle ausstehenden Migrationen aus"
 	@echo "  make migrate-down       - Rolle letzte Migration zurück"
 	@echo "  make migrate-to         - Führe Migration bis zu bestimmter Version aus (version=X)"
