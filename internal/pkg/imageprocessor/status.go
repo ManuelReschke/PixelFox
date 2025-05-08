@@ -33,6 +33,22 @@ const (
 	FAILED_TTL     = 1 * time.Hour    // Längere Zeit für fehlgeschlagene Bilder (für Fehleranalyse)
 )
 
+// Function types for cache operations (for dependency injection in tests)
+type (
+	SetCacheFunc    func(key string, value interface{}, expiration time.Duration) error
+	GetCacheFunc    func(key string) (string, error)
+	GetIntCacheFunc func(key string) (int, error)
+	DeleteCacheFunc func(key string) error
+)
+
+// Default implementations that use the actual cache package
+var (
+	SetCacheImplementation    SetCacheFunc    = cache.Set
+	GetCacheImplementation    GetCacheFunc    = cache.Get
+	GetIntCacheImplementation GetIntCacheFunc = cache.GetInt
+	DeleteCacheImplementation DeleteCacheFunc = cache.Delete
+)
+
 // SetImageStatus sets the processing status of an image in the cache
 func SetImageStatus(imageUUID string, status string) error {
 	if imageUUID == "" || status == "" {
@@ -64,7 +80,7 @@ func SetImageStatus(imageUUID string, status string) error {
 	}
 
 	log.Debugf("[ImageProcessor] Setting cache key '%s' with status '%s' and TTL %v", key, status, ttl)
-	err := cache.Set(key, status, ttl)
+	err := SetCacheImplementation(key, status, ttl)
 	if err != nil {
 		log.Errorf("[ImageProcessor] Failed to set cache status for %s: %v", imageUUID, err)
 	}
@@ -92,7 +108,7 @@ func SetImageStatusTimestamp(imageUUID string, timestamp time.Time, currentStatu
 	}
 
 	log.Debugf("[ImageProcessor] Setting cache timestamp key '%s' with value '%s' and TTL %v", cacheKey, timestampStr, ttl)
-	err := cache.Set(cacheKey, timestampStr, ttl)
+	err := SetCacheImplementation(cacheKey, timestampStr, ttl)
 	if err != nil {
 		log.Errorf("[ImageProcessor] Failed to set cache timestamp for %s: %v", imageUUID, err)
 	}
@@ -105,9 +121,9 @@ func GetImageStatus(imageUUID string) (string, error) {
 		return "", fmt.Errorf("image UUID is empty")
 	}
 	key := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
-	status, err := cache.Get(key)
-	if err != nil && err.Error() != "cache: key not found" { // Adjust error check based on your cache library
-		log.Errorf("[ImageProcessor] Error retrieving cache status for %s: %v", imageUUID, err)
+	status, err := GetCacheImplementation(key)
+	if err != nil {
+		log.Debugf("[ImageProcessor] Cache miss for status %s: %v", imageUUID, err)
 	}
 	return status, err
 }
@@ -118,20 +134,18 @@ func GetImageStatusTimestamp(imageUUID string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("image UUID is empty")
 	}
 	cacheKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
-	timestampStr, err := cache.Get(cacheKey)
+	timestampStr, err := GetCacheImplementation(cacheKey)
 	if err != nil {
-		// Don't log error here, cache miss is normal
-		if err.Error() != "cache: key not found" { // Adjust error check
-			log.Errorf("[ImageProcessor] Error retrieving cache timestamp for %s: %v", imageUUID, err)
-		}
 		return time.Time{}, err
 	}
 
+	// Parse the timestamp string
 	timestamp, err := time.Parse(time.RFC3339, timestampStr)
 	if err != nil {
-		log.Errorf("[ImageProcessor] Failed to parse timestamp '%s' from cache for %s: %v", timestampStr, imageUUID, err)
-		return time.Time{}, err
+		log.Errorf("[ImageProcessor] Failed to parse timestamp '%s' for %s: %v", timestampStr, imageUUID, err)
+		return time.Time{}, fmt.Errorf("failed to parse timestamp: %w", err)
 	}
+
 	return timestamp, nil
 }
 
@@ -140,53 +154,56 @@ func DeleteImageStatus(imageUUID string) error {
 	if imageUUID == "" {
 		return fmt.Errorf("image UUID is empty")
 	}
+
+	// Delete status key
 	statusKey := fmt.Sprintf(ImageStatusKeyFormat, imageUUID)
+	err := DeleteCacheImplementation(statusKey)
+	if err != nil {
+		log.Warnf("[ImageProcessor] Failed to delete status key for %s: %v", imageUUID, err)
+		// Continue and try to delete timestamp key anyway
+	}
+
+	// Delete timestamp key
 	timestampKey := fmt.Sprintf(ImageStatusTimestampKeyFormat, imageUUID)
-
-	log.Debugf("[ImageProcessor] Deleting cache keys: %s, %s", statusKey, timestampKey)
-
-	err1 := cache.Delete(statusKey)
-	err2 := cache.Delete(timestampKey)
-
-	// Combine errors if necessary, but often logging is sufficient
-	if err1 != nil {
-		log.Warnf("[ImageProcessor] Failed to delete status cache key %s: %v", statusKey, err1)
-	}
-	if err2 != nil {
-		log.Warnf("[ImageProcessor] Failed to delete timestamp cache key %s: %v", timestampKey, err2)
+	errTimestamp := DeleteCacheImplementation(timestampKey)
+	if errTimestamp != nil {
+		log.Warnf("[ImageProcessor] Failed to delete timestamp key for %s: %v", imageUUID, errTimestamp)
+		// Return this error only if the first one was nil
+		if err == nil {
+			err = errTimestamp
+		}
 	}
 
-	// Return the first error encountered, or nil if both succeed
-	if err1 != nil {
-		return err1
-	}
-	return err2 // Returns nil if err1 was nil and err2 is nil
+	return err
 }
 
 // IsImageProcessingComplete checks if image processing is complete using cache and DB fallback.
 func IsImageProcessingComplete(imageUUID string) bool {
 	if imageUUID == "" {
+		log.Warn("[ImageProcessor] Called IsImageProcessingComplete with empty UUID")
 		return false
-	} // Cannot check status without UUID
+	}
 
 	// 1. Check Cache Status
 	status, err := GetImageStatus(imageUUID)
-	if err == nil { // Cache hit
-		if status == STATUS_COMPLETED {
-			log.Debugf("[ImageProcessor] Cache status for %s is COMPLETED.", imageUUID)
-			// Optional: Consider deleting the cache entry now or rely on TTL
-			// go DeleteImageStatus(imageUUID) // Maybe too aggressive? TTL might be better.
+	if err == nil && status != "" {
+		// Status found in cache
+		switch status {
+		case STATUS_COMPLETED:
+			// Status is COMPLETED in cache, done.
+			log.Debugf("[ImageProcessor] Cache indicates status COMPLETED for %s", imageUUID)
 			return true
-		}
-		if status == STATUS_FAILED {
-			log.Debugf("[ImageProcessor] Cache status for %s is FAILED. Considered 'complete' for polling purposes.", imageUUID)
-			// Treat FAILED as complete in terms of stopping polling, though processing failed.
+		case STATUS_FAILED:
+			// Status is FAILED in cache, also considered 'complete' for polling
+			log.Debugf("[ImageProcessor] Cache indicates status FAILED for %s", imageUUID)
 			return true
+		default:
+			// Status is PENDING or PROCESSING, need additional checks
+			log.Debugf("[ImageProcessor] Cache indicates status %s for %s", status, imageUUID)
 		}
-		// If status is PENDING or PROCESSING, check timestamp below
 	} else {
-		if err.Error() != "cache: key not found" { // Adjust error check based on your cache library
-			log.Errorf("[ImageProcessor] Error checking cache status for %s: %v", imageUUID, err)
+		if err != nil {
+			log.Warnf("[ImageProcessor] Error getting processing status from cache for %s: %v", imageUUID, err)
 		} else {
 			log.Debugf("[ImageProcessor] Cache miss for status %s.", imageUUID)
 		}

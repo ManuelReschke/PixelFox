@@ -29,15 +29,29 @@ const (
 	MediumThumbnailSize = 500
 )
 
-// Directory paths
-const (
+// Directory paths and worker settings
+var (
+	// Processing limits to avoid overloading the server
+	MaxWorkers  = 3
+	Throttler   = make(chan struct{}, MaxWorkers)
+
+	// Image quality settings for WebP conversion - can be adjusted via config
+	WebPQuality     = 90 // Default quality for WebP conversion (1-100)
+	SmallThumbSize  = 200
+	MediumThumbSize = 500
+
+	// Directory Paths
 	OriginalDir = "uploads/original"
 	VariantsDir = "uploads/variants"
-	MaxWorkers  = 3
-)
 
-// IsFFmpegAvailable Global variables
-var IsFFmpegAvailable bool
+	// Tool availability flags
+	IsPNGQuantAvailable  = false
+	IsJPEGOptimAvailable = false
+	IsFFmpegAvailable    = false
+
+	// Function for database updates - can be mocked for testing
+	UpdateImageRecordFunc = updateImageRecord
+)
 
 // init initializes global variables and settings
 func init() {
@@ -289,7 +303,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 		hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium = false, false, false, false
 
 		// Update Database record (flags, dimensions, metadata)
-		if err := updateImageRecord(imageModel, width, height, hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium); err != nil {
+		if err := UpdateImageRecordFunc(imageModel, width, height, hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium); err != nil {
 			return err // Return DB update error
 		}
 		log.Infof("[ImageProcessor] AVIF input file %s processed successfully (DB updated).", imageModel.UUID)
@@ -414,7 +428,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 	}
 
 	// --- Database Update ---
-	if err := updateImageRecord(imageModel, width, height, hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium); err != nil {
+	if err := UpdateImageRecordFunc(imageModel, width, height, hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium); err != nil {
 		return err // Return DB update error
 	}
 
