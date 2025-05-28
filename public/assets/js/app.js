@@ -56,29 +56,41 @@ function initChangingWords() {
     if (!wordElement) return;
     
     // Array mit den Wörtern, die angezeigt werden sollen
-    const words = ["schnelles", "sicheres", "anonymes"];
+    const words = ["schnelles", "sicheres", "anonymes", "Made in Germany", "kostenloses", "einfaches", "zuverlässiges"];
     let currentIndex = 0;
     
-    // CSS für den Übergangseffekt
-    wordElement.style.transition = "opacity 0.5s ease-in-out";
+    // CSS für den Übergangseffekt - verbesserte Animation
+    wordElement.style.transition = "opacity 0.8s ease, transform 0.6s ease";
+    wordElement.style.opacity = 1;
     
-    // Funktion zum Ändern des Wortes mit Fade-Effekt
+    // Initiales Wort setzen
+    wordElement.textContent = words[currentIndex];
+    
+    // Funktion zum Ändern des Wortes mit verbessertem Fade-Effekt
     function changeWord() {
-        // Ausblenden
+        // Ausblenden mit leichter Bewegung nach unten
         wordElement.style.opacity = 0;
+        wordElement.style.transform = "translateY(10px)";
         
         setTimeout(() => {
             // Nächstes Wort wählen
             currentIndex = (currentIndex + 1) % words.length;
             wordElement.textContent = words[currentIndex];
             
-            // Einblenden
-            wordElement.style.opacity = 1;
-        }, 500); // Halbe Sekunde zum Ausblenden
+            // Position für Einblendeffekt zurücksetzen
+            wordElement.style.transform = "translateY(-10px)";
+            
+            // Kurze Verzögerung für besseren visuellen Effekt
+            setTimeout(() => {
+                // Einblenden mit Bewegung nach oben
+                wordElement.style.opacity = 1;
+                wordElement.style.transform = "translateY(0)";
+            }, 50);
+        }, 600); // Etwas mehr Zeit zum Ausblenden für flüssigeren Übergang
     }
     
-    // Wort alle 3 Sekunden ändern
-    setInterval(changeWord, 3000);
+    // Wort alle 4 Sekunden ändern für mehr Lesezeit
+    setInterval(changeWord, 4000);
 }
 
 /**
