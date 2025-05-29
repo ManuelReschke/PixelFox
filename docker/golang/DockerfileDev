@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.23-alpine AS fetch-stage
+FROM golang:1.24-alpine AS fetch-stage
 WORKDIR /app
 # dependencies
 RUN apk add --no-cache build-base ffmpeg libwebp-dev
@@ -14,7 +14,7 @@ COPY . .
 RUN templ generate
 
 # Final stage (development)
-FROM golang:1.23-alpine AS dev-stage
+FROM golang:1.24-alpine AS dev-stage
 WORKDIR /app
 RUN apk add --no-cache supervisor ffmpeg libwebp-dev build-base
 # enable CGO (needed for kolesa-teamgo webp)

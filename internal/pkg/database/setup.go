@@ -39,6 +39,7 @@ func SetupDatabase() {
 			DB.AutoMigrate(
 				&models.User{},
 				&models.Image{},
+				&models.ImageMetadata{},
 				&models.Album{},
 				&models.Tag{},
 				&models.Comment{},

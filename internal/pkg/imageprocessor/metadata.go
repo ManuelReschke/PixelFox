@@ -20,6 +20,15 @@ func init() {
 
 // ExtractMetadata extracts EXIF metadata from an image file
 func ExtractMetadata(image *models.Image, filePath string) error {
+	// Create or get the metadata object
+	metadata := &models.ImageMetadata{}
+	if image.Metadata != nil {
+		metadata = image.Metadata
+	} else {
+		metadata.ImageID = image.ID
+		image.Metadata = metadata
+	}
+
 	// Open the image file
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -61,25 +70,25 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 	if m, err := x.Get(exif.Model); err == nil {
 		s := strings.Trim(m.String(), `"`)
 		trimmed := strings.TrimSpace(s)
-		image.CameraModel = &trimmed
+		metadata.CameraModel = &trimmed
 	}
 
 	// 2. Date and Time
 	if dt, err := x.DateTime(); err == nil {
-		image.TakenAt = &dt
+		metadata.TakenAt = &dt
 	}
 
 	// 3. GPS Coordinates
 	if lat, long, err := x.LatLong(); err == nil {
-		image.Latitude = &lat
-		image.Longitude = &long
+		metadata.Latitude = &lat
+		metadata.Longitude = &long
 	}
 
 	// 4. Exposure Time
 	if expTag, err := x.Get(exif.ExposureTime); err == nil {
 		raw := expTag.String()
 		trimmed := strings.Trim(raw, `"`)
-		image.ExposureTime = &trimmed
+		metadata.ExposureTime = &trimmed
 	}
 
 	// 5. Aperture (F-Number)
@@ -88,10 +97,10 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		floatVal, err := fTag.Float(0)
 		if err == nil {
 			apertureStr := fmt.Sprintf("f/%.1f", floatVal)
-			image.Aperture = &apertureStr
+			metadata.Aperture = &apertureStr
 		} else {
 			trimmed := strings.Trim(fTag.String(), `"`)
-			image.Aperture = &trimmed
+			metadata.Aperture = &trimmed
 		}
 	}
 
@@ -100,7 +109,7 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		isoVal, err := isoTag.Int(0)
 		if err == nil {
 			iso := int(isoVal)
-			image.ISO = &iso
+			metadata.ISO = &iso
 		}
 	}
 
@@ -109,10 +118,10 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		floatVal, err := flTag.Float(0)
 		if err == nil {
 			focalStr := fmt.Sprintf("%.1fmm", floatVal)
-			image.FocalLength = &focalStr
+			metadata.FocalLength = &focalStr
 		} else {
 			trimmed := strings.Trim(flTag.String(), `"`)
-			image.FocalLength = &trimmed
+			metadata.FocalLength = &trimmed
 		}
 	}
 
@@ -122,7 +131,7 @@ func ExtractMetadata(image *models.Image, filePath string) error {
 		// Continue even if JSON marshaling fails
 	} else {
 		meta := models.JSON(metadataJSON)
-		image.Metadata = &meta
+		metadata.Metadata = &meta
 	}
 
 	return nil

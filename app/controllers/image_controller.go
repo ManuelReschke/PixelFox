@@ -175,7 +175,7 @@ func HandleUpload(c *fiber.Ctx) error {
 
 	// Erfassen der IP-Adresse des Nutzers mit der gemeinsamen Hilfsfunktion
 	ipv4, ipv6 := GetClientIP(c)
-	
+
 	image := models.Image{
 		UUID:     imageUUID,
 		UserID:   c.Locals(USER_ID).(uint),
@@ -439,50 +439,50 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		UUID:               image.UUID,
 		IsProcessing:       true, // Wird später geprüft
 		CameraModel: func() string {
-			if image.CameraModel != nil {
-				return *image.CameraModel
+			if image.Metadata != nil && image.Metadata.CameraModel != nil {
+				return *image.Metadata.CameraModel
 			}
 			return ""
 		}(),
 		TakenAt: func() string {
-			if image.TakenAt != nil {
-				return image.TakenAt.Format("02.01.2006 15:04")
+			if image.Metadata != nil && image.Metadata.TakenAt != nil {
+				return image.Metadata.TakenAt.Format("02.01.2006 15:04")
 			}
 			return ""
 		}(),
 		Latitude: func() string {
-			if image.Latitude != nil {
-				return fmt.Sprintf("%f", *image.Latitude)
+			if image.Metadata != nil && image.Metadata.Latitude != nil {
+				return fmt.Sprintf("%f", *image.Metadata.Latitude)
 			}
 			return ""
 		}(),
 		Longitude: func() string {
-			if image.Longitude != nil {
-				return fmt.Sprintf("%f", *image.Longitude)
+			if image.Metadata != nil && image.Metadata.Longitude != nil {
+				return fmt.Sprintf("%f", *image.Metadata.Longitude)
 			}
 			return ""
 		}(),
 		ExposureTime: func() string {
-			if image.ExposureTime != nil {
-				return *image.ExposureTime
+			if image.Metadata != nil && image.Metadata.ExposureTime != nil {
+				return *image.Metadata.ExposureTime
 			}
 			return ""
 		}(),
 		Aperture: func() string {
-			if image.Aperture != nil {
-				return *image.Aperture
+			if image.Metadata != nil && image.Metadata.Aperture != nil {
+				return *image.Metadata.Aperture
 			}
 			return ""
 		}(),
 		ISO: func() string {
-			if image.ISO != nil {
-				return strconv.Itoa(*image.ISO)
+			if image.Metadata != nil && image.Metadata.ISO != nil {
+				return strconv.Itoa(*image.Metadata.ISO)
 			}
 			return ""
 		}(),
 		FocalLength: func() string {
-			if image.FocalLength != nil {
-				return *image.FocalLength
+			if image.Metadata != nil && image.Metadata.FocalLength != nil {
+				return *image.Metadata.FocalLength
 			}
 			return ""
 		}(),
@@ -506,7 +506,6 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// HandleImageProcessingStatus checks the status of image processing and returns only the image element
 func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	uuid := c.Params("uuid")
 	if uuid == "" {
@@ -543,50 +542,50 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 			OriginalPath: "/" + filepath.Join(image.FilePath, image.FileName),
 			IsProcessing: true,
 			CameraModel: func() string {
-				if image.CameraModel != nil {
-					return *image.CameraModel
+				if image.Metadata != nil && image.Metadata.CameraModel != nil {
+					return *image.Metadata.CameraModel
 				}
 				return ""
 			}(),
 			TakenAt: func() string {
-				if image.TakenAt != nil {
-					return image.TakenAt.Format("02.01.2006 15:04")
+				if image.Metadata != nil && image.Metadata.TakenAt != nil {
+					return image.Metadata.TakenAt.Format("02.01.2006 15:04")
 				}
 				return ""
 			}(),
 			Latitude: func() string {
-				if image.Latitude != nil {
-					return fmt.Sprintf("%f", *image.Latitude)
+				if image.Metadata != nil && image.Metadata.Latitude != nil {
+					return fmt.Sprintf("%f", *image.Metadata.Latitude)
 				}
 				return ""
 			}(),
 			Longitude: func() string {
-				if image.Longitude != nil {
-					return fmt.Sprintf("%f", *image.Longitude)
+				if image.Metadata != nil && image.Metadata.Longitude != nil {
+					return fmt.Sprintf("%f", *image.Metadata.Longitude)
 				}
 				return ""
 			}(),
 			ExposureTime: func() string {
-				if image.ExposureTime != nil {
-					return *image.ExposureTime
+				if image.Metadata != nil && image.Metadata.ExposureTime != nil {
+					return *image.Metadata.ExposureTime
 				}
 				return ""
 			}(),
 			Aperture: func() string {
-				if image.Aperture != nil {
-					return *image.Aperture
+				if image.Metadata != nil && image.Metadata.Aperture != nil {
+					return *image.Metadata.Aperture
 				}
 				return ""
 			}(),
 			ISO: func() string {
-				if image.ISO != nil {
-					return strconv.Itoa(*image.ISO)
+				if image.Metadata != nil && image.Metadata.ISO != nil {
+					return strconv.Itoa(*image.Metadata.ISO)
 				}
 				return ""
 			}(),
 			FocalLength: func() string {
-				if image.FocalLength != nil {
-					return *image.FocalLength
+				if image.Metadata != nil && image.Metadata.FocalLength != nil {
+					return *image.Metadata.FocalLength
 				}
 				return ""
 			}(),
@@ -665,50 +664,50 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		ShareURL:          fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
 		Domain:            c.BaseURL(),
 		CameraModel: func() string {
-			if image.CameraModel != nil {
-				return *image.CameraModel
+			if image.Metadata != nil && image.Metadata.CameraModel != nil {
+				return *image.Metadata.CameraModel
 			}
 			return ""
 		}(),
 		TakenAt: func() string {
-			if image.TakenAt != nil {
-				return image.TakenAt.Format("02.01.2006 15:04")
+			if image.Metadata != nil && image.Metadata.TakenAt != nil {
+				return image.Metadata.TakenAt.Format("02.01.2006 15:04")
 			}
 			return ""
 		}(),
 		Latitude: func() string {
-			if image.Latitude != nil {
-				return fmt.Sprintf("%f", *image.Latitude)
+			if image.Metadata != nil && image.Metadata.Latitude != nil {
+				return fmt.Sprintf("%f", *image.Metadata.Latitude)
 			}
 			return ""
 		}(),
 		Longitude: func() string {
-			if image.Longitude != nil {
-				return fmt.Sprintf("%f", *image.Longitude)
+			if image.Metadata != nil && image.Metadata.Longitude != nil {
+				return fmt.Sprintf("%f", *image.Metadata.Longitude)
 			}
 			return ""
 		}(),
 		ExposureTime: func() string {
-			if image.ExposureTime != nil {
-				return *image.ExposureTime
+			if image.Metadata != nil && image.Metadata.ExposureTime != nil {
+				return *image.Metadata.ExposureTime
 			}
 			return ""
 		}(),
 		Aperture: func() string {
-			if image.Aperture != nil {
-				return *image.Aperture
+			if image.Metadata != nil && image.Metadata.Aperture != nil {
+				return *image.Metadata.Aperture
 			}
 			return ""
 		}(),
 		ISO: func() string {
-			if image.ISO != nil {
-				return strconv.Itoa(*image.ISO)
+			if image.Metadata != nil && image.Metadata.ISO != nil {
+				return strconv.Itoa(*image.Metadata.ISO)
 			}
 			return ""
 		}(),
 		FocalLength: func() string {
-			if image.FocalLength != nil {
-				return *image.FocalLength
+			if image.Metadata != nil && image.Metadata.FocalLength != nil {
+				return *image.Metadata.FocalLength
 			}
 			return ""
 		}(),

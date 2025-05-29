@@ -2,6 +2,7 @@ package imageprocessor
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"gorm.io/gorm"
 )
 
 // Thumbnail sizes
@@ -32,8 +34,8 @@ const (
 // Directory paths and worker settings
 var (
 	// Processing limits to avoid overloading the server
-	MaxWorkers  = 3
-	Throttler   = make(chan struct{}, MaxWorkers)
+	MaxWorkers = 3
+	Throttler  = make(chan struct{}, MaxWorkers)
 
 	// Image quality settings for WebP conversion - can be adjusted via config
 	WebPQuality     = 90 // Default quality for WebP conversion (1-100)
@@ -459,38 +461,63 @@ func updateImageRecord(imageModel *models.Image, width, height int, hasWebp, has
 		log.Error("[ImageProcessor] Database connection is nil, cannot update image record.")
 		return fmt.Errorf("database connection is nil")
 	}
-	updateData := map[string]interface{}{
+
+	// Update image dimensions and variant flags
+	imageUpdateData := map[string]interface{}{
 		"has_webp":             hasWebp,
 		"has_avif":             hasAvif,
 		"has_thumbnail_small":  hasThumbSmall,
 		"has_thumbnail_medium": hasThumbMedium,
 		"width":                width,
 		"height":               height,
-		"camera_model":         imageModel.CameraModel,
-		"exposure_time":        imageModel.ExposureTime,
-		"aperture":             imageModel.Aperture,
-		"focal_length":         imageModel.FocalLength,
-		"metadata":             imageModel.Metadata,
-	}
-	if imageModel.ISO != nil {
-		updateData["iso"] = *imageModel.ISO
-	}
-	if imageModel.Latitude != nil {
-		updateData["latitude"] = *imageModel.Latitude
-	}
-	if imageModel.Longitude != nil {
-		updateData["longitude"] = *imageModel.Longitude
-	}
-	if imageModel.TakenAt != nil && !imageModel.TakenAt.IsZero() {
-		updateData["taken_at"] = *imageModel.TakenAt
 	}
 
-	log.Debugf("[ImageProcessor] Updating database record for %s with data: %+v", imageModel.UUID, updateData)
-	if err := db.Model(&models.Image{}).Where("uuid = ?", imageModel.UUID).Updates(updateData).Error; err != nil {
+	log.Debugf("[ImageProcessor] Updating image record for %s with data: %+v", imageModel.UUID, imageUpdateData)
+	if err := db.Model(&models.Image{}).Where("uuid = ?", imageModel.UUID).Updates(imageUpdateData).Error; err != nil {
 		log.Errorf("[ImageProcessor] Failed to update image %s in database: %v", imageModel.UUID, err)
 		return fmt.Errorf("failed to update image in database: %w", err)
 	}
-	log.Infof("[ImageProcessor] Successfully updated database record for image %s", imageModel.UUID)
+
+	// Get or create metadata record
+	var metadata models.ImageMetadata
+	result := db.Where("image_id = ?", imageModel.ID).First(&metadata)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// Create new metadata record if not found
+			metadata = models.ImageMetadata{
+				ImageID: imageModel.ID,
+			}
+		} else {
+			log.Errorf("[ImageProcessor] Failed to fetch metadata for image %s: %v", imageModel.UUID, result.Error)
+			return fmt.Errorf("failed to fetch metadata: %w", result.Error)
+		}
+	}
+
+	// Update metadata fields if they exist in the image model
+	if imageModel.Metadata != nil {
+		// If the image already has metadata, use it directly
+		metadata = *imageModel.Metadata
+
+		// Make sure the ImageID is set correctly
+		metadata.ImageID = imageModel.ID
+	}
+
+	// Save the metadata record
+	var saveErr error
+	if metadata.ID == 0 {
+		// Create new record
+		saveErr = db.Create(&metadata).Error
+	} else {
+		// Update existing record
+		saveErr = db.Save(&metadata).Error
+	}
+
+	if saveErr != nil {
+		log.Errorf("[ImageProcessor] Failed to save metadata for image %s: %v", imageModel.UUID, saveErr)
+		return fmt.Errorf("failed to save metadata: %w", saveErr)
+	}
+
+	log.Infof("[ImageProcessor] Successfully updated database record and metadata for image %s", imageModel.UUID)
 	return nil
 }
 

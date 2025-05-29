@@ -1,9 +1,6 @@
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,50 +8,6 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
 )
-
-// JSON ist ein Typ für die Speicherung von JSON-Daten in der Datenbank
-type JSON json.RawMessage
-
-// Value implementiert das driver.Valuer Interface
-func (j JSON) Value() (driver.Value, error) {
-	if len(j) == 0 {
-		return nil, nil
-	}
-	return string(j), nil
-}
-
-// Scan implementiert das sql.Scanner Interface
-func (j *JSON) Scan(value interface{}) error {
-	if value == nil {
-		*j = JSON("{}")
-		return nil
-	}
-	var bytes []byte
-	switch v := value.(type) {
-	case []byte:
-		bytes = v
-	case string:
-		bytes = []byte(v)
-	default:
-		return errors.New("invalid scan source")
-	}
-	*j = JSON(bytes)
-	return nil
-}
-
-// MarshalJSON implementiert das json.Marshaler Interface
-func (j JSON) MarshalJSON() ([]byte, error) {
-	if len(j) == 0 {
-		return []byte("null"), nil
-	}
-	return j, nil
-}
-
-// UnmarshalJSON implementiert das json.Unmarshaler Interface
-func (j *JSON) UnmarshalJSON(data []byte) error {
-	*j = JSON(data)
-	return nil
-}
 
 type Image struct {
 	ID                 uint   `gorm:"primaryKey" json:"id"`
@@ -77,19 +30,10 @@ type Image struct {
 	HasAVIF            bool   `gorm:"default:false" json:"has_avif"`
 	HasThumbnailSmall  bool   `gorm:"default:false" json:"has_thumbnail_small"`
 	HasThumbnailMedium bool   `gorm:"default:false" json:"has_thumbnail_medium"`
-	// meta data
-	CameraModel  *string    `gorm:"type:varchar(255)" json:"camera_model"`
-	TakenAt      *time.Time `gorm:"type:datetime" json:"taken_at"`
-	Latitude     *float64   `gorm:"type:decimal(10,8)" json:"latitude"`
-	Longitude    *float64   `gorm:"type:decimal(11,8)" json:"longitude"`
-	ExposureTime *string    `gorm:"type:varchar(50)" json:"exposure_time"`
-	Aperture     *string    `gorm:"type:varchar(20)" json:"aperture"`
-	ISO          *int       `gorm:"type:int" json:"iso"`
-	FocalLength  *string    `gorm:"type:varchar(20)" json:"focal_length"`
-	Metadata     *JSON      `gorm:"type:json" json:"metadata"`
-	IPv4         string     `gorm:"type:varchar(15);default:null" json:"-"` // IPv4 address of the uploader
-	IPv6         string     `gorm:"type:varchar(45);default:null" json:"-"` // IPv6 address of the uploader
+	IPv4               string `gorm:"type:varchar(15);default:null" json:"-"` // IPv4 address of the uploader
+	IPv6               string `gorm:"type:varchar(45);default:null" json:"-"` // IPv6 address of the uploader
 	// relations
+	Metadata  *ImageMetadata `gorm:"foreignKey:ImageID" json:"metadata,omitempty"`
 	Tags      []Tag          `gorm:"many2many:image_tags;" json:"tags,omitempty"`
 	Comments  []Comment      `gorm:"foreignKey:ImageID" json:"comments,omitempty"`
 	Likes     []Like         `gorm:"foreignKey:ImageID" json:"likes,omitempty"`
@@ -149,7 +93,7 @@ func (i *Image) TogglePublic(db *gorm.DB) error {
 // FindByUUID findet ein Bild anhand seiner UUID
 func FindImageByUUID(db *gorm.DB, uuid string) (*Image, error) {
 	var image Image
-	result := db.Where("uuid = ?", uuid).First(&image)
+	result := db.Preload("Metadata").Where("uuid = ?", uuid).First(&image)
 	return &image, result.Error
 }
 

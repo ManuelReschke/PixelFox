@@ -121,7 +121,7 @@ migrate-status:
 .PHONY: db-reset
 db-reset:
 	@echo "🔄 Setze Datenbank zurück..."
-	cd $(PROJECT_ROOT) && docker-compose stop db
+	cd $(PROJECT_ROOT) && docker-compose stop db app
 	cd $(PROJECT_ROOT) && docker-compose rm -f db
 	cd $(PROJECT_ROOT) && docker volume rm pixelfox_db_data || true
 	@echo "🚀 Starte Datenbank neu..."
@@ -129,6 +129,8 @@ db-reset:
 	@echo "⏳ Warte bis die Datenbank bereit ist..."
 	sleep 30
 	@echo "🔼 Führe Migrationen aus..."
+	cd $(PROJECT_ROOT) && docker-compose up -d app
+	sleep 15
 	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go up
 	@echo "✅ Datenbank wurde erfolgreich zurückgesetzt!"
 
