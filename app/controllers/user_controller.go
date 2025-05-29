@@ -20,13 +20,31 @@ import (
 
 func HandleUserProfile(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
-	_ = sess.Get(USER_ID) // Using _ to avoid unused variable warning
+	userID := sess.Get(USER_ID).(uint)
 	username := sess.Get(USER_NAME).(string)
 	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
 
+	// Get user data from database
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "User not found"})
+		return c.Redirect("/")
+	}
+
+	// Get user statistics
+	var imageCount int64
+	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Count(&imageCount)
+
+	var albumCount int64
+	database.DB.Model(&models.Album{}).Where("user_id = ?", userID).Count(&albumCount)
+
+	// Calculate storage usage
+	var totalStorage int64
+	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Select("SUM(file_size)").Row().Scan(&totalStorage)
+
 	csrfToken := c.Locals("csrf").(string)
 
-	profileIndex := user_views.ProfileIndex(username, csrfToken)
+	profileIndex := user_views.ProfileIndex(username, csrfToken, user, int(imageCount), int(albumCount), int64(totalStorage))
 	profile := user_views.Profile(
 		" | Profil", isLoggedIn(c), false, flash.Get(c), username, profileIndex, isAdmin,
 	)
