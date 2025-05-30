@@ -16,33 +16,35 @@ const (
 	CacheKeyImagesTotal = "statistics:images:total"
 	CacheKeyImagesDaily = "statistics:images:daily:%s" // Format with date YYYY-MM-DD
 	CacheKeyUsers       = "statistics:users:total"
+	CacheKeyAlbums      = "statistics:albums:total"
 	CacheExpiration     = 30 * time.Minute
 )
 
-// StatisticsData enthu00e4lt die Statistikdaten fu00fcr die Startseite
+// StatisticsData enthält die Statistikdaten für die Startseite
 type StatisticsData struct {
 	TodayImages int
 	TotalUsers  int
 	TotalImages int
+	TotalAlbums int
 }
 
-// Variablen fu00fcr die Cache-Aktualisierungslogik
+// Variablen für die Cache-Aktualisierungslogik
 var (
 	lastCacheUpdate     time.Time
 	cacheUpdateMutex    sync.Mutex
 	cacheUpdateInterval = 5 * time.Minute // Aktualisiere den Cache alle 5 Minuten
 )
 
-// ShouldUpdateCache pru00fcft, ob der Cache aktualisiert werden sollte
+// ShouldUpdateCache prüft, ob der Cache aktualisiert werden sollte
 func ShouldUpdateCache() bool {
 	cacheUpdateMutex.Lock()
 	defer cacheUpdateMutex.Unlock()
 
-	// Wenn der letzte Update lu00e4nger als das Intervall zuru00fcckliegt, sollte der Cache aktualisiert werden
+	// Wenn der letzte Update länger als das Intervall zurückliegt, sollte der Cache aktualisiert werden
 	return time.Since(lastCacheUpdate) > cacheUpdateInterval
 }
 
-// UpdateCacheIfNeeded aktualisiert den Cache, wenn nu00f6tig
+// UpdateCacheIfNeeded aktualisiert den Cache, wenn nötig
 func UpdateCacheIfNeeded() {
 	if ShouldUpdateCache() {
 		cacheUpdateMutex.Lock()
@@ -60,7 +62,7 @@ func UpdateCacheIfNeeded() {
 	}
 }
 
-// ResetCacheUpdateTimer setzt den Timer fu00fcr die Cache-Aktualisierung zuru00fcck
+// ResetCacheUpdateTimer setzt den Timer für die Cache-Aktualisierung zurück
 func ResetCacheUpdateTimer() {
 	cacheUpdateMutex.Lock()
 	defer cacheUpdateMutex.Unlock()
@@ -98,6 +100,13 @@ func UpdateStatisticsCache() error {
 		return err
 	}
 
+	// Count total albums
+	var totalAlbums int64
+	if err := db.Model(&models.Album{}).Count(&totalAlbums).Error; err != nil {
+		log.Printf("Error counting total albums: %v", err)
+		return err
+	}
+
 	// Store values in cache
 	if err := cache.Set(CacheKeyImagesTotal, strconv.FormatInt(totalImages, 10), CacheExpiration); err != nil {
 		log.Printf("Error caching total images: %v", err)
@@ -115,8 +124,13 @@ func UpdateStatisticsCache() error {
 		return err
 	}
 
-	log.Printf("Statistics updated in cache: Total Images: %d, Today's Images: %d, Total Users: %d",
-		totalImages, todayImages, totalUsers)
+	if err := cache.Set(CacheKeyAlbums, strconv.FormatInt(totalAlbums, 10), CacheExpiration); err != nil {
+		log.Printf("Error caching total albums: %v", err)
+		return err
+	}
+
+	log.Printf("Statistics updated in cache: Total Images: %d, Today's Images: %d, Total Users: %d, Total Albums: %d",
+		totalImages, todayImages, totalUsers, totalAlbums)
 
 	return nil
 }
@@ -217,6 +231,36 @@ func GetTotalUsers() int {
 	return int(count)
 }
 
+// GetTotalAlbums returns the total number of albums from cache or database
+func GetTotalAlbums() int {
+	// Try to get from cache first
+	val, err := cache.Get(CacheKeyAlbums)
+	if err != nil {
+		// If not in cache, get from database and update cache
+		var count int64
+		db := database.GetDB()
+		if err := db.Model(&models.Album{}).Count(&count).Error; err != nil {
+			log.Printf("Error counting total albums: %v", err)
+			return 0
+		}
+
+		// Update cache
+		if err := cache.Set(CacheKeyAlbums, strconv.FormatInt(count, 10), CacheExpiration); err != nil {
+			log.Printf("Error caching total albums: %v", err)
+		}
+
+		return int(count)
+	}
+
+	// Convert string to int
+	count, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return int(count)
+}
+
 // GetStatisticsData returns all statistics data as StatisticsData structure
 func GetStatisticsData() StatisticsData {
 	// Aktualisiere den Cache bei Bedarf
@@ -226,5 +270,6 @@ func GetStatisticsData() StatisticsData {
 		TodayImages: GetTodayImages(),
 		TotalUsers:  GetTotalUsers(),
 		TotalImages: GetTotalImages(),
+		TotalAlbums: GetTotalAlbums(),
 	}
 }
