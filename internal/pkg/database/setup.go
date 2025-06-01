@@ -47,6 +47,7 @@ func SetupDatabase() {
 				&models.AlbumImage{},
 				&models.ImageTag{},
 				&models.Notification{},
+				&models.News{},
 			)
 
 			return

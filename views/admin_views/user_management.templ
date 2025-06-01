@@ -14,40 +14,40 @@ func formatTime(t time.Time) string {
 templ userManagementContent(users []models.User, currentPage int, pages []int) {
 	<div class="mb-6">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-800 mb-2">Benutzerverwaltung</h1>
-			<p class="text-gray-600">Verwalte die Benutzer deiner PixelFox-Anwendung</p>
+			<h1 class="text-3xl font-bold mb-2">Benutzerverwaltung</h1>
+			<p class="opacity-75">Verwalte die Benutzer deiner PixelFox-Anwendung</p>
 		</div>
 	</div>
 
 	<!-- User Table -->
-	<div class="bg-white shadow-md rounded-lg overflow-hidden">
-		<table class="min-w-full divide-y divide-gray-200">
-			<thead class="bg-gray-50">
+	<div class="bg-base-200 shadow-md rounded-lg overflow-hidden">
+		<table class="min-w-full divide-y divide-base-300">
+			<thead class="bg-base-300">
 				<tr>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Benutzer</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rolle</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Erstellt</th>
-					<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Letzter Login</th>
-					<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium opacity-75 uppercase tracking-wider">Benutzer</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium opacity-75 uppercase tracking-wider">Rolle</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium opacity-75 uppercase tracking-wider">Status</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium opacity-75 uppercase tracking-wider">Erstellt</th>
+					<th scope="col" class="px-6 py-3 text-left text-xs font-medium opacity-75 uppercase tracking-wider">Letzter Login</th>
+					<th scope="col" class="px-6 py-3 text-right text-xs font-medium opacity-75 uppercase tracking-wider">Aktionen</th>
 				</tr>
 			</thead>
-			<tbody class="bg-white divide-y divide-gray-200">
+			<tbody class="divide-y divide-base-300">
 				if len(users) == 0 {
 					<tr>
-						<td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Keine Benutzer gefunden</td>
+						<td colspan="6" class="px-6 py-4 text-center text-sm opacity-75">Keine Benutzer gefunden</td>
 					</tr>
 				} else {
 					for _, user := range users {
 						<tr>
 							<td class="px-6 py-4 whitespace-nowrap">
 								<div class="flex items-center">
-									<div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+									<div class="flex-shrink-0 h-10 w-10 rounded-full bg-base-300 flex items-center justify-center opacity-75">
 										{ string(user.Name[0]) }
 									</div>
 									<div class="ml-4">
-										<div class="text-sm font-medium text-gray-900">{ user.Name }</div>
-										<div class="text-sm text-gray-500">{ user.Email }</div>
+										<div class="text-sm font-medium">{ user.Name }</div>
+										<div class="text-sm opacity-75">{ user.Email }</div>
 									</div>
 								</div>
 							</td>
@@ -77,10 +77,10 @@ templ userManagementContent(users []models.User, currentPage int, pages []int) {
 									</span>
 								}
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+							<td class="px-6 py-4 whitespace-nowrap text-sm opacity-75">
 								{ formatTime(user.CreatedAt) }
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+							<td class="px-6 py-4 whitespace-nowrap text-sm opacity-75">
 								if user.LastLoginAt != nil {
 									{ formatTime(*user.LastLoginAt) }
 								} else {
@@ -91,7 +91,7 @@ templ userManagementContent(users []models.User, currentPage int, pages []int) {
 								<div class="flex items-center justify-end space-x-3">
 									if user.Status == "inactive" {
 										<form action={ templ.SafeURL("/admin/users/resend-activation/" + strconv.FormatUint(uint64(user.ID), 10)) } method="POST" class="inline-block">
-											<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Aktivierungs-E-Mail erneut senden?', icon:'question', showCancelButton:true, confirmButtonText:'Ja', cancelButtonText:'Nein'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"} } class="inline-flex items-center">
+											<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Aktivierungs-E-Mail erneut senden?', icon:'question', showCancelButton:true, confirmButtonText:'Ja', cancelButtonText:'Nein'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"}  } class="inline-flex items-center">
 												<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 hover:text-yellow-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m0 0v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8m18 0l-9 6-9-6" />
 												</svg>
@@ -104,7 +104,7 @@ templ userManagementContent(users []models.User, currentPage int, pages []int) {
 										</svg>
 									</a>
 									<form action={ templ.SafeURL("/admin/users/delete/" + strconv.FormatUint(uint64(user.ID), 10)) } method="GET" class="inline-block">
-										<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Benutzer wirklich löschen?', icon:'warning', showCancelButton:true, confirmButtonText:'Ja, löschen', cancelButtonText:'Abbrechen'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"} } class="inline-flex items-center text-red-600 hover:text-red-900">
+										<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Benutzer wirklich l\u00f6schen?', icon:'warning', showCancelButton:true, confirmButtonText:'Ja, l\u00f6schen', cancelButtonText:'Abbrechen'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"}  } class="inline-flex items-center text-red-600 hover:text-red-900">
 											<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 											</svg>
@@ -124,15 +124,15 @@ templ userManagementContent(users []models.User, currentPage int, pages []int) {
 		<div class="flex justify-center mt-6">
 			<nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
 				if currentPage > 1 {
-					<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(currentPage-1)) } class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-						<span class="sr-only">Zurück</span>
+					<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(currentPage-1)) } class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-base-300 bg-base-200 text-sm font-medium hover:bg-base-300">
+						<span class="sr-only">Zur\u00fcck</span>
 						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
 							<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
 						</svg>
 					</a>
 				} else {
-					<span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400">
-						<span class="sr-only">Zurück</span>
+					<span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-base-300 bg-base-300 text-sm font-medium opacity-50">
+						<span class="sr-only">Zur\u00fcck</span>
 						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
 							<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
 						</svg>
@@ -140,20 +140,20 @@ templ userManagementContent(users []models.User, currentPage int, pages []int) {
 				}
 				for _, p := range pages {
 					if p == currentPage {
-						<span class="relative inline-flex items-center px-4 py-2 border border-indigo-500 bg-indigo-50 text-sm font-medium text-indigo-600">{ strconv.Itoa(p) }</span>
+						<span class="relative inline-flex items-center px-4 py-2 border border-indigo-500 bg-indigo-100 dark:bg-indigo-900 text-sm font-medium text-indigo-600 dark:text-indigo-300">{ strconv.Itoa(p) }</span>
 					} else {
-						<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(p)) } class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{ strconv.Itoa(p) }</a>
+						<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(p)) } class="relative inline-flex items-center px-4 py-2 border border-base-300 bg-base-200 text-sm font-medium hover:bg-base-300">{ strconv.Itoa(p) }</a>
 					}
 				}
 				if currentPage < len(pages) {
-					<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(currentPage+1)) } class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+					<a href={ templ.SafeURL("/admin/users?page=" + strconv.Itoa(currentPage+1)) } class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-base-300 bg-base-200 text-sm font-medium hover:bg-base-300">
 						<span class="sr-only">Weiter</span>
 						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
 							<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
 						</svg>
 					</a>
 				} else {
-					<span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400">
+					<span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-base-300 bg-base-300 text-sm font-medium opacity-50">
 						<span class="sr-only">Weiter</span>
 						<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
 							<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />

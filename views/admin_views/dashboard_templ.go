@@ -34,44 +34,44 @@ func dashboardContent(totalUsers int, totalImages int, recentUsers []models.User
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-8\"><h1 class=\"text-3xl font-bold text-gray-800 mb-2\">Admin Dashboard</h1><p class=\"text-gray-600\">Verwalte deine PixelFox-Anwendung</p></div><div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8\"><!-- Stats Card: Total Users --><div class=\"bg-white rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-blue-100 text-blue-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-gray-600 text-sm font-medium\">Benutzer gesamt</h2><p class=\"text-2xl font-semibold text-gray-800\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-8\"><h1 class=\"text-3xl font-bold mb-2\">Admin Dashboard</h1><p class=\"opacity-75\">Verwalte deine PixelFox-Anwendung</p></div><div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8\"><!-- Stats Card: Total Users --><div class=\"bg-base-200 rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-blue-100 text-blue-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-sm font-medium opacity-75\">Benutzer gesamt</h2><p class=\"text-2xl font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(totalUsers))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 25, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 25, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div></div></div><!-- Stats Card: Total Images --><div class=\"bg-white rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-green-100 text-green-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-gray-600 text-sm font-medium\">Bilder gesamt</h2><p class=\"text-2xl font-semibold text-gray-800\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div></div></div><!-- Stats Card: Total Images --><div class=\"bg-base-200 rounded-lg shadow p-6\"><div class=\"flex items-center\"><div class=\"p-3 rounded-full bg-green-100 text-green-600\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-8 w-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg></div><div class=\"ml-4\"><h2 class=\"text-sm font-medium opacity-75\">Bilder gesamt</h2><p class=\"text-2xl font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(totalImages))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 40, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 40, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div></div></div><!-- Quick Actions --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-gray-600 text-sm font-medium mb-4\">Schnellzugriff</h2><div class=\"space-y-2\"><a href=\"/admin/users\" class=\"flex items-center text-blue-600 hover:text-blue-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg> Benutzerverwaltung</a> <a href=\"/admin/images\" class=\"flex items-center text-green-600 hover:text-green-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg> Bilderverwaltung</a></div></div></div><!-- Charts --><div class=\"grid grid-cols-1 md:grid-cols-2 gap-6 mb-8\"><!-- Image Chart --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-lg font-medium text-gray-800 mb-4\">Bilder pro Tag (letzte 7 Tage)</h2><div class=\"h-64\"><canvas id=\"imageChart\"></canvas></div></div><!-- User Chart --><div class=\"bg-white rounded-lg shadow p-6\"><h2 class=\"text-lg font-medium text-gray-800 mb-4\">Benutzer pro Tag (letzte 7 Tage)</h2><div class=\"h-64\"><canvas id=\"userChart\"></canvas></div></div></div><!-- Recent Users --><div class=\"bg-white rounded-lg shadow overflow-hidden\"><div class=\"px-6 py-4 border-b border-gray-200\"><h2 class=\"text-lg font-medium text-gray-800\">Neueste Benutzer</h2></div><div class=\"divide-y divide-gray-200\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div></div></div><!-- Quick Actions --><div class=\"bg-base-200 rounded-lg shadow p-6\"><h2 class=\"text-sm font-medium opacity-75 mb-4\">Schnellzugriff</h2><div class=\"space-y-2\"><a href=\"/admin/users\" class=\"flex items-center text-blue-600 hover:text-blue-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z\"></path></svg> Benutzerverwaltung</a> <a href=\"/admin/images\" class=\"flex items-center text-green-600 hover:text-green-800\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg> Bilderverwaltung</a></div></div></div><!-- Charts --><div class=\"grid grid-cols-1 md:grid-cols-2 gap-6 mb-8\"><!-- Image Chart --><div class=\"bg-base-200 rounded-lg shadow p-6\"><h2 class=\"text-lg font-medium mb-4\">Bilder pro Tag (letzte 7 Tage)</h2><div class=\"h-64\"><canvas id=\"imageChart\"></canvas></div></div><!-- User Chart --><div class=\"bg-base-200 rounded-lg shadow p-6\"><h2 class=\"text-lg font-medium mb-4\">Benutzer pro Tag (letzte 7 Tage)</h2><div class=\"h-64\"><canvas id=\"userChart\"></canvas></div></div></div><!-- Recent Users --><div class=\"bg-base-200 rounded-lg shadow overflow-hidden\"><div class=\"px-6 py-4 border-b border-base-300\"><h2 class=\"text-lg font-medium\">Neueste Benutzer</h2></div><div class=\"divide-y divide-base-300\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(recentUsers) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"px-6 py-4 text-gray-500 text-center\">Keine Benutzer gefunden</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"px-6 py-4 opacity-75 text-center\">Keine Benutzer gefunden</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
 			for _, user := range recentUsers {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"px-6 py-4\"><div class=\"flex items-center\"><div class=\"flex-shrink-0\"><div class=\"h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"px-6 py-4\"><div class=\"flex items-center\"><div class=\"flex-shrink-0\"><div class=\"h-10 w-10 rounded-full bg-base-300 flex items-center justify-center opacity-75\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -84,27 +84,27 @@ func dashboardContent(totalUsers int, totalImages int, recentUsers []models.User
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div><div class=\"ml-4\"><div class=\"text-sm font-medium text-gray-900\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div><div class=\"ml-4\"><div class=\"text-sm font-medium\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 102, Col: 66}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 102, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><div class=\"text-sm text-gray-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><div class=\"text-sm opacity-75\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 103, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/dashboard.templ`, Line: 103, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {

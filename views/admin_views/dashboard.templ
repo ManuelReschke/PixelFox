@@ -7,13 +7,13 @@ import (
 
 templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
 	<div class="mb-8">
-		<h1 class="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
-		<p class="text-gray-600">Verwalte deine PixelFox-Anwendung</p>
+		<h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
+		<p class="opacity-75">Verwalte deine PixelFox-Anwendung</p>
 	</div>
 
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 		<!-- Stats Card: Total Users -->
-		<div class="bg-white rounded-lg shadow p-6">
+		<div class="bg-base-200 rounded-lg shadow p-6">
 			<div class="flex items-center">
 				<div class="p-3 rounded-full bg-blue-100 text-blue-600">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -21,14 +21,14 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 					</svg>
 				</div>
 				<div class="ml-4">
-					<h2 class="text-gray-600 text-sm font-medium">Benutzer gesamt</h2>
-					<p class="text-2xl font-semibold text-gray-800">{ strconv.Itoa(totalUsers) }</p>
+					<h2 class="text-sm font-medium opacity-75">Benutzer gesamt</h2>
+					<p class="text-2xl font-semibold">{ strconv.Itoa(totalUsers) }</p>
 				</div>
 			</div>
 		</div>
 
 		<!-- Stats Card: Total Images -->
-		<div class="bg-white rounded-lg shadow p-6">
+		<div class="bg-base-200 rounded-lg shadow p-6">
 			<div class="flex items-center">
 				<div class="p-3 rounded-full bg-green-100 text-green-600">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,15 +36,15 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 					</svg>
 				</div>
 				<div class="ml-4">
-					<h2 class="text-gray-600 text-sm font-medium">Bilder gesamt</h2>
-					<p class="text-2xl font-semibold text-gray-800">{ strconv.Itoa(totalImages) }</p>
+					<h2 class="text-sm font-medium opacity-75">Bilder gesamt</h2>
+					<p class="text-2xl font-semibold">{ strconv.Itoa(totalImages) }</p>
 				</div>
 			</div>
 		</div>
 
 		<!-- Quick Actions -->
-		<div class="bg-white rounded-lg shadow p-6">
-			<h2 class="text-gray-600 text-sm font-medium mb-4">Schnellzugriff</h2>
+		<div class="bg-base-200 rounded-lg shadow p-6">
+			<h2 class="text-sm font-medium opacity-75 mb-4">Schnellzugriff</h2>
 			<div class="space-y-2">
 				<a href="/admin/users" class="flex items-center text-blue-600 hover:text-blue-800">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,16 +65,16 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 	<!-- Charts -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 		<!-- Image Chart -->
-		<div class="bg-white rounded-lg shadow p-6">
-			<h2 class="text-lg font-medium text-gray-800 mb-4">Bilder pro Tag (letzte 7 Tage)</h2>
+		<div class="bg-base-200 rounded-lg shadow p-6">
+			<h2 class="text-lg font-medium mb-4">Bilder pro Tag (letzte 7 Tage)</h2>
 			<div class="h-64">
 				<canvas id="imageChart"></canvas>
 			</div>
 		</div>
 
 		<!-- User Chart -->
-		<div class="bg-white rounded-lg shadow p-6">
-			<h2 class="text-lg font-medium text-gray-800 mb-4">Benutzer pro Tag (letzte 7 Tage)</h2>
+		<div class="bg-base-200 rounded-lg shadow p-6">
+			<h2 class="text-lg font-medium mb-4">Benutzer pro Tag (letzte 7 Tage)</h2>
 			<div class="h-64">
 				<canvas id="userChart"></canvas>
 			</div>
@@ -82,25 +82,25 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 	</div>
 
 	<!-- Recent Users -->
-	<div class="bg-white rounded-lg shadow overflow-hidden">
-		<div class="px-6 py-4 border-b border-gray-200">
-			<h2 class="text-lg font-medium text-gray-800">Neueste Benutzer</h2>
+	<div class="bg-base-200 rounded-lg shadow overflow-hidden">
+		<div class="px-6 py-4 border-b border-base-300">
+			<h2 class="text-lg font-medium">Neueste Benutzer</h2>
 		</div>
-		<div class="divide-y divide-gray-200">
+		<div class="divide-y divide-base-300">
 			if len(recentUsers) == 0 {
-				<div class="px-6 py-4 text-gray-500 text-center">Keine Benutzer gefunden</div>
+				<div class="px-6 py-4 opacity-75 text-center">Keine Benutzer gefunden</div>
 			} else {
 				for _, user := range recentUsers {
 					<div class="px-6 py-4">
 						<div class="flex items-center">
 							<div class="flex-shrink-0">
-								<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+								<div class="h-10 w-10 rounded-full bg-base-300 flex items-center justify-center opacity-75">
 									{ string(user.Name[0]) }
 								</div>
 							</div>
 							<div class="ml-4">
-								<div class="text-sm font-medium text-gray-900">{ user.Name }</div>
-								<div class="text-sm text-gray-500">{ user.Email }</div>
+								<div class="text-sm font-medium">{ user.Name }</div>
+								<div class="text-sm opacity-75">{ user.Email }</div>
 							</div>
 							<div class="ml-auto">
 								<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">

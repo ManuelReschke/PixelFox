@@ -1,0 +1,82 @@
+package views
+
+import (
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+	"github.com/gofiber/fiber/v2"
+)
+
+templ NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) {
+	@Layout(viewmodel.Layout{
+		Page:          "news",
+		FromProtected: fromProtected,
+		IsError:       false,
+		Msg:           flashMsg,
+		Username:      "",
+		IsAdmin:       false,
+		OGViewModel:   &viewmodel.OpenGraph{
+			Title:       news.Title + " - PixelFox News",
+			Description: stripHTMLAndTruncate(news.Content, 150),
+			Image:       "/img/pixelfox-logo.png",
+			URL:         "/news/" + news.Slug,
+		},
+	}) {
+		<div class="container mx-auto px-4 py-8 max-w-4xl">
+			<div class="mb-6">
+				<a href="/news" class="btn btn-ghost btn-sm">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+					</svg>
+					Zurück zur Übersicht
+				</a>
+			</div>
+			
+			<article class="prose prose-lg max-w-none">
+				<h1 class="text-3xl font-bold mb-2">{ news.Title }</h1>
+				<div class="flex items-center gap-2 text-base-content/70 mb-6">
+					<span>Von { news.User.Name }</span>
+					<span>•</span>
+					<span>{ news.CreatedAt.Format("02.01.2006 15:04") }</span>
+				</div>
+				
+				<div class="mt-6 news-content">
+					@templ.Raw(news.Content)
+				</div>
+			</article>
+		</div>
+		
+		<style>
+			.news-content img {
+				max-width: 100%;
+				height: auto;
+				border-radius: 0.5rem;
+			}
+			
+			.news-content a {
+				color: hsl(var(--p));
+				text-decoration: underline;
+			}
+			
+			.news-content blockquote {
+				border-left: 4px solid hsl(var(--p));
+				padding-left: 1rem;
+				font-style: italic;
+			}
+			
+			.news-content table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1rem 0;
+			}
+			
+			.news-content th, .news-content td {
+				border: 1px solid hsl(var(--bc) / 0.2);
+				padding: 0.5rem;
+			}
+			
+			.news-content th {
+				background-color: hsl(var(--bc) / 0.1);
+			}
+		</style>
+	}
+}

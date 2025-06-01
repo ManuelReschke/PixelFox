@@ -21,7 +21,10 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)
 
 	// NO AUTH - GENERAL
-	app.Get("/news", loggedInMiddleware, controllers.HandleNews)
+	//app.Get("/news", loggedInMiddleware, controllers.HandleNews)
+	// Public News Routes
+	app.Get("/news", loggedInMiddleware, controllers.HandleNewsIndex)
+	app.Get("/news/:slug", loggedInMiddleware, controllers.HandleNewsShow)
 	app.Get("/about", loggedInMiddleware, controllers.HandleAbout)
 	app.Get("/contact", loggedInMiddleware, controllers.HandleContact)
 	app.Get("/jobs", loggedInMiddleware, controllers.HandleJobs)
@@ -51,6 +54,13 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/images/edit/:uuid", controllers.HandleAdminImageEdit)
 	adminGroup.Post("/images/update/:uuid", controllers.HandleAdminImageUpdate)
 	adminGroup.Get("/images/delete/:uuid", controllers.HandleAdminImageDelete)
+	// Admin News Management Routes
+	adminGroup.Get("/news", controllers.HandleAdminNews)
+	adminGroup.Get("/news/create", controllers.HandleAdminNewsCreate)
+	adminGroup.Post("/news/store", controllers.HandleAdminNewsStore)
+	adminGroup.Get("/news/edit/:id", controllers.HandleAdminNewsEdit)
+	adminGroup.Post("/news/update/:id", controllers.HandleAdminNewsUpdate)
+	adminGroup.Get("/news/delete/:id", controllers.HandleAdminNewsDelete)
 	// Admin Search Route
 	adminGroup.Get("/search", controllers.HandleAdminSearch)
 	// Admin Queue Monitor Route
@@ -99,7 +109,7 @@ func loggedInMiddleware(c *fiber.Ctx) error {
 
 	// Get user ID from session
 	userId := sess.Get(controllers.USER_ID)
-	
+
 	// If no user ID exists, user is not logged in
 	if userId == nil {
 		c.Locals(controllers.FROM_PROTECTED, false)
@@ -108,7 +118,7 @@ func loggedInMiddleware(c *fiber.Ctx) error {
 
 	// Get username from session
 	userName := sess.Get(controllers.USER_NAME)
-	
+
 	// If user ID exists but username is missing, something is inconsistent
 	if userName == nil {
 		// Still consider as logged in, but log a warning
@@ -121,7 +131,7 @@ func loggedInMiddleware(c *fiber.Ctx) error {
 	c.Locals(controllers.FROM_PROTECTED, true)
 	c.Locals(controllers.USER_NAME, userName)
 	c.Locals(controllers.USER_ID, userId.(uint))
-	
+
 	// We can use the global map, but only when necessary
 	// This is thread-safe thanks to our mutex
 	session.SetKeyValue(controllers.USER_NAME, userName.(string))
@@ -139,7 +149,7 @@ func requireAuthMiddleware(c *fiber.Ctx) error {
 
 	// Get user ID from session
 	userId := sess.Get(controllers.USER_ID)
-	
+
 	// If no user ID exists, user is not logged in - redirect to login page
 	if userId == nil {
 		return c.Redirect("/login", fiber.StatusSeeOther)
@@ -147,7 +157,7 @@ func requireAuthMiddleware(c *fiber.Ctx) error {
 
 	// Get username from session
 	userName := sess.Get(controllers.USER_NAME)
-	
+
 	// If user ID exists but username is missing, something is inconsistent
 	if userName == nil {
 		// Still consider as logged in, but only set user ID
@@ -160,7 +170,7 @@ func requireAuthMiddleware(c *fiber.Ctx) error {
 	c.Locals(controllers.FROM_PROTECTED, true)
 	c.Locals(controllers.USER_NAME, userName)
 	c.Locals(controllers.USER_ID, userId.(uint))
-	
+
 	// Store username in the global map (thread-safe)
 	session.SetKeyValue(controllers.USER_NAME, userName.(string))
 

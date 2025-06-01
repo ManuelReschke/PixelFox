@@ -1,0 +1,132 @@
+package admin_views
+
+import (
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"strconv"
+)
+
+templ newsEditContent(news models.News) {
+	<div class="mb-6">
+		<div>
+			<h1 class="text-2xl font-bold">
+				News-Artikel bearbeiten
+			</h1>
+			<p class="opacity-75">Bearbeite den News-Artikel</p>
+		</div>
+	</div>
+
+	<!-- News Edit Form -->
+	<div class="bg-base-200 shadow-md rounded-lg p-6">
+		<form action={ templ.SafeURL("/admin/news/update/" + strconv.FormatUint(news.ID, 10)) } method="POST" class="space-y-6">
+			<div class="grid grid-cols-1 gap-6">
+				<div>
+					<label for="title" class="block text-sm font-medium">Titel</label>
+					<input type="text" name="title" id="title" value={ news.Title } required 
+						class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100"/>
+				</div>
+
+				<div>
+					<label for="slug" class="block text-sm font-medium">Slug</label>
+					<input type="text" name="slug" id="slug" value={ news.Slug } required 
+						class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100"/>
+					<p class="mt-1 text-sm opacity-75">Der Slug wird in der URL verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche.</p>
+				</div>
+
+				<div>
+					<label for="content" class="block text-sm font-medium">Inhalt</label>
+					<textarea name="content" id="content" rows="10" required 
+						class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100">{ news.Content }</textarea>
+					<p class="mt-1 text-sm opacity-75">Markdown wird unterstützt.</p>
+				</div>
+
+				<div>
+					<label for="published" class="block text-sm font-medium">Status</label>
+					<select name="published" id="published" 
+						class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100">
+						if news.Published {
+							<option value="1" selected>Veröffentlicht</option>
+							<option value="0">Entwurf</option>
+						} else {
+							<option value="1">Veröffentlicht</option>
+							<option value="0" selected>Entwurf</option>
+						}
+					</select>
+				</div>
+			</div>
+
+			<div class="flex justify-end space-x-3">
+				<a href="/admin/news" class="btn btn-outline">
+					Abbrechen
+				</a>
+				<button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+					Speichern
+				</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- Editor JS -->
+	<script src="/js/editor.js"></script>
+}
+
+templ newsCreateContent() {
+	<div class="mb-6">
+		<div>
+			<h1 class="text-2xl font-bold">Neuen News-Artikel erstellen</h1>
+			<p class="opacity-75">Erstelle einen neuen News-Artikel</p>
+		</div>
+	</div>
+
+	<!-- News Create Form -->
+	<div class="bg-base-200 shadow-md rounded-lg p-6">
+		<form action="/admin/news/store" method="POST" class="space-y-6">
+			<!-- CSRF Token -->
+			@csrf()
+
+			<div class="grid grid-cols-1 gap-6">
+				<div>
+					<label for="title" class="block text-sm font-medium">Titel</label>
+					<input type="text" name="title" id="title" required class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100" />
+				</div>
+
+				<div>
+					<label for="slug" class="block text-sm font-medium">Slug</label>
+					<input type="text" name="slug" id="slug" required class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100" />
+				</div>
+
+				<div>
+					<label for="content" class="block text-sm font-medium">Inhalt</label>
+					<textarea name="content" id="content" rows="10" required class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100"></textarea>
+				</div>
+
+				<div>
+					<label for="published" class="block text-sm font-medium">Status</label>
+					<select name="published" id="published" class="mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100">
+						<option value="1">Veröffentlicht</option>
+						<option value="0" selected>Entwurf</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="flex justify-end space-x-3">
+				<a href="/admin/news" class="btn btn-outline">
+					Abbrechen
+				</a>
+				<button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+					Speichern
+				</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- Editor JS -->
+	<script src="/js/editor.js"></script>
+}
+
+templ NewsEdit(news models.News) {
+	@AdminLayout(newsEditContent(news))
+}
+
+templ NewsCreate() {
+	@AdminLayout(newsCreateContent())
+}
