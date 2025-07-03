@@ -118,107 +118,61 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 	@templ.JSONScript("imageStatsData", imageStats)
 	@templ.JSONScript("userStatsData", userStats)
 
-	<!-- Chart.js Script -->
-	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<!-- Chart.js Loader (OOB) -->
+	<script hx-swap-oob="true" id="chartjs-loader">
+		function _loadChartJs(callback){
+			if(window.Chart){ callback(); return; }
+			var s=document.createElement('script');
+			s.src='https://cdn.jsdelivr.net/npm/chart.js';
+			s.onload=callback;
+			document.head.appendChild(s);
+		}
+	</script>
+
 	<script>
+		// ensure loader helper exists (may run before OOB script)
+		if (typeof _loadChartJs === 'undefined') {
+			function _loadChartJs(cb){
+				if(window.Chart){ cb(); return; }
+				var s=document.createElement('script');
+				s.src='https://cdn.jsdelivr.net/npm/chart.js';
+				s.onload=cb;
+				document.head.appendChild(s);
+			}
+		}
+
 		// Globale Variablen für die Charts
 		let imageChart = null;
 		let userChart = null;
 
-		// Funktion zum Initialisieren oder Aktualisieren der Charts
-		function initCharts() {
+		function buildCharts(){
 			// Daten aus den JSON-Skripten laden
 			const imageStats = JSON.parse(document.getElementById('imageStatsData').textContent);
 			const userStats = JSON.parse(document.getElementById('userStatsData').textContent);
 
-			// Daten für Charts vorbereiten
 			const imageData = {
 				labels: imageStats.map(stat => stat.date),
-				datasets: [{
-					label: 'Bilder',
-					data: imageStats.map(stat => stat.count),
-					backgroundColor: 'rgba(34, 197, 94, 0.2)',
-					borderColor: 'rgba(34, 197, 94, 1)',
-					borderWidth: 1
-				}]
+				datasets: [{ label:'Bilder', data:imageStats.map(stat=>stat.count), backgroundColor:'rgba(34,197,94,.2)', borderColor:'rgba(34,197,94,1)', borderWidth:1 }]
 			};
 
 			const userData = {
 				labels: userStats.map(stat => stat.date),
-				datasets: [{
-					label: 'Benutzer',
-					data: userStats.map(stat => stat.count),
-					backgroundColor: 'rgba(59, 130, 246, 0.2)',
-					borderColor: 'rgba(59, 130, 246, 1)',
-					borderWidth: 1
-				}]
+				datasets: [{ label:'Benutzer', data:userStats.map(stat=>stat.count), backgroundColor:'rgba(59,130,246,.2)', borderColor:'rgba(59,130,246,1)', borderWidth:1 }]
 			};
 
-			// Chart-Optionen
-			const chartOptions = {
-				responsive: true,
-				maintainAspectRatio: false,
-				scales: {
-					y: {
-						beginAtZero: true,
-						ticks: {
-							precision: 0
-						}
-					}
-				}
-			};
+			const chartOptions = { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } };
 
-			// Bilder-Chart
-			const imageCtx = document.getElementById('imageChart');
-			if (imageCtx) {
-				// Bestehenden Chart zerstören, falls vorhanden
-				if (imageChart) {
-					imageChart.destroy();
-				}
+			const imageCtx=document.getElementById('imageChart');
+			if(imageCtx){ if(imageChart){imageChart.destroy();} imageChart=new Chart(imageCtx.getContext('2d'),{type:'bar', data:imageData, options:chartOptions}); }
 
-				// Neuen Chart erstellen
-				imageChart = new Chart(imageCtx.getContext('2d'), {
-					type: 'bar',
-					data: imageData,
-					options: chartOptions
-				});
-			}
-
-			// Benutzer-Chart
-			const userCtx = document.getElementById('userChart');
-			if (userCtx) {
-				// Bestehenden Chart zerstören, falls vorhanden
-				if (userChart) {
-					userChart.destroy();
-				}
-
-				// Neuen Chart erstellen
-				userChart = new Chart(userCtx.getContext('2d'), {
-					type: 'bar',
-					data: userData,
-					options: chartOptions
-				});
-			}
+			const userCtx=document.getElementById('userChart');
+			if(userCtx){ if(userChart){userChart.destroy();} userChart=new Chart(userCtx.getContext('2d'),{type:'bar', data:userData, options:chartOptions}); }
 		}
 
-		// Charts initialisieren, wenn DOM geladen ist
+		function initCharts(){ _loadChartJs(buildCharts); }
+
 		document.addEventListener('DOMContentLoaded', initCharts);
-
-		// MutationObserver für dynamisches Nachladen
-		const observer = new MutationObserver(function(mutations) {
-			for (let mutation of mutations) {
-				if (mutation.type === 'childList' && document.getElementById('imageChart') && document.getElementById('userChart')) {
-					initCharts();
-					break;
-				}
-			}
-		});
-
-		// Observer starten
-		observer.observe(document.body, { childList: true, subtree: true });
-
-		// Sofort initialisieren
-		initCharts();
+		document.addEventListener('htmx:afterSettle', function(){ if(document.getElementById('imageChart')){ initCharts(); }});
 	</script>
 }
 

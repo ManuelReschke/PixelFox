@@ -1,10 +1,13 @@
 // Initialize editor when DOM is loaded
+// We rely on two cases:
+// 1. Normal full page load → DOMContentLoaded fires.
+// 2. HTMX boost swap → "htmx:afterSettle" fires after new content in DOM.
+
 document.addEventListener('DOMContentLoaded', initEditor);
 
-// Also initialize when htmx content is swapped
-document.addEventListener('htmx:afterSwap', function(event) {
-    // Check if the swapped content contains our editor element
-    if (event.detail.target.querySelector('#content')) {
+// Runs after HTMX has inserted & settled new content
+document.addEventListener('htmx:afterSettle', function() {
+    if (document.getElementById('content')) {
         initEditor();
     }
 });
@@ -29,8 +32,12 @@ function initEditor() {
         if (typeof ClassicEditor === 'undefined') {
             var script = document.createElement('script');
             // Use the latest version of CKEditor 5 (Classic Editor build)
-            script.src = 'https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js';
+            script.src = 'https://cdn.ckeditor.com/ckeditor5/41.0.0/super-build/ckeditor.js';
             script.onload = function() {
+                // Super-build exposes ClassicEditor under CKEDITOR.ClassicEditor
+                if (typeof ClassicEditor === 'undefined' && window.CKEDITOR && window.CKEDITOR.ClassicEditor) {
+                    window.ClassicEditor = window.CKEDITOR.ClassicEditor;
+                }
                 createEditor(contentElement);
             };
             document.head.appendChild(script);
@@ -66,15 +73,56 @@ function initEditor() {
 }
 
 function createEditor(element) {
-    // Initialize CKEditor with more features
-    ClassicEditor
+    const EditorBuilder = (typeof ClassicEditor !== 'undefined') ? ClassicEditor : (window.CKEDITOR ? window.CKEDITOR.ClassicEditor : null);
+    if (!EditorBuilder) {
+        console.error('ClassicEditor builder not found');
+        return;
+    }
+    // Initialize CKEditor with features
+    EditorBuilder
         .create(element, {
+            removePlugins: [
+                'RealTimeCollaborativeComments',
+                'RealTimeCollaborativeTrackChanges',
+                'RealTimeCollaborativeRevisionHistory',
+                'PresenceList',
+                'Comments',
+                'TrackChanges',
+                'TrackChangesData',
+                'RevisionHistory',
+                'Pagination',
+                'WProofreader',
+                'MathType',
+                'DocumentOutline',
+                'DocumentOutlineEditing',
+                'DocumentOutlineUI',
+                'AI',
+                'AIAdapter',
+                'AIAssistant',
+                'AIAssistantUI',
+                'TableOfContents',
+                'TableOfContentsEditing',
+                'TableOfContentsUI',
+                'FormatPainter',
+                'FormatPainterEditing',
+                'FormatPainterUI',
+                'Template',
+                'TemplateEditing',
+                'TemplateUI',
+                'SlashCommand',
+                'SlashCommandEditing',
+                'SlashCommandUI',
+                'PasteFromOfficeEnhanced',
+                'CaseChange',
+                'CaseChangeEditing',
+                'CaseChangeUI'
+            ],
             toolbar: {
                 items: [
                     'undo', 'redo',
                     '|', 'heading',
                     '|', 'bold', 'italic', 'strikethrough', 'underline',
-                    '|', 'link', 'uploadImage', 'blockQuote', 'code', 'codeBlock',
+                    '|', 'link', 'imageInsert', 'blockQuote', 'code', 'codeBlock',
                     '|', 'bulletedList', 'numberedList', 'todoList',
                     '|', 'outdent', 'indent',
                     '|', 'alignment',
@@ -94,13 +142,11 @@ function createEditor(element) {
                 ]
             },
             image: {
+                insert: {
+                    integrations: [ 'url' ]   // nur URL-Eingabe zulassen
+                },
                 toolbar: [
-                    'imageStyle:inline',
-                    'imageStyle:block',
-                    'imageStyle:side',
-                    '|',
-                    'toggleImageCaption',
-                    'imageTextAlternative'
+                    'imageTextAlternative', '|', 'toggleImageCaption', 'linkImage'
                 ]
             },
             table: {
@@ -121,6 +167,11 @@ function createEditor(element) {
             
             // Store the editor instance
             element.editor = editor;
+            
+            // Keep underlying textarea in sync on every change (important for htmx serialization)
+            editor.model.document.on('change:data', () => {
+                element.value = editor.getData();
+            });
             
             // Add event listener for form submission
             const form = element.closest('form');

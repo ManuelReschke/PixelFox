@@ -9,7 +9,7 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 RUN go install github.com/air-verse/air@v1.61.7
-RUN go install github.com/a-h/templ/cmd/templ@v0.3.857
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.906
 COPY . .
 RUN templ generate
 
