@@ -22,6 +22,8 @@ build-no-cache:
 generate-template:
 	@echo "🔧 Generiere Templates..."
 	cd $(PROJECT_ROOT) && docker exec -it pxlfox-app templ generate ./..
+	@echo "🎨 Aktualisiere CSS..."
+	$(MAKE) build-css
 
 .PHONY: prepare-env-dev
 prepare-env-dev:
@@ -134,6 +136,22 @@ db-reset:
 	cd $(PROJECT_ROOT) && docker-compose exec app go run cmd/migrate/main.go up
 	@echo "✅ Datenbank wurde erfolgreich zurückgesetzt!"
 
+# Frontend Build Befehle
+.PHONY: install-frontend-deps
+install-frontend-deps:
+	@echo "📦 Installiere Frontend-Abhängigkeiten..."
+	cd $(PROJECT_ROOT) && npm install
+
+.PHONY: build-css
+build-css:
+	@echo "🎨 Baue CSS mit Tailwind und DaisyUI..."
+	cd $(PROJECT_ROOT) && npm run build:css
+
+.PHONY: watch-css
+watch-css:
+	@echo "👀 Überwache CSS-Änderungen..."
+	cd $(PROJECT_ROOT) && npm run watch:css
+
 # Hilfsfunktion: make help
 .PHONY: help
 help:
@@ -156,3 +174,6 @@ help:
 	@echo "  make migrate-status     - Zeige Status der Migrationen an"
 	@echo "  make db-reset           - Setze Datenbank zurück (löscht alle Daten)"
 	@echo "  make generate-template  - Generiere Templates"
+	@echo "  make install-frontend-deps - Installiere Frontend-Abhängigkeiten"
+	@echo "  make build-css         - Baue CSS mit Tailwind und DaisyUI"
+	@echo "  make watch-css         - Überwache CSS-Änderungen"

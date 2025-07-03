@@ -1,0 +1,14 @@
+{
+  "name": "pixelfox",
+  "version": "1.0.0",
+  "description": "PixelFox Bildhosting",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/input.css -o ./public/assets/css/styles.css --minify",
+    "watch:css": "tailwindcss -i ./assets/css/input.css -o ./public/assets/css/styles.css --watch"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.1",
+    "daisyui": "^4.6.1",
+    "chart.js": "^4.5.0"
+  }
+}
