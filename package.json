@@ -3,12 +3,18 @@
   "version": "1.0.0",
   "description": "PixelFox Bildhosting",
   "scripts": {
-    "build:css": "tailwindcss -i ./assets/css/input.css -o ./public/assets/css/styles.css --minify",
-    "watch:css": "tailwindcss -i ./assets/css/input.css -o ./public/assets/css/styles.css --watch"
+    "build:css": "tailwindcss -i ./assets/css/input.css -o ./public/css/styles.css --minify",
+    "watch:css": "tailwindcss -i ./assets/css/input.css -o ./public/css/styles.css --watch",
+    "copy:js": "mkdir -p public/js && cp -r node_modules/htmx.org/dist/htmx.min.js node_modules/hyperscript.org/dist/_hyperscript.min.js node_modules/htmx-ext-response-targets/response-targets.js node_modules/sweetalert2/dist/sweetalert2.all.min.js public/js/",
+    "build:all": "npm run build:css && npm run copy:js"
   },
   "dependencies": {
     "tailwindcss": "^3.4.1",
     "daisyui": "^4.6.1",
-    "chart.js": "^4.5.0"
+    "chart.js": "^4.5.0",
+    "htmx.org": "^2.0.6",
+    "hyperscript.org": "^0.9.14",
+    "htmx-ext-response-targets": "^2.0.0",
+    "sweetalert2": "^11.22.2"
   }
 }

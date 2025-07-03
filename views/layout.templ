@@ -41,12 +41,12 @@ templ Layout(layout viewmodel.Layout) {
 				<meta name="twitter:description" content={ layout.OGViewModel.Description } />
 			}
 			
-			<!-- Lokal kompilierte CSS-Dateien (Tailwind + DaisyUI) -->
+			<!-- Lokal kompilierte CSS und JavaScript Dateien -->
 			<link rel="stylesheet" href="/css/styles.css"/>
-			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-			<script src="https://unpkg.com/hyperscript.org@0.9.14"></script>
-			<script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
-			<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.1/dist/sweetalert2.all.min.js"></script>
+			<script src="/js/htmx.min.js"></script>
+			<script src="/js/_hyperscript.min.js"></script>
+			<script src="/js/response-targets.js"></script>
+			<script src="/js/sweetalert2.all.min.js"></script>
 			<!-- Lightweight loader; only initializes CKEditor when #content present -->
 			<script src="/js/editor.js"></script>
 			<script src="/js/app.js"></script>

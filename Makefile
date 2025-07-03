@@ -147,6 +147,15 @@ build-css:
 	@echo "🎨 Baue CSS mit Tailwind und DaisyUI..."
 	cd $(PROJECT_ROOT) && npm run build:css
 
+.PHONY: copy-js
+copy-js:
+	@echo "📄 Kopiere JavaScript-Bibliotheken..."
+	cd $(PROJECT_ROOT) && npm run copy:js
+
+.PHONY: build-frontend
+build-frontend: install-frontend-deps build-css copy-js
+	@echo "🚀 Frontend-Assets wurden erfolgreich gebaut!"
+
 .PHONY: watch-css
 watch-css:
 	@echo "👀 Überwache CSS-Änderungen..."
@@ -176,4 +185,6 @@ help:
 	@echo "  make generate-template  - Generiere Templates"
 	@echo "  make install-frontend-deps - Installiere Frontend-Abhängigkeiten"
 	@echo "  make build-css         - Baue CSS mit Tailwind und DaisyUI"
+	@echo "  make copy-js           - Kopiere JavaScript-Bibliotheken"
+	@echo "  make build-frontend     - Baue alle Frontend-Assets (CSS und JS)"
 	@echo "  make watch-css         - Überwache CSS-Änderungen"

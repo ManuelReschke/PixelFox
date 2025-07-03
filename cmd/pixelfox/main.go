@@ -62,7 +62,7 @@ func NewApplication() *fiber.App {
 
 	// ignore and cache favicon
 	app.Use(favicon.New(favicon.Config{
-		File:         basePath + "public/assets/icons/favicon.ico",
+		File:         basePath + "public/icons/favicon.ico",
 		URL:          "/favicon.ico",
 		CacheControl: "public, max-age=604800",
 	}))
@@ -79,7 +79,7 @@ func NewApplication() *fiber.App {
 	}), monitor.New())
 
 	// static files
-	app.Static("/", basePath+"public/assets", fiber.Static{
+	app.Static("/", basePath+"public", fiber.Static{
 		CacheDuration: 15 * time.Second,
 		Compress:      true,
 	})
