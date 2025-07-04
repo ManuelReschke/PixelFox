@@ -1,9 +1,8 @@
 .idea/
 .vscode/
-tmp/
+.windsurfrules
 .env
+node_modules
+tmp/
 pixelfox-app
 uploads/
-
-# windsurf rules
-.windsurfrules
