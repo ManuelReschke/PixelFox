@@ -1,0 +1,128 @@
+package admin_views
+
+import (
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"strconv"
+)
+
+templ pageEditContent(page models.Page, isEdit bool, csrfToken string) {
+	<div class="mb-6">
+		<div class="flex justify-between items-center">
+			<div>
+				if isEdit {
+					<h1 class="text-3xl font-bold mb-2">Seite bearbeiten</h1>
+					<p class="opacity-75">Bearbeite die Seite "{ page.Title }"</p>
+				} else {
+					<h1 class="text-3xl font-bold mb-2">Neue Seite erstellen</h1>
+					<p class="opacity-75">Erstelle eine neue statische Seite</p>
+				}
+			</div>
+			<div>
+				<a href="/admin/pages" class="btn btn-secondary">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Zurück zur Übersicht
+				</a>
+			</div>
+		</div>
+	</div>
+
+	<!-- Page Form -->
+	<div class="bg-base-200 shadow-md rounded-lg p-6">
+		<form 
+			if isEdit {
+				action={ templ.SafeURL("/admin/pages/update/" + strconv.FormatUint(uint64(page.ID), 10)) }
+			} else {
+				action="/admin/pages/store"
+			}
+			method="POST"
+			class="space-y-6"
+		>
+			<input type="hidden" name="_csrf" value={csrfToken} />
+			
+			<!-- Title Field -->
+			<div>
+				<label for="title" class="block text-sm font-medium mb-2">Titel</label>
+				<input 
+					type="text" 
+					id="title" 
+					name="title" 
+					value={ page.Title }
+					class="input input-bordered w-full" 
+					placeholder="Titel der Seite eingeben"
+					required
+				/>
+			</div>
+
+			<!-- Slug Field -->
+			<div>
+				<label for="slug" class="block text-sm font-medium mb-2">URL Slug</label>
+				<input 
+					type="text" 
+					id="slug" 
+					name="slug" 
+					value={ page.Slug }
+					class="input input-bordered w-full" 
+					placeholder="url-slug-der-seite"
+					pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+					title="Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt"
+					required
+				/>
+				<div class="text-xs opacity-75 mt-1">
+					Die Seite wird unter /page/{ page.Slug } erreichbar sein
+				</div>
+			</div>
+
+			<!-- Content Field -->
+			<div>
+				<label for="content" class="block text-sm font-medium mb-2">Inhalt</label>
+				<textarea 
+					id="content" 
+					name="content" 
+					rows="20"
+					class="textarea textarea-bordered w-full" 
+					placeholder="Hier den Inhalt der Seite eingeben (HTML erlaubt)"
+					required
+				>{ page.Content }</textarea>
+				<div class="text-xs opacity-75 mt-1">
+					HTML-Tags sind erlaubt. Der Inhalt wird in das bestehende Layout eingebettet.
+				</div>
+			</div>
+
+			<!-- Active Status -->
+			<div class="form-control">
+				<label class="label cursor-pointer justify-start">
+					<input 
+						type="checkbox" 
+						name="is_active" 
+						class="checkbox checkbox-primary mr-3"
+						if page.IsActive || !isEdit {
+							checked
+						}
+					/>
+					<span class="label-text">Seite ist aktiv</span>
+				</label>
+				<div class="text-xs opacity-75 mt-1">
+					Nur aktive Seiten sind öffentlich zugänglich
+				</div>
+			</div>
+
+			<!-- Submit Button -->
+			<div class="flex justify-end space-x-3">
+				<a href="/admin/pages" class="btn btn-secondary">Abbrechen</a>
+				<button type="submit" class="btn btn-primary">
+					if isEdit {
+						Seite aktualisieren
+					} else {
+						Seite erstellen
+					}
+				</button>
+			</div>
+		</form>
+	</div>
+}
+
+templ PageEdit(page models.Page, isEdit bool, csrfToken string) {
+	@AdminLayout(pageEditContent(page, isEdit, csrfToken))
+}

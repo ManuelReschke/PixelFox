@@ -23,9 +23,9 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
-	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
+	
 )
 
 // HandleAdminDashboard renders the admin dashboard
@@ -262,7 +262,7 @@ func HandleAdminResendActivation(c *fiber.Ctx) error {
 	db := database.GetDB()
 	var user models.User
 	if err := db.First(&user, id).Error; err != nil {
-		return flash.WithError(c, fiber.Map{"type":"error","message":"Benutzer nicht gefunden"}).Redirect("/admin/users")
+		return flash.WithError(c, fiber.Map{"type": "error", "message": "Benutzer nicht gefunden"}).Redirect("/admin/users")
 	}
 	// generate new token
 	if err := user.GenerateActivationToken(); err != nil {
@@ -278,9 +278,9 @@ func HandleAdminResendActivation(c *fiber.Ctx) error {
 	templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL), user.ActivationToken)).ServeHTTP(rec, &http.Request{})
 	if err := mail.SendMail(user.Email, "Aktivierungslink PIXELFOX.cc", rec.Body.String()); err != nil {
 		log.Printf("Activation email error: %v", err)
-		return flash.WithError(c, fiber.Map{"type":"error","message":"Aktivierungs-Mail konnte nicht gesendet werden"}).Redirect("/admin/users")
+		return flash.WithError(c, fiber.Map{"type": "error", "message": "Aktivierungs-Mail konnte nicht gesendet werden"}).Redirect("/admin/users")
 	}
-	return flash.WithSuccess(c, fiber.Map{"type":"success","message":"Aktivierungs-Mail wurde erneut versendet"}).Redirect("/admin/users")
+	return flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Aktivierungs-Mail wurde erneut versendet"}).Redirect("/admin/users")
 }
 
 // HandleAdminImages renders the image management page
@@ -496,7 +496,7 @@ func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 		"type":    "info",
 		"message": "Suchergebnisse für '" + query + "': " + strconv.Itoa(len(users)) + " Benutzer gefunden",
 	}
-	
+
 	flash.WithInfo(c, fm)
 
 	// Default pagination for search results
@@ -526,7 +526,7 @@ func handleImageSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 		"type":    "info",
 		"message": "Suchergebnisse für '" + query + "': " + strconv.Itoa(len(images)) + " Bilder gefunden",
 	}
-	
+
 	flash.WithInfo(c, fm)
 
 	// Render image management page with search results
@@ -535,4 +535,209 @@ func handleImageSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
+}
+
+// HandleAdminPages renders the page management page
+func HandleAdminPages(c *fiber.Ctx) error {
+	// Get all pages from database
+	db := database.GetDB()
+	pages, err := models.GetAllPages(db)
+	if err != nil {
+		// Handle error
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Error loading pages",
+		}
+		return flash.WithError(c, fm).Redirect("/admin")
+	}
+
+	// Render page management page
+	pageManagement := admin_views.PageManagement(pages)
+	home := views.Home(" | Page Management", isLoggedIn(c), false, flash.Get(c), pageManagement, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminPageCreate renders the page creation form
+func HandleAdminPageCreate(c *fiber.Ctx) error {
+	// Get CSRF token
+	csrfToken := c.Locals("csrf").(string)
+
+	// Render page creation form
+	pageCreate := admin_views.PageEdit(models.Page{}, false, csrfToken)
+	home := views.Home(" | Create Page", isLoggedIn(c), false, flash.Get(c), pageCreate, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminPageStore handles page creation
+func HandleAdminPageStore(c *fiber.Ctx) error {
+	// Get form data
+	title := c.FormValue("title")
+	slug := c.FormValue("slug")
+	content := c.FormValue("content")
+	isActiveStr := c.FormValue("is_active")
+	isActive := isActiveStr == "on"
+
+	// Create new page
+	page := models.Page{
+		Title:    title,
+		Slug:     slug,
+		Content:  content,
+		IsActive: isActive,
+	}
+
+	// Validate page
+	err := page.Validate()
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Validation failed: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/pages/create")
+	}
+
+	// Save to database
+	db := database.GetDB()
+	result := db.Create(&page)
+	if result.Error != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Error creating page: " + result.Error.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/pages/create")
+	}
+
+	// Set success flash message
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Page created successfully",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
+}
+
+// HandleAdminPageEdit renders the page edit form
+func HandleAdminPageEdit(c *fiber.Ctx) error {
+	// Get page ID from params
+	pageID := c.Params("id")
+	if pageID == "" {
+		return c.Redirect("/admin/pages")
+	}
+
+	// Convert ID to uint
+	id, err := strconv.ParseUint(pageID, 10, 32)
+	if err != nil {
+		return c.Redirect("/admin/pages")
+	}
+
+	// Get page from database
+	db := database.GetDB()
+	page, err := models.FindPageByID(db, uint(id))
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Page not found",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/pages")
+	}
+
+	// Get CSRF token
+	csrfToken := c.Locals("csrf").(string)
+
+	// Render page edit form
+	pageEdit := admin_views.PageEdit(*page, true, csrfToken)
+	home := views.Home(" | Edit Page", isLoggedIn(c), false, flash.Get(c), pageEdit, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminPageUpdate handles page update
+func HandleAdminPageUpdate(c *fiber.Ctx) error {
+	// Get page ID from params
+	pageID := c.Params("id")
+	if pageID == "" {
+		return c.Redirect("/admin/pages")
+	}
+
+	// Convert ID to uint
+	id, err := strconv.ParseUint(pageID, 10, 32)
+	if err != nil {
+		return c.Redirect("/admin/pages")
+	}
+
+	// Get page from database
+	db := database.GetDB()
+	page, err := models.FindPageByID(db, uint(id))
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Page not found",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/pages")
+	}
+
+	// Get form data
+	title := c.FormValue("title")
+	slug := c.FormValue("slug")
+	content := c.FormValue("content")
+	isActiveStr := c.FormValue("is_active")
+	isActive := isActiveStr == "on"
+
+	// Update page
+	page.Title = title
+	page.Slug = slug
+	page.Content = content
+	page.IsActive = isActive
+
+	// Validate page
+	err = page.Validate()
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Validation failed: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/pages/edit/" + pageID)
+	}
+
+	// Save to database
+	db.Save(page)
+
+	// Set success flash message
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Page updated successfully",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
+}
+
+// HandleAdminPageDelete handles page deletion
+func HandleAdminPageDelete(c *fiber.Ctx) error {
+	// Get page ID from params
+	pageID := c.Params("id")
+	if pageID == "" {
+		return c.Redirect("/admin/pages")
+	}
+
+	// Convert ID to uint
+	id, err := strconv.ParseUint(pageID, 10, 32)
+	if err != nil {
+		return c.Redirect("/admin/pages")
+	}
+
+	// Delete page from database
+	db := database.GetDB()
+	db.Delete(&models.Page{}, uint(id))
+
+	// Set success flash message
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Page deleted successfully",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
 }

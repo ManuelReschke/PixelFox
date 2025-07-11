@@ -36,6 +36,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// short url for sharing
 	app.Get("/i/:sharelink", loggedInMiddleware, controllers.HandleShareLink)
+	
+	// public page display
+	app.Get("/page/:slug", loggedInMiddleware, controllers.HandlePageDisplay)
 
 	// auth
 	app.Post("/logout", requireAuthMiddleware, controllers.HandleAuthLogout)
@@ -66,6 +69,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// Admin Queue Monitor Route
 	adminGroup.Get("/queues", controllers.HandleAdminQueues)
 	adminGroup.Get("/queues/data", controllers.HandleAdminQueuesData)
+	// Admin Page Management Routes (moved to CSRF protected routes below)
 
 	csrfConf := csrf.Config{
 		KeyLookup:      "form:_csrf",
@@ -92,6 +96,13 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/user/images/edit/:uuid", requireAuthMiddleware, controllers.HandleUserImageEdit)
 	group.Post("/user/images/update/:uuid", requireAuthMiddleware, controllers.HandleUserImageUpdate)
 	group.Get("/user/images/delete/:uuid", requireAuthMiddleware, controllers.HandleUserImageDelete)
+	// Admin Page Management Routes (CSRF protected)
+	group.Get("/admin/pages", RequireAdminMiddleware, controllers.HandleAdminPages)
+	group.Get("/admin/pages/create", RequireAdminMiddleware, controllers.HandleAdminPageCreate)
+	group.Post("/admin/pages/store", RequireAdminMiddleware, controllers.HandleAdminPageStore)
+	group.Get("/admin/pages/edit/:id", RequireAdminMiddleware, controllers.HandleAdminPageEdit)
+	group.Post("/admin/pages/update/:id", RequireAdminMiddleware, controllers.HandleAdminPageUpdate)
+	group.Get("/admin/pages/delete/:id", RequireAdminMiddleware, controllers.HandleAdminPageDelete)
 }
 
 func NewHttpRouter() *HttpRouter {
