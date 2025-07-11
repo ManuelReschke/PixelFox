@@ -31,7 +31,7 @@ templ NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) {
 				</a>
 			</div>
 			
-			<article class="prose prose-lg max-w-none">
+			<article class="max-w-none">
 				<h1 class="text-3xl font-bold mb-2">{ news.Title }</h1>
 				<div class="flex items-center gap-2 text-base-content/70 mb-6">
 					<span>Von { news.User.Name }</span>
@@ -39,44 +39,11 @@ templ NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) {
 					<span>{ news.CreatedAt.Format("02.01.2006 15:04") }</span>
 				</div>
 				
-				<div class="mt-6 news-content">
+				<div class="mt-6 content-output">
 					@templ.Raw(news.Content)
 				</div>
 			</article>
 		</div>
 		
-		<style>
-			.news-content img {
-				max-width: 100%;
-				height: auto;
-				border-radius: 0.5rem;
-			}
-			
-			.news-content a {
-				color: hsl(var(--p));
-				text-decoration: underline;
-			}
-			
-			.news-content blockquote {
-				border-left: 4px solid hsl(var(--p));
-				padding-left: 1rem;
-				font-style: italic;
-			}
-			
-			.news-content table {
-				width: 100%;
-				border-collapse: collapse;
-				margin: 1rem 0;
-			}
-			
-			.news-content th, .news-content td {
-				border: 1px solid hsl(var(--bc) / 0.2);
-				padding: 0.5rem;
-			}
-			
-			.news-content th {
-				background-color: hsl(var(--bc) / 0.1);
-			}
-		</style>
 	}
 }

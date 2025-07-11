@@ -19,3 +19,104 @@
     padding: 10px;
     margin-top: 10px;
 }
+
+/* Content formatting for CKEditor output */
+.content-output {
+    @apply max-w-none;
+}
+
+.content-output h1 {
+    @apply text-4xl font-bold mb-4 mt-6 text-base-content;
+}
+
+.content-output h2 {
+    @apply text-3xl font-bold mb-3 mt-5 text-base-content;
+}
+
+.content-output h3 {
+    @apply text-2xl font-bold mb-2 mt-4 text-base-content;
+}
+
+.content-output h4 {
+    @apply text-xl font-bold mb-2 mt-3 text-base-content;
+}
+
+.content-output h5 {
+    @apply text-lg font-bold mb-1 mt-2 text-base-content;
+}
+
+.content-output h6 {
+    @apply text-base font-bold mb-1 mt-2 text-base-content;
+}
+
+.content-output p {
+    @apply mb-4 text-base-content leading-relaxed;
+}
+
+.content-output ul {
+    @apply list-disc list-inside mb-4 ml-4 space-y-2 text-base-content;
+}
+
+.content-output ol {
+    @apply list-decimal list-inside mb-4 ml-4 space-y-2 text-base-content;
+}
+
+.content-output li {
+    @apply text-base-content;
+}
+
+.content-output blockquote {
+    @apply border-l-4 border-primary pl-4 italic mb-4 text-base-content/80;
+}
+
+.content-output table {
+    @apply table table-zebra w-full mb-4;
+}
+
+.content-output thead {
+    @apply table-header-group;
+}
+
+.content-output tbody {
+    @apply table-row-group;
+}
+
+.content-output tr {
+    @apply table-row;
+}
+
+.content-output th {
+    @apply table-cell font-bold text-base-content;
+}
+
+.content-output td {
+    @apply table-cell text-base-content;
+}
+
+.content-output code {
+    @apply bg-base-200 px-2 py-1 rounded text-sm font-mono text-base-content;
+}
+
+.content-output pre {
+    @apply bg-base-200 p-4 rounded-lg mb-4 overflow-x-auto;
+}
+
+.content-output pre code {
+    @apply bg-transparent p-0 text-base-content;
+}
+
+.content-output a {
+    @apply link link-primary;
+}
+
+.content-output strong {
+    @apply font-bold text-base-content;
+}
+
+.content-output em {
+    @apply italic text-base-content;
+}
+
+.content-output img {
+    @apply max-w-full h-auto rounded-lg mb-4;
+}

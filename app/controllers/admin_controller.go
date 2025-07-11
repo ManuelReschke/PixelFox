@@ -25,7 +25,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
-	
+	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 )
 
 // HandleAdminDashboard renders the admin dashboard

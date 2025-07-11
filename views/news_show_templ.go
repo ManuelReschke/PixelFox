@@ -47,7 +47,7 @@ func NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) templ.Co
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-4 py-8 max-w-4xl\"><div class=\"mb-6\"><a href=\"/news\" class=\"btn btn-ghost btn-sm\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"size-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3\"></path></svg> Zurück zur Übersicht</a></div><article class=\"prose prose-lg max-w-none\"><h1 class=\"text-3xl font-bold mb-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-4 py-8 max-w-4xl\"><div class=\"mb-6\"><a href=\"/news\" class=\"btn btn-ghost btn-sm\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"size-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3\"></path></svg> Zurück zur Übersicht</a></div><article class=\"max-w-none\"><h1 class=\"text-3xl font-bold mb-2\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -86,7 +86,7 @@ func NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) templ.Co
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></div><div class=\"mt-6 news-content\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></div><div class=\"mt-6 content-output\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -94,7 +94,7 @@ func NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) templ.Co
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></article></div><style>\n\t\t\t.news-content img {\n\t\t\t\tmax-width: 100%;\n\t\t\t\theight: auto;\n\t\t\t\tborder-radius: 0.5rem;\n\t\t\t}\n\t\t\t\n\t\t\t.news-content a {\n\t\t\t\tcolor: hsl(var(--p));\n\t\t\t\ttext-decoration: underline;\n\t\t\t}\n\t\t\t\n\t\t\t.news-content blockquote {\n\t\t\t\tborder-left: 4px solid hsl(var(--p));\n\t\t\t\tpadding-left: 1rem;\n\t\t\t\tfont-style: italic;\n\t\t\t}\n\t\t\t\n\t\t\t.news-content table {\n\t\t\t\twidth: 100%;\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tmargin: 1rem 0;\n\t\t\t}\n\t\t\t\n\t\t\t.news-content th, .news-content td {\n\t\t\t\tborder: 1px solid hsl(var(--bc) / 0.2);\n\t\t\t\tpadding: 0.5rem;\n\t\t\t}\n\t\t\t\n\t\t\t.news-content th {\n\t\t\t\tbackground-color: hsl(var(--bc) / 0.1);\n\t\t\t}\n\t\t</style>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></article></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
