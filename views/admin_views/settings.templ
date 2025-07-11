@@ -1,0 +1,87 @@
+package admin_views
+
+import (
+	"github.com/ManuelReschke/PixelFox/app/models"
+)
+
+templ Settings(settings models.AppSettings, csrfToken string) {
+	<div class="container mx-auto px-4 py-8">
+		<div class="max-w-4xl mx-auto">
+			<div class="flex items-center justify-between mb-6">
+				<h1 class="text-3xl font-bold">System Settings</h1>
+			</div>
+
+			<div class="bg-base-100 rounded-lg shadow-md p-6">
+				<form 
+					hx-post="/admin/settings"
+					hx-target="body"
+					hx-push-url="true"
+					method="POST" 
+					action="/admin/settings" 
+					class="space-y-6"
+				>
+					<input type="hidden" name="_csrf" value={ csrfToken }/>
+
+					<!-- Site Title -->
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Site Title</span>
+						</label>
+						<input 
+							type="text" 
+							name="site_title" 
+							value={ settings.SiteTitle }
+							class="input input-bordered w-full" 
+							placeholder="Enter site title"
+							required
+						/>
+						<label class="label">
+							<span class="label-text-alt">This title will be displayed in the navigation and browser title.</span>
+						</label>
+					</div>
+
+					<!-- Site Description -->
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Site Description</span>
+						</label>
+						<textarea 
+							name="site_description" 
+							class="textarea textarea-bordered h-24" 
+							placeholder="Enter site description"
+						>{ settings.SiteDescription }</textarea>
+						<label class="label">
+							<span class="label-text-alt">This description will be used for meta tags and SEO.</span>
+						</label>
+					</div>
+
+					<!-- Image Upload Settings -->
+					<div class="divider">Image Upload Settings</div>
+					
+					<div class="form-control">
+						<label class="label cursor-pointer">
+							<span class="label-text font-semibold">Enable Image Upload</span>
+							<input 
+								type="checkbox" 
+								name="image_upload_enabled" 
+								class="checkbox"
+								if settings.ImageUploadEnabled {
+									checked
+								}
+							/>
+						</label>
+						<label class="label">
+							<span class="label-text-alt">When disabled, users will not be able to upload new images.</span>
+						</label>
+					</div>
+
+					<!-- Actions -->
+					<div class="flex justify-end space-x-4 pt-6">
+						<a href="/admin" class="btn btn-ghost">Cancel</a>
+						<button type="submit" class="btn btn-primary">Save Settings</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+}

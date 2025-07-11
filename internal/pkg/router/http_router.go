@@ -36,7 +36,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// short url for sharing
 	app.Get("/i/:sharelink", loggedInMiddleware, controllers.HandleShareLink)
-	
+
 	// public page display
 	app.Get("/page/:slug", loggedInMiddleware, controllers.HandlePageDisplay)
 
@@ -103,6 +103,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/admin/pages/edit/:id", RequireAdminMiddleware, controllers.HandleAdminPageEdit)
 	group.Post("/admin/pages/update/:id", RequireAdminMiddleware, controllers.HandleAdminPageUpdate)
 	group.Get("/admin/pages/delete/:id", RequireAdminMiddleware, controllers.HandleAdminPageDelete)
+	// Admin Settings Routes (CSRF protected)
+	group.Get("/admin/settings", RequireAdminMiddleware, controllers.HandleAdminSettings)
+	group.Post("/admin/settings", RequireAdminMiddleware, controllers.HandleAdminSettingsUpdate)
 }
 
 func NewHttpRouter() *HttpRouter {

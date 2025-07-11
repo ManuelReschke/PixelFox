@@ -31,6 +31,20 @@ func HandleUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 	}
 
+	// Check if image upload is globally enabled
+	if !models.GetAppSettings().IsImageUploadEnabled() {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Der Bild-Upload ist derzeit deaktiviert",
+		}
+		flash.WithError(c, fm)
+
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusForbidden).SendString("Der Bild-Upload ist derzeit deaktiviert")
+		}
+		return c.Redirect("/")
+	}
+
 	// Use MultipartForm instead of FormFile for better control
 	form, err := c.MultipartForm()
 	if err != nil {

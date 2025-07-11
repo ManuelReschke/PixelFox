@@ -3,6 +3,7 @@ package views
 import (
 	"github.com/ManuelReschke/PixelFox/views/partials"
     "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+    "github.com/ManuelReschke/PixelFox/app/models"
 )
 
 const APP_NAME = "PIXELFOX.cc"
@@ -14,9 +15,9 @@ templ Layout(layout viewmodel.Layout) {
 			<meta charset="UTF-8"/>
 			<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<meta name="description" content="Bilder und Fotos hochladen und kostenlos teilen. Schnellster Bilder Hosting Dienst." />
+			<meta name="description" content={ models.GetAppSettings().GetSiteDescription() } />
 			<meta name="google" content="notranslate"/>
-			<title>{ APP_NAME } { layout.Page }</title>
+			<title>{ models.GetAppSettings().GetSiteTitle() } { layout.Page }</title>
 			<link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
             <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
             <link rel="shortcut icon" href="/icons/favicon.ico" />

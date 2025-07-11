@@ -2,12 +2,13 @@ package partials
 
 import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+import "github.com/ManuelReschke/PixelFox/app/models"
 
 templ Navbar(appName string, layout viewmodel.Layout) {
     <nav class="navbar bg-neutral text-neutral-content fixed z-10 w-full">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
-				{ appName }
+				{ models.GetAppSettings().GetSiteTitle() }
 			</a>
 		</div>
 		<div class="navbar-end">

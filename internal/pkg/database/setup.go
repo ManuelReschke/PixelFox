@@ -49,7 +49,14 @@ func SetupDatabase() {
 				&models.Notification{},
 				&models.News{},
 				&models.Page{},
+				&models.Setting{},
 			)
+
+			// Load settings into memory
+			err = models.LoadSettings(DB)
+			if err != nil {
+				log.Printf("Warning: Failed to load settings: %v", err)
+			}
 
 			return
 		}

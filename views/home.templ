@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+	"github.com/ManuelReschke/PixelFox/app/models"
 )
 
 templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.StatisticsData) {
@@ -27,7 +28,8 @@ templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.Statistic
 				</a>
 			</div>
 		} else {
-            <form id="upload_form" hx-encoding="multipart/form-data" hx-post="/upload" class="flex flex-col items-center gap-6 max-w-md mx-auto p-8 border border-base-300 shadow-lg rounded-xl bg-base-100">
+			if models.GetAppSettings().IsImageUploadEnabled() {
+				<form id="upload_form" hx-encoding="multipart/form-data" hx-post="/upload" class="flex flex-col items-center gap-6 max-w-md mx-auto p-8 border border-base-300 shadow-lg rounded-xl bg-base-100">
               <div class="text-center mb-2">
                 <h3 class="text-xl font-semibold">Bild hochladen</h3>
                 <p class="text-sm text-base-content/70">Wähle ein Bild zum Hochladen aus</p>
@@ -91,7 +93,15 @@ templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.Statistic
                 <span id="error-text" class="ml-2"></span>
               </div>
             </div>
-
+			} else {
+				<div class="flex flex-col items-center gap-4 max-w-md mx-auto p-8 border border-red-300 shadow-lg rounded-xl bg-red-50">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+					</svg>
+					<h3 class="text-xl font-semibold text-red-700">Upload deaktiviert</h3>
+					<p class="text-red-600 text-center">Der Bild-Upload ist derzeit deaktiviert. Bitte wende dich an den Administrator.</p>
+				</div>
+			}
 		}
 	</section>
 

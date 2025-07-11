@@ -741,3 +741,54 @@ func HandleAdminPageDelete(c *fiber.Ctx) error {
 
 	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
 }
+
+// HandleAdminSettings renders the settings page
+func HandleAdminSettings(c *fiber.Ctx) error {
+	// Get current settings
+	settings := models.GetAppSettings()
+
+	// Get CSRF token
+	csrfToken := c.Locals("csrf").(string)
+
+	// Render settings page
+	settingsView := admin_views.Settings(*settings, csrfToken)
+	home := views.Home(" | Settings", isLoggedIn(c), false, flash.Get(c), settingsView, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminSettingsUpdate handles settings update
+func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
+	// Get form data
+	siteTitle := c.FormValue("site_title")
+	siteDescription := c.FormValue("site_description")
+	imageUploadEnabledStr := c.FormValue("image_upload_enabled")
+	imageUploadEnabled := imageUploadEnabledStr == "on"
+
+	// Create new settings
+	newSettings := &models.AppSettings{
+		SiteTitle:          siteTitle,
+		SiteDescription:    siteDescription,
+		ImageUploadEnabled: imageUploadEnabled,
+	}
+
+	// Save settings
+	db := database.GetDB()
+	err := models.SaveSettings(db, newSettings)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Error saving settings: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/settings")
+	}
+
+	// Set success flash message
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Settings saved successfully",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/settings")
+}
