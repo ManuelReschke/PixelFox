@@ -16,12 +16,13 @@ import (
 )
 
 type GalleryImage struct {
-	ID          uint
-	UUID        string
-	Title       string
-	ShareLink   string
-	PreviewPath string
-	CreatedAt   string
+	ID           uint
+	UUID         string
+	Title        string
+	ShareLink    string
+	PreviewPath  string
+	OriginalPath string
+	CreatedAt    string
 }
 
 func Images(
@@ -115,7 +116,7 @@ func ImagesGallery(username string, images []GalleryImage) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Bilder", len(images)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 44, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 45, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -136,7 +137,7 @@ func ImagesGallery(username string, images []GalleryImage) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div><!-- CSS for gallery --><style>\n\t\t/* True masonry layout with CSS columns */\n\t\t.masonry-container {\n\t\t\tcolumn-count: 5;\n\t\t\tcolumn-gap: 15px;\n\t\t\twidth: 100%;\n\t\t}\n\n\t\t.masonry-item {\n\t\t\tbreak-inside: avoid;\n\t\t\tmargin-bottom: 15px;\n\t\t\tdisplay: block;\n\t\t}\n\n\t\t.img-container {\n\t\t\tposition: relative;\n\t\t\toverflow: hidden;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 2px 4px rgba(0,0,0,0.1);\n\t\t}\n\n\t\t.gallery-img {\n\t\t\twidth: 100%;\n\t\t\tdisplay: block;\n\t\t\ttransition: transform 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .gallery-img {\n\t\t\ttransform: scale(1.03);\n\t\t}\n\n\t\t.overlay {\n\t\t\tposition: absolute;\n\t\t\ttop: 0;\n\t\t\tleft: 0;\n\t\t\tright: 0;\n\t\t\tbottom: 0;\n\t\t\tbackground: rgba(0,0,0,0);\n\t\t\ttransition: background 0.3s ease;\n\t\t\tdisplay: flex;\n\t\t\tflex-direction: column;\n\t\t\tjustify-content: space-between;\n\t\t\tpadding: 12px;\n\t\t}\n\n\t\t.img-container:hover .overlay {\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.image-title-overlay {\n\t\t\tcolor: white;\n\t\t\tfont-weight: 500;\n\t\t\ttext-shadow: 0 1px 2px rgba(0,0,0,0.8);\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t\tmax-width: 100%;\n\t\t\toverflow: hidden;\n\t\t\ttext-overflow: ellipsis;\n\t\t\twhite-space: nowrap;\n\t\t\tpadding: 5px;\n\t\t\tborder-radius: 4px;\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.img-container:hover .image-title-overlay {\n\t\t\topacity: 1;\n\t\t}\n\n\t\t.overlay-content {\n\t\t\tdisplay: flex;\n\t\t\tjustify-content: center;\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .overlay-content {\n\t\t\topacity: 1;\n\t\t}\n\n\t\t.view-btn {\n\t\t\tbackground: white;\n\t\t\tborder-radius: 50%;\n\t\t\twidth: 36px;\n\t\t\theight: 36px;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcolor: #333;\n\t\t\tborder: none;\n\t\t\tcursor: pointer;\n\t\t\tbox-shadow: 0 2px 4px rgba(0,0,0,0.2);\n\t\t}\n\n\t\t.view-btn:hover {\n\t\t\tbackground: #f0f0f0;\n\t\t}\n\n\t\t.empty-gallery {\n\t\t\tcolumn-span: all;\n\t\t\tpadding: 48px 0;\n\t\t\ttext-align: center;\n\t\t}\n\n\t\t.loading-indicator {\n\t\t\tdisplay: none;\n\t\t\ttext-align: center;\n\t\t\tpadding: 20px 0;\n\t\t\tmargin-top: 20px;\n\t\t}\n\n\t\t.loading-indicator.active {\n\t\t\tdisplay: block;\n\t\t}\n\n\t\t/* Responsive adjustments */\n\t\t@media (max-width: 1400px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 4;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 1100px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 3;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 768px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 2;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 500px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 1;\n\t\t\t}\n\t\t}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div><!-- CSS for gallery --><style>\n\t\t/* True masonry layout with CSS columns */\n\t\t.masonry-container {\n\t\t\tcolumn-count: 5;\n\t\t\tcolumn-gap: 15px;\n\t\t\twidth: 100%;\n\t\t}\n\n\t\t.masonry-item {\n\t\t\tbreak-inside: avoid;\n\t\t\tmargin-bottom: 15px;\n\t\t\tdisplay: block;\n\t\t}\n\n\t\t.img-container {\n\t\t\tposition: relative;\n\t\t\toverflow: hidden;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 2px 4px rgba(0,0,0,0.1);\n\t\t}\n\n\t\t.gallery-img {\n\t\t\twidth: 100%;\n\t\t\tdisplay: block;\n\t\t\ttransition: transform 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .gallery-img {\n\t\t\ttransform: scale(1.03);\n\t\t}\n\n\t\t.overlay {\n\t\t\tposition: absolute;\n\t\t\ttop: 0;\n\t\t\tleft: 0;\n\t\t\tright: 0;\n\t\t\tbottom: 0;\n\t\t\tbackground: rgba(0,0,0,0);\n\t\t\ttransition: background 0.3s ease;\n\t\t\tdisplay: flex;\n\t\t\tflex-direction: column;\n\t\t\tjustify-content: space-between;\n\t\t\tpadding: 12px;\n\t\t}\n\n\t\t.img-container:hover .overlay {\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.image-title-overlay {\n\t\t\tcolor: white;\n\t\t\tfont-weight: 500;\n\t\t\ttext-shadow: 0 1px 2px rgba(0,0,0,0.8);\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t\tmax-width: 100%;\n\t\t\toverflow: hidden;\n\t\t\ttext-overflow: ellipsis;\n\t\t\twhite-space: nowrap;\n\t\t\tpadding: 5px;\n\t\t\tborder-radius: 4px;\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.img-container:hover .image-title-overlay {\n\t\t\topacity: 1;\n\t\t}\n\n\t\t.overlay-content {\n\t\t\tdisplay: flex;\n\t\t\tjustify-content: center;\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .overlay-content {\n\t\t\topacity: 1;\n\t\t}\n\n\t\t.view-btn {\n\t\t\tbackground: white;\n\t\t\tborder-radius: 50%;\n\t\t\twidth: 36px;\n\t\t\theight: 36px;\n\t\t\tdisplay: flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tcolor: #333;\n\t\t\tborder: none;\n\t\t\tcursor: pointer;\n\t\t\tbox-shadow: 0 2px 4px rgba(0,0,0,0.2);\n\t\t}\n\n\t\t.view-btn:hover {\n\t\t\tbackground: #f0f0f0;\n\t\t}\n\n\t\t.empty-gallery {\n\t\t\tcolumn-span: all;\n\t\t\tpadding: 48px 0;\n\t\t\ttext-align: center;\n\t\t}\n\n\t\t.loading-indicator {\n\t\t\tdisplay: none;\n\t\t\ttext-align: center;\n\t\t\tpadding: 20px 0;\n\t\t\tmargin-top: 20px;\n\t\t}\n\n\t\t.loading-indicator.active {\n\t\t\tdisplay: block;\n\t\t}\n\n\t\t/* Responsive adjustments */\n\t\t@media (max-width: 1400px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 4;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 1100px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 3;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 768px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 2;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 500px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 1;\n\t\t\t}\n\t\t}\n\t</style><!-- Moved JS to app.js -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -167,27 +168,27 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		for _, image := range images {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"masonry-item\"><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"masonry-item\"><div class=\"img-container relative\"><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 templ.SafeURL
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 216, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 219, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"block\"><div class=\"img-container\"><img src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"block\"><img src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(image.PreviewPath)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 218, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 220, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -200,75 +201,88 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 218, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 220, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" class=\"gallery-img\" loading=\"lazy\"><div class=\"overlay\"><div class=\"image-title-overlay\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" class=\"gallery-img\" loading=\"lazy\"></a><div class=\"overlay\"><div class=\"image-title-overlay\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 220, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 223, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"overlay-content flex flex-row gap-2\"><!-- View button --><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"overlay-content flex flex-row gap-2\"><!-- View button --><button type=\"button\" class=\"view-btn image-view-btn\" title=\"Ansehen\" data-image-src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var10 templ.SafeURL
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(image.OriginalPath)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 223, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 226, Col: 129}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" class=\"view-btn\" title=\"View image\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z\"></path> <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z\"></path></svg></a><!-- Edit button --><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z\"></path> <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z\"></path></svg></button><!-- Share button --><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 templ.SafeURL
-			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/user/images/edit/" + image.UUID))
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 230, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 233, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" class=\"view-btn\" title=\"Edit image\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z\"></path> <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z\"></path></svg></a></div></div></div></a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" class=\"view-btn\" title=\"Teilen\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3.75 5.25a2.25 2.25 0 0 1 2.25-2.25h12a2.25 2.25 0 0 1 2.25 2.25v4.5a2.25 2.25 0 0 1-2.25 2.25h-12A2.25 2.25 0 0 1 3.75 9.75v-4.5Z\"></path> <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 8.25v7.5m0 0l-3-3m3 3l3-3\"></path></svg></a><!-- Edit button --><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<!-- Load more trigger with HTMX -->")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(images) >= 25 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div id=\"load-more-trigger\" hx-get=\"")
+			var templ_7745c5c3_Var12 templ.SafeURL
+			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/user/images/edit/" + image.UUID))
 			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/user/images/load?page=%d", page+1))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 246, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 240, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" hx-trigger=\"revealed\" hx-swap=\"afterend\" hx-target=\"#load-more-trigger\" class=\"loading-indicator\"><div class=\"loading-spinner\"></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" class=\"view-btn\" title=\"Bearbeiten\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z\"></path> <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z\"></path></svg></a></div></div></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<!-- Load more trigger with HTMX -->")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if len(images) >= 25 {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div id=\"load-more-trigger\" hx-get=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var13 string
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/user/images/load?page=%d", page+1))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 255, Col: 60}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" hx-trigger=\"revealed\" hx-swap=\"afterend\" hx-target=\"#load-more-trigger\" class=\"loading-indicator\"><div class=\"loading-spinner\"></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -107,13 +107,15 @@ func HandleUserImages(c *fiber.Ctx) error {
 			title = img.Title
 		}
 
+		originalPath := filepath.Join("/", img.FilePath, img.FileName)
 		galleryImages = append(galleryImages, user_views.GalleryImage{
-			ID:          img.ID,
-			UUID:        img.UUID,
-			Title:       title,
-			ShareLink:   img.ShareLink,
-			PreviewPath: previewPath,
-			CreatedAt:   img.CreatedAt.Format("02.01.2006 15:04"),
+			ID:           img.ID,
+			UUID:         img.UUID,
+			Title:        title,
+			ShareLink:    img.ShareLink,
+			PreviewPath:  previewPath,
+			OriginalPath: originalPath,
+			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
 		})
 	}
 
@@ -165,13 +167,15 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			title = img.Title
 		}
 
+		originalPath := filepath.Join("/", img.FilePath, img.FileName)
 		galleryImages = append(galleryImages, user_views.GalleryImage{
-			ID:          img.ID,
-			UUID:        img.UUID,
-			Title:       title,
-			ShareLink:   img.ShareLink,
-			PreviewPath: previewPath,
-			CreatedAt:   img.CreatedAt.Format("02.01.2006 15:04"),
+			ID:           img.ID,
+			UUID:         img.UUID,
+			Title:        title,
+			ShareLink:    img.ShareLink,
+			PreviewPath:  previewPath,
+			OriginalPath: originalPath,
+			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
 		})
 	}
 

@@ -273,7 +273,7 @@ function initUploadForm() {
         // Fehlermeldung anzeigen
         errorMessage.classList.remove('hidden');
         errorText.textContent = 'Netzwerkfehler beim Hochladen. Bitte versuche es später erneut.';
-        uploadResult.classList.remove('hidden');
+        uploadResult.classList.add('hidden');
         
         // Upload-Button wieder aktivieren
         uploadButton.disabled = false;
@@ -323,5 +323,78 @@ function initThemeToggle() {
         const newTheme = this.checked ? 'dark' : 'emerald';
         htmlElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+    });
+}
+
+// Delegate click on gallery view buttons
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.image-view-btn');
+    if (!btn) return;
+    e.preventDefault();
+
+    // Collect all view buttons to build an ordered image list
+    const buttons = Array.from(document.querySelectorAll('.image-view-btn'));
+    const images = buttons.map(b => b.dataset.imageSrc);
+    let currentIndex = buttons.indexOf(btn);
+
+    // Helper to open the modal with navigation arrows
+    const openImageModal = () => {
+        Swal.fire({
+            html: `
+                <div class="relative flex justify-center items-center">
+                    <button type="button" class="nav-btn prev-btn left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10">&#10094;</button>
+                    <img src="${images[currentIndex]}" alt="Bild" class="modal-image max-h-[80vh] w-auto mx-auto"/>
+                    <button type="button" class="nav-btn next-btn right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10">&#10095;</button>
+                </div>`,
+            showConfirmButton: false,
+            showCloseButton: true,
+            background: 'rgba(0,0,0,0.9)',
+            width: '90%',
+            padding: '1rem',
+            didOpen: (popup) => {
+                console.log('Image modal opened', { currentIndex, src: images[currentIndex] });
+                const imgEl = popup.querySelector('.modal-image');
+                const prevBtn = popup.querySelector('.prev-btn');
+                const nextBtn = popup.querySelector('.next-btn');
+
+                const updateImage = () => {
+                    const newSrc = images[currentIndex];
+                    console.log('Update image to', newSrc);
+                    imgEl.src = newSrc;
+                };
+
+                if(prevBtn){
+                  prevBtn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    console.log('Prev arrow clicked');
+                    currentIndex = (currentIndex - 1 + images.length) % images.length;
+                    updateImage();
+                  });
+                }
+
+                if(nextBtn){
+                  nextBtn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    console.log('Next arrow clicked');
+                    currentIndex = (currentIndex + 1) % images.length;
+                    updateImage();
+                  });
+                }
+            }
+        });
+    };
+
+    openImageModal();
+});
+
+// Kept for potential external usage (opens single image without arrows)
+function viewImage(src) {
+    Swal.fire({
+        html: `<img src="${src}" alt="Bild" class="max-h-[80vh] w-auto mx-auto"/>`,
+        showConfirmButton: false,
+        showCloseButton: true,
+        background: 'rgba(0,0,0,0.9)',
+        width: '90%',
+        padding: '1rem',
     });
 }

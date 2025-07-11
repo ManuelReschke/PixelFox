@@ -13,6 +13,7 @@ type GalleryImage struct {
 	Title       string
 	ShareLink   string
 	PreviewPath string
+	OriginalPath string
 	CreatedAt   string
 }
 
@@ -207,36 +208,44 @@ templ ImagesGallery(username string, images []GalleryImage) {
 			}
 		}
 	</style>
+    <!-- Moved JS to app.js -->
 }
 
 // Template for gallery items with pagination
 templ GalleryItems(images []GalleryImage, page int) {
 	for _, image := range images {
 		<div class="masonry-item">
-			<a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="block">
-				<div class="img-container">
+			<div class="img-container relative">
+				<a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="block">
 					<img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
-					<div class="overlay">
-						<div class="image-title-overlay">{ image.Title }</div>
-						<div class="overlay-content flex flex-row gap-2">
-							<!-- View button -->
-							<a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="view-btn" title="View image">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-									<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-								</svg>
-							</a>
-							<!-- Edit button -->
-							<a href={ templ.URL("/user/images/edit/" + image.UUID) } class="view-btn" title="Edit image">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z" />
-									<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z" />
-								</svg>
-							</a>
-						</div>
+				</a>
+				<div class="overlay">
+					<div class="image-title-overlay">{ image.Title }</div>
+					<div class="overlay-content flex flex-row gap-2">
+                        <!-- View button -->
+                        <button type="button" class="view-btn image-view-btn" title="Ansehen" data-image-src={ image.OriginalPath }>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                        </button>
+                        <!-- Share button -->
+                        <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="view-btn" title="Teilen">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25a2.25 2.25 0 0 1 2.25-2.25h12a2.25 2.25 0 0 1 2.25 2.25v4.5a2.25 2.25 0 0 1-2.25 2.25h-12A2.25 2.25 0 0 1 3.75 9.75v-4.5Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v7.5m0 0l-3-3m3 3l3-3" />
+                            </svg>
+                        </a>
+						<!-- Edit button -->
+						<a href={ templ.URL("/user/images/edit/" + image.UUID) } class="view-btn" title="Bearbeiten">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z" />
+								<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z" />
+						    </svg>
+						</a>
 					</div>
 				</div>
-			</a>
+			</div>
 		</div>
 	}
 	
