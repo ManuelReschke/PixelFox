@@ -1,0 +1,6 @@
+package: apiv1
+generate:
+  fiber-server: true
+  models: true
+  embedded-spec: true
+output: internal/api/v1/generated.go

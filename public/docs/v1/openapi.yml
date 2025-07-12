@@ -2,19 +2,55 @@ openapi: "3.0.0"
 info:
   version: 1.0.0
   title: PixelFox.cc API v1
+  description: Official API for PixelFox image sharing platform
+  contact:
+    name: PixelFox API Support
+    url: https://pixelfox.cc
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+  - url: https://pixelfox.cc/api/v1
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Images
+    description: Image management
+  - name: Users
+    description: User management
+  - name: Albums
+    description: Album management
+
 paths:
   /ping:
     get:
+      summary: Health check endpoint
+      description: Returns a simple pong response to verify API availability
+      operationId: getPing
+      tags:
+        - Health
       responses:
         '200':
-          description: pet response
+          description: Successful health check response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pong'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
-    # base types
+    # Health check schemas
     Pong:
       type: object
       required:
@@ -23,3 +59,40 @@ components:
         ping:
           type: string
           example: pong
+          description: Simple response confirming API availability
+
+    # Error handling schemas
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type identifier
+          example: "internal_server_error"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "An unexpected error occurred"
+        details:
+          type: string
+          description: Additional error details
+          example: "Database connection failed"
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token authentication
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []

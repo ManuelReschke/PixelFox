@@ -25,6 +25,13 @@ generate-template:
 	@echo "🎨 Aktualisiere CSS..."
 	$(MAKE) build-css
 
+# API Code-Generierung aus OpenAPI Spec
+.PHONY: generate-api
+generate-api:
+	@echo "🔧 Generiere API Code aus OpenAPI Spec..."
+	cd $(PROJECT_ROOT) && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen -config oapi-codegen.yaml public/docs/v1/openapi.yml
+	@echo "✅ API Code wurde erfolgreich generiert!"
+
 .PHONY: prepare-env-dev
 prepare-env-dev:
 	@echo "🔧 Kopiere $(ENV_DEV_FILE) nach $(ENV_FILE) (Testumgebung)"
@@ -183,6 +190,7 @@ help:
 	@echo "  make migrate-status     - Zeige Status der Migrationen an"
 	@echo "  make db-reset           - Setze Datenbank zurück (löscht alle Daten)"
 	@echo "  make generate-template  - Generiere Templates"
+	@echo "  make generate-api       - Generiere API Code aus OpenAPI Spec"
 	@echo "  make install-frontend-deps - Installiere Frontend-Abhängigkeiten"
 	@echo "  make build-css         - Baue CSS mit Tailwind und DaisyUI"
 	@echo "  make copy-js           - Kopiere JavaScript-Bibliotheken"

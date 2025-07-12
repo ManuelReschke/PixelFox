@@ -1,6 +1,8 @@
 package router
 
 import (
+	apiv1 "github.com/ManuelReschke/PixelFox/internal/api/v1"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
@@ -15,6 +17,11 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 			"message": "Hello from api",
 		})
 	})
+
+	// API v1 routes
+	v1 := api.Group("/v1")
+	apiServer := apiv1.NewAPIServer()
+	apiv1.RegisterHandlers(v1, apiServer)
 }
 
 func NewApiRouter() *ApiRouter {
