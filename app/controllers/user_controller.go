@@ -238,7 +238,7 @@ func HandleUserImageUpdate(c *fiber.Ctx) error {
 	return c.Redirect("/user/images")
 }
 
-// HandleUserImageDelete removes user's image
+// HandleUserImageDelete removes user's image and all variants
 func HandleUserImageDelete(c *fiber.Ctx) error {
 	sess, _ := session.GetSessionStore().Get(c)
 	userID := sess.Get(USER_ID).(uint)
@@ -252,7 +252,13 @@ func HandleUserImageDelete(c *fiber.Ctx) error {
 		flash.WithError(c, fiber.Map{"type": "error", "message": "Bild nicht gefunden"})
 		return c.Redirect("/user/images")
 	}
-	db.Delete(image)
-	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild gelöscht"})
+
+	// Use the new function to delete image and all variants (files and database records)
+	if err := imageprocessor.DeleteImageAndVariants(image); err != nil {
+		flash.WithError(c, fiber.Map{"type": "error", "message": "Fehler beim Löschen des Bildes"})
+		return c.Redirect("/user/images")
+	}
+
+	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild und alle Varianten gelöscht"})
 	return c.Redirect("/user/images")
 }

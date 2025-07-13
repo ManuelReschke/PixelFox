@@ -857,3 +857,86 @@ func calculateProportionalHeight(originalWidth, originalHeight, newWidth int) in
 	ratio := float64(newWidth) / float64(originalWidth)
 	return int(float64(originalHeight) * ratio)
 }
+
+// DeleteImageAndVariants removes all physical files and database records for an image
+func DeleteImageAndVariants(imageModel *models.Image) error {
+	if imageModel == nil || imageModel.UUID == "" {
+		return fmt.Errorf("invalid image data provided")
+	}
+
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	log.Infof("[ImageProcessor] Starting deletion of image %s and all variants", imageModel.UUID)
+
+	// Get all variants for this image
+	variants, err := models.FindVariantsByImageID(db, imageModel.ID)
+	if err != nil {
+		log.Errorf("[ImageProcessor] Failed to find variants for image %s: %v", imageModel.UUID, err)
+		// Continue with deletion attempt even if variants can't be found
+	}
+
+	// Delete all variant files
+	for _, variant := range variants {
+		filePath := filepath.Join(variant.FilePath, variant.FileName)
+		if err := os.Remove(filePath); err != nil {
+			if !os.IsNotExist(err) {
+				log.Errorf("[ImageProcessor] Failed to delete variant file %s: %v", filePath, err)
+			}
+		} else {
+			log.Debugf("[ImageProcessor] Deleted variant file: %s", filePath)
+		}
+	}
+
+	// Delete original file if it exists and is different from variants
+	originalPath := filepath.Join(imageModel.FilePath, imageModel.FileName)
+	if err := os.Remove(originalPath); err != nil {
+		if !os.IsNotExist(err) {
+			log.Errorf("[ImageProcessor] Failed to delete original file %s: %v", originalPath, err)
+		}
+	} else {
+		log.Debugf("[ImageProcessor] Deleted original file: %s", originalPath)
+	}
+
+	// Clean up empty directories
+	// Try to remove the variants directory for this image
+	relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
+	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+	variantsDir := filepath.Join(VariantsDir, relativePath)
+	if err := os.Remove(variantsDir); err != nil {
+		if !os.IsNotExist(err) {
+			log.Debugf("[ImageProcessor] Could not remove variants directory %s (may not be empty): %v", variantsDir, err)
+		}
+	}
+
+	// Remove original directory if empty
+	originalDir := imageModel.FilePath
+	if err := os.Remove(originalDir); err != nil {
+		if !os.IsNotExist(err) {
+			log.Debugf("[ImageProcessor] Could not remove original directory %s (may not be empty): %v", originalDir, err)
+		}
+	}
+
+	// Delete database records - variants first due to foreign key constraints
+	if err := db.Where("image_id = ?", imageModel.ID).Delete(&models.ImageVariant{}).Error; err != nil {
+		log.Errorf("[ImageProcessor] Failed to delete image variants from database for %s: %v", imageModel.UUID, err)
+		return fmt.Errorf("failed to delete image variants from database: %w", err)
+	}
+
+	// Delete metadata
+	if err := db.Where("image_id = ?", imageModel.ID).Delete(&models.ImageMetadata{}).Error; err != nil {
+		log.Errorf("[ImageProcessor] Failed to delete image metadata from database for %s: %v", imageModel.UUID, err)
+		// Don't return error here, continue with image deletion
+	}
+
+	// Delete the main image record
+	if err := db.Delete(imageModel).Error; err != nil {
+		log.Errorf("[ImageProcessor] Failed to delete image from database for %s: %v", imageModel.UUID, err)
+		return fmt.Errorf("failed to delete image from database: %w", err)
+	}
+
+	log.Infof("[ImageProcessor] Successfully deleted image %s and all variants", imageModel.UUID)
+	return nil
+}
