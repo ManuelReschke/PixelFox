@@ -10,28 +10,24 @@ import (
 )
 
 type Image struct {
-	ID                 uint   `gorm:"primaryKey" json:"id"`
-	UUID               string `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"uuid"`
-	UserID             uint   `gorm:"index" json:"user_id"`
-	User               User   `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Title              string `gorm:"type:varchar(255)" json:"title"`
-	Description        string `gorm:"type:text" json:"description"`
-	FilePath           string `gorm:"type:varchar(255);not null" json:"file_path"`
-	FileName           string `gorm:"type:varchar(255);not null" json:"file_name"`
-	FileSize           int64  `gorm:"type:bigint" json:"file_size"`
-	FileType           string `gorm:"type:varchar(50)" json:"file_type"`
-	Width              int    `gorm:"type:int" json:"width"`
-	Height             int    `gorm:"type:int" json:"height"`
-	ShareLink          string `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
-	IsPublic           bool   `gorm:"default:false" json:"is_public"`
-	ViewCount          int    `gorm:"default:0" json:"view_count"`
-	DownloadCount      int    `gorm:"default:0" json:"download_count"`
-	HasWebp            bool   `gorm:"default:false" json:"has_webp"`
-	HasAVIF            bool   `gorm:"default:false" json:"has_avif"`
-	HasThumbnailSmall  bool   `gorm:"default:false" json:"has_thumbnail_small"`
-	HasThumbnailMedium bool   `gorm:"default:false" json:"has_thumbnail_medium"`
-	IPv4               string `gorm:"type:varchar(15);default:null" json:"-"` // IPv4 address of the uploader
-	IPv6               string `gorm:"type:varchar(45);default:null" json:"-"` // IPv6 address of the uploader
+	ID            uint   `gorm:"primaryKey" json:"id"`
+	UUID          string `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"uuid"`
+	UserID        uint   `gorm:"index" json:"user_id"`
+	User          User   `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Title         string `gorm:"type:varchar(255)" json:"title"`
+	Description   string `gorm:"type:text" json:"description"`
+	FilePath      string `gorm:"type:varchar(255);not null" json:"file_path"`
+	FileName      string `gorm:"type:varchar(255);not null" json:"file_name"`
+	FileSize      int64  `gorm:"type:bigint" json:"file_size"`
+	FileType      string `gorm:"type:varchar(50)" json:"file_type"`
+	Width         int    `gorm:"type:int" json:"width"`
+	Height        int    `gorm:"type:int" json:"height"`
+	ShareLink     string `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
+	IsPublic      bool   `gorm:"default:false" json:"is_public"`
+	ViewCount     int    `gorm:"default:0" json:"view_count"`
+	DownloadCount int    `gorm:"default:0" json:"download_count"`
+	IPv4          string `gorm:"type:varchar(15);default:null" json:"-"` // IPv4 address of the uploader
+	IPv6          string `gorm:"type:varchar(45);default:null" json:"-"` // IPv6 address of the uploader
 	// relations
 	Metadata  *ImageMetadata `gorm:"foreignKey:ImageID" json:"metadata,omitempty"`
 	Tags      []Tag          `gorm:"many2many:image_tags;" json:"tags,omitempty"`

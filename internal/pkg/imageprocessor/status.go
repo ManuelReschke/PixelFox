@@ -231,12 +231,16 @@ func IsImageProcessingComplete(imageUUID string) bool {
 	optimizationSkipped := isGif || isAVIFInput
 
 	dbIndicatesComplete := false
-	if optimizationSkipped {
-		// For GIF/AVIF input, completion means thumbnails exist (or it's old)
-		dbIndicatesComplete = image.HasThumbnailSmall || image.HasThumbnailMedium
-	} else {
-		// For other types, completion means optimized versions OR thumbnails exist
-		dbIndicatesComplete = image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium
+	// Check if any variants exist for this image (indicates completion)
+	variantInfo, err := GetImageVariantInfo(image.ID)
+	if err == nil {
+		if optimizationSkipped {
+			// For GIF/AVIF input, completion means thumbnails exist (or it's old)
+			dbIndicatesComplete = variantInfo.HasThumbnailSmall || variantInfo.HasThumbnailMedium
+		} else {
+			// For other types, completion means optimized versions OR thumbnails exist
+			dbIndicatesComplete = variantInfo.HasWebP || variantInfo.HasAVIF || variantInfo.HasThumbnailSmall || variantInfo.HasThumbnailMedium
+		}
 	}
 
 	if dbIndicatesComplete {

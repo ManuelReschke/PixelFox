@@ -17,7 +17,7 @@ type Image struct {
 	// ShareLink URL
 	ShareURL string
 
-	// Available image formats
+	// Available image formats (determined dynamically from variants)
 	HasWebP bool
 	HasAVIF bool
 
@@ -29,8 +29,8 @@ type Image struct {
 	PreviewAVIFPath string
 
 	// Paths for small thumbnails (nur WebP und AVIF existieren)
-	SmallWebPPath  string
-	SmallAVIFPath  string
+	SmallWebPPath string
+	SmallAVIFPath string
 
 	// Paths for optimized full-size versions
 	OptimizedWebPPath string

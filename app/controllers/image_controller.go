@@ -303,86 +303,78 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	// Generate the share link URL with the domain and the new /i/ path
 	shareURL := filepath.Join(domain, "/i/", image.ShareLink)
 
-	// Paths for optimized image formats
+	// Get variant information for this image
+	variantInfo, err := imageprocessor.GetImageVariantInfo(image.ID)
+	if err != nil {
+		variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
+	}
+
+	// Build all image paths using the new variant system
+	imagePaths := imageprocessor.BuildImagePaths(image)
+
+	// Extract paths with proper URL format
 	webpPath := ""
 	avifPath := ""
-	// Nur WebP und AVIF Small-Thumbnails existieren
 	smallThumbWebpPath := ""
 	smallThumbAvifPath := ""
-
-	// Check if any optimized versions are available
-	hasOptimizedVersions := image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium
-
-	// If optimized formats are available, generate the paths
-	if image.HasWebp {
-		webpRelativePath := imageprocessor.GetImagePath(image, "webp", "")
-		webpPath = "/" + webpRelativePath
-	}
-
-	if image.HasAVIF {
-		avifRelativePath := imageprocessor.GetImagePath(image, "avif", "")
-		avifPath = "/" + avifRelativePath
-	}
-
-	// If thumbnails are available, generate the paths
-	if image.HasThumbnailSmall {
-		if image.HasWebp {
-			smallThumbWebpRelativePath := imageprocessor.GetImagePath(image, "webp", "small")
-			smallThumbWebpPath = "/" + smallThumbWebpRelativePath
-		}
-
-		if image.HasAVIF {
-			smallThumbAvifRelativePath := imageprocessor.GetImagePath(image, "avif", "small")
-			smallThumbAvifPath = "/" + smallThumbAvifRelativePath
-		}
-	}
-
-	// Paths for medium thumbnails
 	mediumThumbWebpPath := ""
 	mediumThumbAvifPath := ""
 
-	// If medium thumbnails are available, generate the paths
-	if image.HasThumbnailMedium {
-		// Path to the medium thumbnail (WebP)
-		if image.HasWebp {
-			mediumThumbWebpRelativePath := imageprocessor.GetImagePath(image, "webp", "medium")
-			mediumThumbWebpPath = "/" + mediumThumbWebpRelativePath
-		}
-
-		// Path to the medium thumbnail (AVIF)
-		if image.HasAVIF {
-			mediumThumbAvifRelativePath := imageprocessor.GetImagePath(image, "avif", "medium")
-			mediumThumbAvifPath = "/" + mediumThumbAvifRelativePath
+	if path, exists := imagePaths["webp_full"]; exists {
+		webpPath = "/" + path
+	}
+	if path, exists := imagePaths["avif_full"]; exists {
+		avifPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_small"]; exists {
+		smallThumbWebpPath = "/" + path
+		// For AVIF small thumbnail, try to build path manually
+		if variantInfo.HasThumbnailSmall {
+			if avifSmallPath := imageprocessor.GetImagePath(image, "avif", "small"); avifSmallPath != "" {
+				smallThumbAvifPath = "/" + avifSmallPath
+			}
 		}
 	}
+	if path, exists := imagePaths["thumbnail_medium"]; exists {
+		mediumThumbWebpPath = "/" + path
+		// For AVIF medium thumbnail, try to build path manually
+		if variantInfo.HasThumbnailMedium {
+			if avifMediumPath := imageprocessor.GetImagePath(image, "avif", "medium"); avifMediumPath != "" {
+				mediumThumbAvifPath = "/" + avifMediumPath
+			}
+		}
+	}
+
+	// Check if any optimized versions are available
+	hasOptimizedVersions := variantInfo.HasWebP || variantInfo.HasAVIF || variantInfo.HasThumbnailSmall || variantInfo.HasThumbnailMedium
 
 	// Use the medium thumbnail for the preview
 	previewPath := filePathComplete
 	previewWebpPath := webpPath
 	previewAvifPath := avifPath
 
-	if image.HasThumbnailMedium {
+	if variantInfo.HasThumbnailMedium {
 		// Set the paths for medium thumbnails, if available
-		if image.HasAVIF {
+		if variantInfo.HasAVIF && mediumThumbAvifPath != "" {
 			previewPath = mediumThumbAvifPath
 			previewAvifPath = mediumThumbAvifPath
 		}
 		// Set the WebP path independently of AVIF
-		if image.HasWebp {
-			if !image.HasAVIF { // Only change the main path if no AVIF is available
+		if variantInfo.HasWebP && mediumThumbWebpPath != "" {
+			if !variantInfo.HasAVIF { // Only change the main path if no AVIF is available
 				previewPath = mediumThumbWebpPath
 			}
 			previewWebpPath = mediumThumbWebpPath
 		}
-	} else if image.HasThumbnailSmall {
+	} else if variantInfo.HasThumbnailSmall {
 		// Fallback to small thumbnail if medium is not available
-		if image.HasAVIF {
+		if variantInfo.HasAVIF && smallThumbAvifPath != "" {
 			previewPath = smallThumbAvifPath
 			previewAvifPath = smallThumbAvifPath
 		}
 		// Set the WebP path independently of AVIF
-		if image.HasWebp {
-			if !image.HasAVIF { // Only change the main path if no AVIF is available
+		if variantInfo.HasWebP && smallThumbWebpPath != "" {
+			if !variantInfo.HasAVIF { // Only change the main path if no AVIF is available
 				previewPath = smallThumbWebpPath
 			}
 			previewWebpPath = smallThumbWebpPath
@@ -390,26 +382,16 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	}
 
 	// Get paths for optimized versions
-	optimizedWebpPath := ""
-	optimizedAvifPath := ""
-	if image.HasWebp {
-		optimizedWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "")
-	}
-	if image.HasAVIF {
-		optimizedAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "")
-	}
-
-	// Optimized version for direct links and embeddings (AVIF or WebP)
-	// Note: This variable is no longer needed, as optimization is done directly in the template
-	// through the use of hasAVIF, hasWebP, avifPath, and webpPath
+	optimizedWebpPath := webpPath
+	optimizedAvifPath := avifPath
 
 	// Prepare Open Graph meta tags
 	ogImage := ""
-	if image.HasThumbnailSmall {
+	if variantInfo.HasThumbnailSmall {
 		// Use small thumbnail for OG tags
-		if image.HasAVIF {
+		if variantInfo.HasAVIF && smallThumbAvifPath != "" {
 			ogImage = filepath.Join(domain, smallThumbAvifPath)
-		} else if image.HasWebp {
+		} else if variantInfo.HasWebP && smallThumbWebpPath != "" {
 			ogImage = filepath.Join(domain, smallThumbWebpPath)
 		}
 	} else {
@@ -439,8 +421,8 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		FilePathWithDomain: filePathWithDomain,
 		DisplayName:        displayName,
 		ShareURL:           shareURL,
-		HasWebP:            image.HasWebp,
-		HasAVIF:            image.HasAVIF,
+		HasWebP:            variantInfo.HasWebP,
+		HasAVIF:            variantInfo.HasAVIF,
 		PreviewWebPPath:    previewWebpPath,
 		PreviewAVIFPath:    previewAvifPath,
 		SmallWebPPath:      smallThumbWebpPath,
@@ -537,8 +519,12 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
 	}
 
-	// Check if any optimized versions are available
-	hasOptimizedVersions := image.HasWebp || image.HasAVIF || image.HasThumbnailSmall || image.HasThumbnailMedium
+	// Check if any optimized versions are available (for Ajax response)
+	variantInfoAjax, err := imageprocessor.GetImageVariantInfo(image.ID)
+	if err != nil {
+		variantInfoAjax = &imageprocessor.VariantInfo{} // fallback to empty
+	}
+	hasOptimizedVersions := variantInfoAjax.HasWebP || variantInfoAjax.HasAVIF || variantInfoAjax.HasThumbnailSmall || variantInfoAjax.HasThumbnailMedium
 
 	// Use the original file name (title) for display, if available
 	displayName := image.FileName
@@ -625,20 +611,20 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	optimizedAvifPath := ""
 
 	// Use the medium thumbnail for the preview
-	if image.HasThumbnailMedium {
+	if variantInfoAjax.HasThumbnailMedium {
 		previewPath = "/" + imageprocessor.GetImagePath(image, "", "medium")
-		if image.HasWebp {
+		if variantInfoAjax.HasWebP {
 			previewWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "medium")
 		}
-		if image.HasAVIF {
+		if variantInfoAjax.HasAVIF {
 			previewAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "medium")
 		}
-	} else if image.HasThumbnailSmall {
+	} else if variantInfoAjax.HasThumbnailSmall {
 		previewPath = "/" + imageprocessor.GetImagePath(image, "", "small")
-		if image.HasWebp {
+		if variantInfoAjax.HasWebP {
 			previewWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "small")
 		}
-		if image.HasAVIF {
+		if variantInfoAjax.HasAVIF {
 			previewAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "small")
 		}
 	} else {
@@ -647,10 +633,10 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 
 	// Set the paths for the optimized versions (for the lightbox)
-	if image.HasWebp {
+	if variantInfoAjax.HasWebP {
 		optimizedWebpPath = "/" + imageprocessor.GetImagePath(image, "webp", "")
 	}
-	if image.HasAVIF {
+	if variantInfoAjax.HasAVIF {
 		optimizedAvifPath = "/" + imageprocessor.GetImagePath(image, "avif", "")
 	}
 
@@ -669,8 +655,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		OptimizedAVIFPath: optimizedAvifPath,
 		OriginalPath:      originalPath,
 		DisplayName:       displayName,
-		HasWebP:           image.HasWebp,
-		HasAVIF:           image.HasAVIF,
+		HasWebP:           variantInfoAjax.HasWebP,
+		HasAVIF:           variantInfoAjax.HasAVIF,
 		Width:             image.Width,
 		Height:            image.Height,
 		IsProcessing:      false,

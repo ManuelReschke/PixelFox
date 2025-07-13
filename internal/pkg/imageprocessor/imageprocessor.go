@@ -454,7 +454,7 @@ func processImage(imageModel *models.Image) (errResult error) {
 	return nil // Indicate success
 }
 
-// updateImageRecord updates the database record for the image.
+// updateImageRecord updates the database record for the image and creates variants.
 func updateImageRecord(imageModel *models.Image, width, height int, hasWebp, hasAvif, hasThumbSmall, hasThumbMedium bool) error {
 	db := database.GetDB()
 	if db == nil {
@@ -462,20 +462,21 @@ func updateImageRecord(imageModel *models.Image, width, height int, hasWebp, has
 		return fmt.Errorf("database connection is nil")
 	}
 
-	// Update image dimensions and variant flags
+	// Update image dimensions only (remove variant flags)
 	imageUpdateData := map[string]interface{}{
-		"has_webp":             hasWebp,
-		"has_avif":             hasAvif,
-		"has_thumbnail_small":  hasThumbSmall,
-		"has_thumbnail_medium": hasThumbMedium,
-		"width":                width,
-		"height":               height,
+		"width":  width,
+		"height": height,
 	}
 
 	log.Debugf("[ImageProcessor] Updating image record for %s with data: %+v", imageModel.UUID, imageUpdateData)
 	if err := db.Model(&models.Image{}).Where("uuid = ?", imageModel.UUID).Updates(imageUpdateData).Error; err != nil {
 		log.Errorf("[ImageProcessor] Failed to update image %s in database: %v", imageModel.UUID, err)
 		return fmt.Errorf("failed to update image in database: %w", err)
+	}
+
+	// Create variant records based on what was successfully processed
+	if err := createImageVariants(db, imageModel, hasWebp, hasAvif, hasThumbSmall, hasThumbMedium); err != nil {
+		return fmt.Errorf("failed to create image variants: %w", err)
 	}
 
 	// Get or create metadata record
@@ -665,73 +666,194 @@ func checkFfmpegAvailable() bool {
 
 // GetImagePath returns the path to a specific image variant based on format and size.
 func GetImagePath(imageModel *models.Image, format string, size string) string {
-	if imageModel == nil || imageModel.UUID == "" || imageModel.FilePath == "" {
-		log.Warn("[GetImagePath] Called with invalid image data (nil model, empty UUID or FilePath)")
+	if imageModel == nil || imageModel.UUID == "" {
+		log.Warn("[GetImagePath] Called with invalid image data (nil model or empty UUID)")
 		return ""
 	}
-	originalPathDir := imageModel.FilePath
-	relativePath := strings.TrimPrefix(originalPathDir, OriginalDir)
-	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-	baseFileName := imageModel.UUID
-	variantSuffix := ""
-	lowerSize := strings.ToLower(size)
-	switch lowerSize {
-	case "small":
-		variantSuffix = "_small"
-	case "medium":
-		variantSuffix = "_medium"
-	case "":
-		variantSuffix = ""
-	case "original":
-		if imageModel.FileName == "" {
-			log.Warnf("[GetImagePath] Cannot get original path for %s: FileName is empty", imageModel.UUID)
+
+	// Get database connection
+	db := database.GetDB()
+	if db == nil {
+		log.Error("[GetImagePath] Database connection is nil")
+		return ""
+	}
+
+	// Determine variant type based on format and size
+	variantType := getVariantType(format, size)
+	if variantType == "" {
+		log.Warnf("[GetImagePath] Cannot determine variant type for format '%s' and size '%s'", format, size)
+		return ""
+	}
+
+	// Handle original separately
+	if variantType == "original" {
+		if imageModel.FilePath == "" || imageModel.FileName == "" {
+			log.Warnf("[GetImagePath] Cannot get original path for %s: FilePath or FileName is empty", imageModel.UUID)
 			return ""
 		}
 		return filepath.Join(imageModel.FilePath, imageModel.FileName)
-	default:
-		log.Warnf("[GetImagePath] Unknown size requested: '%s' for image %s. Returning empty path.", size, imageModel.UUID)
+	}
+
+	// Find variant in database
+	variant, err := models.FindVariantByImageIDAndType(db, imageModel.ID, variantType)
+	if err != nil {
+		log.Debugf("[GetImagePath] Variant '%s' not found for image %s: %v", variantType, imageModel.UUID, err)
 		return ""
 	}
 
-	var finalExt string
-	requestedFormat := strings.ToLower(format)
-	isThumbnail := lowerSize == "small" || lowerSize == "medium"
-	fileExt := strings.ToLower(strings.TrimPrefix(imageModel.FileType, "."))
-	isGifInput := fileExt == "gif"
+	// Construct full path
+	fullPath := filepath.Join(variant.FilePath, variant.FileName)
+	log.Debugf("[GetImagePath] Found variant path for %s (Type: %s): %s", imageModel.UUID, variantType, fullPath)
+	return fullPath
+}
 
-	switch requestedFormat {
-	case "webp":
-		if isThumbnail && imageModel.HasThumbnailSmall {
-			finalExt = ".webp"
-		} else if !isThumbnail && imageModel.HasWebp {
-			finalExt = ".webp"
-		} else if isGifInput && isThumbnail {
-			if lowerSize == "small" && imageModel.HasThumbnailSmall {
-				finalExt = ".webp"
-			} else if lowerSize == "medium" && imageModel.HasThumbnailMedium {
-				finalExt = ".webp"
+// getVariantType determines the variant type based on format and size
+func getVariantType(format, size string) string {
+	lowerFormat := strings.ToLower(format)
+	lowerSize := strings.ToLower(size)
+
+	// Handle original
+	if lowerSize == "original" || (lowerFormat == "original" && lowerSize == "") {
+		return "original"
+	}
+
+	// Handle thumbnails
+	if lowerSize == "small" {
+		return "thumbnail_small"
+	}
+	if lowerSize == "medium" {
+		return "thumbnail_medium"
+	}
+
+	// Handle formats (full size)
+	if lowerSize == "" || lowerSize == "full" {
+		switch lowerFormat {
+		case "webp":
+			return "webp"
+		case "avif":
+			return "avif"
+		}
+	}
+
+	return ""
+}
+
+// createImageVariants creates variant records in the database
+func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif, hasThumbSmall, hasThumbMedium bool) error {
+	relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
+	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+	variantsBaseDir := filepath.Join(VariantsDir, relativePath)
+	baseFileName := imageModel.UUID
+
+	// Create original variant record
+	originalVariant := models.ImageVariant{
+		ImageID:     imageModel.ID,
+		VariantType: "original",
+		FilePath:    imageModel.FilePath,
+		FileName:    imageModel.FileName,
+		FileType:    imageModel.FileType,
+		FileSize:    imageModel.FileSize,
+		Width:       imageModel.Width,
+		Height:      imageModel.Height,
+	}
+	if err := db.Create(&originalVariant).Error; err != nil {
+		log.Errorf("[ImageProcessor] Failed to create original variant for %s: %v", imageModel.UUID, err)
+		return fmt.Errorf("failed to create original variant: %w", err)
+	}
+
+	// Create WebP variant if available
+	if hasWebp {
+		webpPath := filepath.Join(variantsBaseDir, baseFileName+".webp")
+		if fileInfo, err := os.Stat(webpPath); err == nil {
+			webpVariant := models.ImageVariant{
+				ImageID:     imageModel.ID,
+				VariantType: "webp",
+				FilePath:    variantsBaseDir,
+				FileName:    baseFileName + ".webp",
+				FileType:    ".webp",
+				FileSize:    fileInfo.Size(),
+				Width:       imageModel.Width,
+				Height:      imageModel.Height,
+				Quality:     85,
+			}
+			if err := db.Create(&webpVariant).Error; err != nil {
+				log.Errorf("[ImageProcessor] Failed to create webp variant for %s: %v", imageModel.UUID, err)
 			}
 		}
-	case "avif":
-		// AVIF Thumbnails depend on WebP thumbnails existing AND ffmpeg being available
-		canHaveAvifThumb := (lowerSize == "small" && imageModel.HasThumbnailSmall) || (lowerSize == "medium" && imageModel.HasThumbnailMedium)
-		if isThumbnail && canHaveAvifThumb && IsFFmpegAvailable {
-			finalExt = ".avif"
-		} else if !isThumbnail && imageModel.HasAVIF {
-			finalExt = ".avif"
+	}
+
+	// Create AVIF variant if available
+	if hasAvif {
+		avifPath := filepath.Join(variantsBaseDir, baseFileName+".avif")
+		if fileInfo, err := os.Stat(avifPath); err == nil {
+			avifVariant := models.ImageVariant{
+				ImageID:     imageModel.ID,
+				VariantType: "avif",
+				FilePath:    variantsBaseDir,
+				FileName:    baseFileName + ".avif",
+				FileType:    ".avif",
+				FileSize:    fileInfo.Size(),
+				Width:       imageModel.Width,
+				Height:      imageModel.Height,
+				Quality:     35,
+			}
+			if err := db.Create(&avifVariant).Error; err != nil {
+				log.Errorf("[ImageProcessor] Failed to create avif variant for %s: %v", imageModel.UUID, err)
+			}
 		}
-	default:
-		log.Warnf("[GetImagePath] Unknown format requested: '%s' for image %s. Returning empty path.", format, imageModel.UUID)
-		return ""
 	}
 
-	if finalExt == "" {
-		log.Debugf("[GetImagePath] Format '%s' (size '%s') not available or flags indicate missing for image %s. Returning empty path.", format, size, imageModel.UUID)
-		return ""
+	// Create small thumbnail variants
+	if hasThumbSmall {
+		smallWebpPath := filepath.Join(variantsBaseDir, baseFileName+"_small.webp")
+		if fileInfo, err := os.Stat(smallWebpPath); err == nil {
+			smallVariant := models.ImageVariant{
+				ImageID:     imageModel.ID,
+				VariantType: "thumbnail_small",
+				FilePath:    variantsBaseDir,
+				FileName:    baseFileName + "_small.webp",
+				FileType:    ".webp",
+				FileSize:    fileInfo.Size(),
+				Width:       SmallThumbnailSize,
+				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
+				Quality:     85,
+			}
+			if err := db.Create(&smallVariant).Error; err != nil {
+				log.Errorf("[ImageProcessor] Failed to create small thumbnail variant for %s: %v", imageModel.UUID, err)
+			}
+		}
 	}
 
-	variantFileName := baseFileName + variantSuffix + finalExt
-	variantPath := filepath.Join(VariantsDir, relativePath, variantFileName)
-	log.Debugf("[GetImagePath] Constructed variant path for %s (Format: %s, Size: %s): %s", imageModel.UUID, format, size, variantPath)
-	return variantPath
+	// Create medium thumbnail variants
+	if hasThumbMedium {
+		mediumWebpPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.webp")
+		if fileInfo, err := os.Stat(mediumWebpPath); err == nil {
+			mediumVariant := models.ImageVariant{
+				ImageID:     imageModel.ID,
+				VariantType: "thumbnail_medium",
+				FilePath:    variantsBaseDir,
+				FileName:    baseFileName + "_medium.webp",
+				FileType:    ".webp",
+				FileSize:    fileInfo.Size(),
+				Width:       MediumThumbnailSize,
+				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
+				Quality:     85,
+			}
+			if err := db.Create(&mediumVariant).Error; err != nil {
+				log.Errorf("[ImageProcessor] Failed to create medium thumbnail variant for %s: %v", imageModel.UUID, err)
+			}
+		}
+	}
+
+	log.Debugf("[ImageProcessor] Successfully created variant records for image %s", imageModel.UUID)
+	return nil
+}
+
+// calculateProportionalHeight calculates the proportional height for a given width
+func calculateProportionalHeight(originalWidth, originalHeight, newWidth int) int {
+	if originalWidth == 0 {
+		return newWidth // fallback
+	}
+	ratio := float64(newWidth) / float64(originalWidth)
+	return int(float64(originalHeight) * ratio)
 }

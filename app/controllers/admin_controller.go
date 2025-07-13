@@ -20,7 +20,6 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/views"
@@ -415,33 +414,20 @@ func HandleAdminImageDelete(c *fiber.Ctx) error {
 	// Delete the original file
 	os.Remove(originalPath)
 
-	// Delete optimized versions and thumbnails if they exist
-	if image.HasWebp {
-		webpPath := imageprocessor.GetImagePath(image, "webp", "")
-		os.Remove(webpPath)
-	}
+	// Delete all variant files
+	variants, err := models.FindVariantsByImageID(db, image.ID)
+	if err == nil {
+		for _, variant := range variants {
+			variantPath := filepath.Join(variant.FilePath, variant.FileName)
+			if err := os.Remove(variantPath); err != nil && !os.IsNotExist(err) {
+				log.Printf("Failed to delete variant file %s: %v", variantPath, err)
+			}
+		}
 
-	if image.HasAVIF {
-		avifPath := imageprocessor.GetImagePath(image, "avif", "")
-		os.Remove(avifPath)
-	}
-
-	if image.HasThumbnailSmall {
-		smallWebpPath := imageprocessor.GetImagePath(image, "webp", "small")
-		os.Remove(smallWebpPath)
-
-		// Also delete AVIF thumbnail if it exists
-		smallAvifPath := imageprocessor.GetImagePath(image, "avif", "small")
-		os.Remove(smallAvifPath)
-	}
-
-	if image.HasThumbnailMedium {
-		mediumWebpPath := imageprocessor.GetImagePath(image, "webp", "medium")
-		os.Remove(mediumWebpPath)
-
-		// Also delete AVIF thumbnail if it exists
-		mediumAvifPath := imageprocessor.GetImagePath(image, "avif", "medium")
-		os.Remove(mediumAvifPath)
+		// Delete variant records from database
+		if err := models.DeleteVariantsByImageID(db, image.ID); err != nil {
+			log.Printf("Failed to delete variant records for image %d: %v", image.ID, err)
+		}
 	}
 
 	// Delete image from database

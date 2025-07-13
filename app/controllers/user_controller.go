@@ -90,10 +90,16 @@ func HandleUserImages(c *fiber.Ctx) error {
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
 		previewPath := ""
-		if img.HasThumbnailSmall {
-			if img.HasAVIF {
+		// Get variant info for this image
+		variantInfo, err := imageprocessor.GetImageVariantInfo(img.ID)
+		if err != nil {
+			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
+		}
+
+		if variantInfo.HasThumbnailSmall {
+			if variantInfo.HasAVIF {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
-			} else if img.HasWebp {
+			} else if variantInfo.HasWebP {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else {
 				previewPath = filepath.Join("/", img.FilePath, img.FileName)
@@ -150,10 +156,16 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
 		previewPath := ""
-		if img.HasThumbnailSmall {
-			if img.HasAVIF {
+		// Get variant info for this image
+		variantInfo, err := imageprocessor.GetImageVariantInfo(img.ID)
+		if err != nil {
+			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
+		}
+
+		if variantInfo.HasThumbnailSmall {
+			if variantInfo.HasAVIF {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
-			} else if img.HasWebp {
+			} else if variantInfo.HasWebP {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else {
 				previewPath = filepath.Join("/", img.FilePath, img.FileName)
