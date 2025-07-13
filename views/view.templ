@@ -79,7 +79,7 @@ templ ImageOptions(model viewmodel.Image) {
 			<div class="divider my-1"></div>
 			
 			<!-- DaisyUI Tabs für verschiedene Bildgrößen -->
-			<div role="tablist" class="tabs tabs-border justify-center">
+			<div role="tablist" class="tabs tabs-bordered justify-center">
 				if model.HasOptimizedVersions {
 					<a role="tab" class="tab tab-active" id="tab-medium" data-size="medium">Mittel (500 px)</a>
 					<a role="tab" class="tab" id="tab-small" data-size="small">Klein (200 px)</a>
