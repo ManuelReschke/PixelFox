@@ -12,7 +12,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 )
 
-func Settings(settings models.AppSettings, csrfToken string) templ.Component {
+func settingsContent(settings models.AppSettings, csrfToken string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -33,46 +33,46 @@ func Settings(settings models.AppSettings, csrfToken string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"container mx-auto px-4 py-8\"><div class=\"max-w-4xl mx-auto\"><div class=\"flex items-center justify-between mb-6\"><h1 class=\"text-3xl font-bold\">System Settings</h1></div><div class=\"bg-base-100 rounded-lg shadow-md p-6\"><form hx-post=\"/admin/settings\" hx-target=\"body\" hx-push-url=\"true\" method=\"POST\" action=\"/admin/settings\" class=\"space-y-6\"><input type=\"hidden\" name=\"_csrf\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-4xl mx-auto\"><div class=\"flex items-center justify-between mb-6\"><h1 class=\"text-3xl font-bold\">Systemeinstellungen</h1></div><div class=\"bg-base-100 rounded-lg shadow-md p-6\"><form hx-post=\"/admin/settings\" hx-target=\"body\" hx-push-url=\"true\" method=\"POST\" action=\"/admin/settings\" class=\"space-y-6\"><input type=\"hidden\" name=\"_csrf\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 23, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 22, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><!-- Site Title --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Site Title</span></label> <input type=\"text\" name=\"site_title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><!-- Site Title --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Seitentitel</span></label> <input type=\"text\" name=\"site_title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(settings.SiteTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 33, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 32, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"input input-bordered w-full\" placeholder=\"Enter site title\" required> <label class=\"label\"><span class=\"label-text-alt\">This title will be displayed in the navigation and browser title.</span></label></div><!-- Site Description --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Site Description</span></label> <textarea name=\"site_description\" class=\"textarea textarea-bordered h-24\" placeholder=\"Enter site description\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"input input-bordered w-full\" placeholder=\"Seitentitel eingeben\" required> <label class=\"label\"><span class=\"label-text-alt\">Dieser Titel wird in der Navigation und im Browser-Titel angezeigt.</span></label></div><!-- Site Description --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Seitenbeschreibung</span></label> <textarea name=\"site_description\" class=\"textarea textarea-bordered h-24\" placeholder=\"Seitenbeschreibung eingeben\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(settings.SiteDescription)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 52, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 51, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</textarea> <label class=\"label\"><span class=\"label-text-alt\">This description will be used for meta tags and SEO.</span></label></div><!-- Image Upload Settings --><div class=\"divider\">Image Upload Settings</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Enable Image Upload</span> <input type=\"checkbox\" name=\"image_upload_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</textarea> <label class=\"label\"><span class=\"label-text-alt\">Diese Beschreibung wird für Meta-Tags und SEO verwendet.</span></label></div><!-- Image Upload Settings --><div class=\"divider\">Bild-Upload Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Bild-Upload aktivieren</span> <input type=\"checkbox\" name=\"image_upload_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -82,7 +82,36 @@ func Settings(settings models.AppSettings, csrfToken string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "></label> <label class=\"label\"><span class=\"label-text-alt\">When disabled, users will not be able to upload new images.</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Cancel</a> <button type=\"submit\" class=\"btn btn-primary\">Save Settings</button></div></form></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn deaktiviert, können Benutzer keine neuen Bilder hochladen.</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func Settings(settings models.AppSettings, csrfToken string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = AdminLayout(settingsContent(settings, csrfToken)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

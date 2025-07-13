@@ -738,7 +738,7 @@ func HandleAdminSettings(c *fiber.Ctx) error {
 
 	// Render settings page
 	settingsView := admin_views.Settings(*settings, csrfToken)
-	home := views.Home(" | Settings", isLoggedIn(c), false, flash.Get(c), settingsView, true, nil)
+	home := views.Home(" | Einstellungen", isLoggedIn(c), false, fiber.Map(flash.Get(c)), settingsView, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -765,7 +765,7 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 	if err != nil {
 		fm := fiber.Map{
 			"type":    "error",
-			"message": "Error saving settings: " + err.Error(),
+			"message": "Fehler beim Speichern der Einstellungen: " + err.Error(),
 		}
 		return flash.WithError(c, fm).Redirect("/admin/settings")
 	}
@@ -773,7 +773,7 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 	// Set success flash message
 	fm := fiber.Map{
 		"type":    "success",
-		"message": "Settings saved successfully",
+		"message": "Einstellungen erfolgreich gespeichert",
 	}
 
 	return flash.WithSuccess(c, fm).Redirect("/admin/settings")
