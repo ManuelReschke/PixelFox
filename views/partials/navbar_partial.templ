@@ -7,24 +7,24 @@ import "github.com/ManuelReschke/PixelFox/app/models"
 templ Navbar(appName string, layout viewmodel.Layout) {
     <nav class="navbar bg-neutral text-neutral-content fixed z-10 w-full">
 		<div class="navbar-start">
-			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
+			<a hx-swap="transition:true" class="btn btn-ghost text-xl hover:bg-base-200 hover:text-base-content" href="/">
 				{ models.GetAppSettings().GetSiteTitle() }
 			</a>
 		</div>
 		<div class="navbar-end">
 			if layout.FromProtected {
-                <a hx-swap="transition:true" class="btn btn-ghost text-base" href="/user/profile">
+                <a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/user/profile">
                     Hallo, <span class="font-bold text-indigo-200"> { session.GetValueByKey("username") }</span>
                 </a>
-				<a hx-swap="transition:true" class="btn btn-ghost text-base" href="/user/images">
+				<a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/user/images">
 					Meine Bilder
 				</a>
-				<a class="btn btn-ghost text-base line-through" href="#" onclick="return false;">
+				<a class="btn btn-ghost text-base line-through opacity-50 cursor-not-allowed" href="#" onclick="return false;">
 					Meine Alben
 				</a>
 
 				<div class="dropdown dropdown-end">
-                  <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                  <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar hover:bg-base-200">
                     <div class="w-10 rounded-full">
                       <img alt="Profil Bild"src="/img/avatar-default.jpg" />
                     </div>
@@ -33,16 +33,16 @@ templ Navbar(appName string, layout viewmodel.Layout) {
                     tabindex="0"
                     class="menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow">
                     <li>
-                      <a href="/user/profile" class="justify-between">
+                      <a href="/user/profile" class="justify-between hover:bg-base-200">
                         Profil
                         <span class="badge">New</span>
                       </a>
                     </li>
-                    <li><a href="/user/settings">Einstellungen</a></li>
+                    <li><a href="/user/settings" class="hover:bg-base-200">Einstellungen</a></li>
                     
                     if layout.IsAdmin {
                       <li>
-                        <a href="/admin" class="text-purple-500 font-semibold">
+                        <a href="/admin" class="text-purple-500 font-semibold hover:bg-purple-100 hover:text-purple-600">
                           Admin Panel
                         </a>
                       </li>
@@ -72,7 +72,7 @@ templ Navbar(appName string, layout viewmodel.Layout) {
                             })"
                             hx-target="body"
                             hx-push-url="true"
-                            class="text-red-500"
+                            class="text-red-500 hover:bg-red-100 hover:text-red-600"
                         >
                             Abmelden
                         </a>
@@ -80,10 +80,10 @@ templ Navbar(appName string, layout viewmodel.Layout) {
                   </ul>
                 </div>
 			} else {
-				<a hx-swap="transition:true" class="btn btn-ghost text-base" href="/register">
+				<a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/register">
 					Registrieren
 				</a>
-				<a hx-swap="transition:true" class="btn btn-ghost text-base" href="/login">
+				<a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/login">
 					Einloggen
 				</a>
 			}

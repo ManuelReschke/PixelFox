@@ -61,7 +61,7 @@ func imageEditContent(image models.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"btn btn-outline\">Dashboard</a></div></div></div><div class=\"grid grid-cols-1 md:grid-cols-3 gap-6\"><!-- Image Preview --><div class=\"bg-white shadow-md rounded-lg p-6\"><h2 class=\"text-lg font-semibold mb-4\">Bildvorschau</h2><div class=\"flex justify-center\"><img class=\"max-w-full h-auto rounded-lg\" src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"btn btn-outline\">Dashboard</a></div></div></div><div class=\"grid grid-cols-1 md:grid-cols-3 gap-6\"><!-- Image Preview --><div class=\"bg-base-100 shadow-md rounded-lg p-6\"><h2 class=\"text-lg font-semibold mb-4 text-base-content\">Bildvorschau</h2><div class=\"flex justify-center\"><img class=\"max-w-full h-auto rounded-lg\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -87,7 +87,7 @@ func imageEditContent(image models.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"></div><div class=\"mt-4\"><h3 class=\"text-md font-medium mb-2\">Bildinformationen</h3><div class=\"text-sm text-gray-600\"><p><span class=\"font-medium\">UUID:</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"></div><div class=\"mt-4\"><h3 class=\"text-md font-medium mb-2 text-base-content\">Bildinformationen</h3><div class=\"text-sm text-base-content opacity-75\"><p><span class=\"font-medium\">UUID:</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -191,7 +191,7 @@ func imageEditContent(image models.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</p></div></div><div class=\"mt-4\"><h3 class=\"text-md font-medium mb-2\">Links</h3><div class=\"text-sm text-gray-600\"><p><span class=\"font-medium\">Bild ansehen:</span> <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</p></div></div><div class=\"mt-4\"><h3 class=\"text-md font-medium mb-2 text-base-content\">Links</h3><div class=\"text-sm text-base-content opacity-75\"><p><span class=\"font-medium\">Bild ansehen:</span> <a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -204,7 +204,7 @@ func imageEditContent(image models.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" target=\"_blank\" class=\"text-blue-600 hover:underline\">Öffnen</a></p><p><span class=\"font-medium\">Teilen-Link:</span> <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" target=\"_blank\" class=\"text-primary hover:underline\">Öffnen</a></p><p><span class=\"font-medium\">Teilen-Link:</span> <a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -217,20 +217,20 @@ func imageEditContent(image models.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" target=\"_blank\" class=\"text-blue-600 hover:underline\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" target=\"_blank\" class=\"text-primary hover:underline\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(image.ShareLink)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 53, Col: 128}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 53, Col: 127}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</a></p></div></div></div><!-- Edit Form --><div class=\"md:col-span-2 bg-white shadow-md rounded-lg p-6\"><h2 class=\"text-lg font-semibold mb-4\">Bilddetails bearbeiten</h2><form action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</a></p></div></div></div><!-- Edit Form --><div class=\"md:col-span-2 bg-base-100 shadow-md rounded-lg p-6\"><h2 class=\"text-lg font-semibold mb-4 text-base-content\">Bilddetails bearbeiten</h2><form action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -243,61 +243,61 @@ func imageEditContent(image models.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" method=\"POST\"><!-- Title --><div class=\"mb-4\"><label for=\"title\" class=\"block text-sm font-medium text-gray-700 mb-1\">Titel</label> <input type=\"text\" id=\"title\" name=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" method=\"POST\" class=\"space-y-4\"><!-- Title --><div class=\"form-control\"><label for=\"title\" class=\"label\"><span class=\"label-text\">Titel</span></label> <input type=\"text\" id=\"title\" name=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 66, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 68, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500\"></div><!-- Description --><div class=\"mb-4\"><label for=\"description\" class=\"block text-sm font-medium text-gray-700 mb-1\">Beschreibung</label> <textarea id=\"description\" name=\"description\" rows=\"4\" class=\"w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"input input-bordered w-full\"></div><!-- Description --><div class=\"form-control\"><label for=\"description\" class=\"label\"><span class=\"label-text\">Beschreibung</span></label> <textarea id=\"description\" name=\"description\" rows=\"4\" class=\"textarea textarea-bordered w-full\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(image.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 74, Col: 159}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 78, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</textarea></div><!-- Public Status --><div class=\"mb-4\"><div class=\"flex items-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</textarea></div><!-- Public Status --><div class=\"form-control\"><label class=\"label cursor-pointer justify-start\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if image.IsPublic {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<input type=\"checkbox\" id=\"is_public\" name=\"is_public\" checked class=\"h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<input type=\"checkbox\" id=\"is_public\" name=\"is_public\" checked class=\"checkbox checkbox-primary mr-3\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<input type=\"checkbox\" id=\"is_public\" name=\"is_public\" class=\"h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<input type=\"checkbox\" id=\"is_public\" name=\"is_public\" class=\"checkbox checkbox-primary mr-3\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<label for=\"is_public\" class=\"ml-2 block text-sm text-gray-900\">Öffentliches Bild</label></div><p class=\"mt-1 text-sm text-gray-500\">Wenn aktiviert, ist das Bild öffentlich zugänglich.</p></div><!-- Submit Button --><div class=\"flex justify-between mt-6\"><button type=\"submit\" class=\"inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500\">Bild aktualisieren</button> <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"label-text\">Öffentliches Bild</span></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn aktiviert, ist das Bild öffentlich zugänglich.</span></label></div><!-- Submit Button --><div class=\"flex justify-between mt-6\"><button type=\"submit\" class=\"btn btn-primary\">Bild aktualisieren</button> <a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 templ.SafeURL
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/images/delete/" + image.UUID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 98, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 104, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" class=\"inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500\" onclick=\"return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');\">Bild löschen</a></div></form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" class=\"btn btn-error\" onclick=\"return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');\">Bild löschen</a></div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

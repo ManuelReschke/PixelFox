@@ -33,7 +33,7 @@ func Navbar(appName string, layout viewmodel.Layout) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"navbar bg-neutral text-neutral-content fixed z-10 w-full\"><div class=\"navbar-start\"><a hx-swap=\"transition:true\" class=\"btn btn-ghost text-xl\" href=\"/\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav class=\"navbar bg-neutral text-neutral-content fixed z-10 w-full\"><div class=\"navbar-start\"><a hx-swap=\"transition:true\" class=\"btn btn-ghost text-xl hover:bg-base-200 hover:text-base-content\" href=\"/\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -51,7 +51,7 @@ func Navbar(appName string, layout viewmodel.Layout) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if layout.FromProtected {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/user/profile\">Hallo, <span class=\"font-bold text-indigo-200\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/user/profile\">Hallo, <span class=\"font-bold text-indigo-200\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -64,22 +64,22 @@ func Navbar(appName string, layout viewmodel.Layout) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/user/images\">Meine Bilder</a> <a class=\"btn btn-ghost text-base line-through\" href=\"#\" onclick=\"return false;\">Meine Alben</a><div class=\"dropdown dropdown-end\"><div tabindex=\"0\" role=\"button\" class=\"btn btn-ghost btn-circle avatar\"><div class=\"w-10 rounded-full\"><img alt=\"Profil Bild\" src=\"/img/avatar-default.jpg\"></div></div><ul tabindex=\"0\" class=\"menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow\"><li><a href=\"/user/profile\" class=\"justify-between\">Profil <span class=\"badge\">New</span></a></li><li><a href=\"/user/settings\">Einstellungen</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/user/images\">Meine Bilder</a> <a class=\"btn btn-ghost text-base line-through opacity-50 cursor-not-allowed\" href=\"#\" onclick=\"return false;\">Meine Alben</a><div class=\"dropdown dropdown-end\"><div tabindex=\"0\" role=\"button\" class=\"btn btn-ghost btn-circle avatar hover:bg-base-200\"><div class=\"w-10 rounded-full\"><img alt=\"Profil Bild\" src=\"/img/avatar-default.jpg\"></div></div><ul tabindex=\"0\" class=\"menu menu-sm dropdown-content bg-base-100 text-base-content rounded-box z-[1] mt-3 w-52 p-2 shadow\"><li><a href=\"/user/profile\" class=\"justify-between hover:bg-base-200\">Profil <span class=\"badge\">New</span></a></li><li><a href=\"/user/settings\" class=\"hover:bg-base-200\">Einstellungen</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if layout.IsAdmin {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li><a href=\"/admin\" class=\"text-purple-500 font-semibold\">Admin Panel</a></li>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li><a href=\"/admin\" class=\"text-purple-500 font-semibold hover:bg-purple-100 hover:text-purple-600\">Admin Panel</a></li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li><a hx-swap=\"transition:true\" hx-post=\"/logout\" hx-confirm=\"Möchtest du dich wirklich abmelden?\" onClick=\"this.addEventListener('htmx:confirm', (e) => {\n                                e.preventDefault()\n                                Swal.fire({\n                                    title: 'Abmelden',\n                                    text: `${e.detail.question}`,\n                                    icon: 'warning',\n                                    background: '#1D232A',\n                                    color: '#A6ADBA',\n                                    showCancelButton: true,\n                                    cancelButtonColor: '#d33',\n                                    cancelButtonText: 'Nein',\n                                    confirmButtonColor: '#3085d6',\n                                    confirmButtonText: 'Ja'\n                                }).then((result) => {\n                                    if(result.isConfirmed) e.detail.issueRequest(true);\n                                })\n                            })\" hx-target=\"body\" hx-push-url=\"true\" class=\"text-red-500\">Abmelden</a></li></ul></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<li><a hx-swap=\"transition:true\" hx-post=\"/logout\" hx-confirm=\"Möchtest du dich wirklich abmelden?\" onClick=\"this.addEventListener('htmx:confirm', (e) => {\n                                e.preventDefault()\n                                Swal.fire({\n                                    title: 'Abmelden',\n                                    text: `${e.detail.question}`,\n                                    icon: 'warning',\n                                    background: '#1D232A',\n                                    color: '#A6ADBA',\n                                    showCancelButton: true,\n                                    cancelButtonColor: '#d33',\n                                    cancelButtonText: 'Nein',\n                                    confirmButtonColor: '#3085d6',\n                                    confirmButtonText: 'Ja'\n                                }).then((result) => {\n                                    if(result.isConfirmed) e.detail.issueRequest(true);\n                                })\n                            })\" hx-target=\"body\" hx-push-url=\"true\" class=\"text-red-500 hover:bg-red-100 hover:text-red-600\">Abmelden</a></li></ul></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/register\">Registrieren</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base\" href=\"/login\">Einloggen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/register\">Registrieren</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/login\">Einloggen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
