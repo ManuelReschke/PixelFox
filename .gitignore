@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 .windsurfrules
+.claude
 .env
 node_modules
 tmp/
