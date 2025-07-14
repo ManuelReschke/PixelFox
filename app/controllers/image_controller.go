@@ -326,23 +326,17 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	if path, exists := imagePaths["avif_full"]; exists {
 		avifPath = "/" + path
 	}
-	if path, exists := imagePaths["thumbnail_small"]; exists {
+	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
 		smallThumbWebpPath = "/" + path
-		// For AVIF small thumbnail, try to build path manually
-		if variantInfo.HasThumbnailSmall {
-			if avifSmallPath := imageprocessor.GetImagePath(image, "avif", "small"); avifSmallPath != "" {
-				smallThumbAvifPath = "/" + avifSmallPath
-			}
-		}
 	}
-	if path, exists := imagePaths["thumbnail_medium"]; exists {
+	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
+		smallThumbAvifPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
 		mediumThumbWebpPath = "/" + path
-		// For AVIF medium thumbnail, try to build path manually
-		if variantInfo.HasThumbnailMedium {
-			if avifMediumPath := imageprocessor.GetImagePath(image, "avif", "medium"); avifMediumPath != "" {
-				mediumThumbAvifPath = "/" + avifMediumPath
-			}
-		}
+	}
+	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
+		mediumThumbAvifPath = "/" + path
 	}
 
 	// Check if any optimized versions are available

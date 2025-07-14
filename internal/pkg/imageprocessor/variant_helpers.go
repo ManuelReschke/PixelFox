@@ -41,9 +41,9 @@ func GetImageVariantInfo(imageID uint) (*VariantInfo, error) {
 			info.HasWebP = true
 		case "avif":
 			info.HasAVIF = true
-		case "thumbnail_small":
+		case "thumbnail_small_webp", "thumbnail_small_avif":
 			info.HasThumbnailSmall = true
-		case "thumbnail_medium":
+		case "thumbnail_medium_webp", "thumbnail_medium_avif":
 			info.HasThumbnailMedium = true
 		}
 	}
@@ -124,10 +124,14 @@ func BuildImagePaths(imageModel *models.Image) map[string]string {
 			paths["webp_full"] = filepath.Join(variant.FilePath, variant.FileName)
 		case "avif":
 			paths["avif_full"] = filepath.Join(variant.FilePath, variant.FileName)
-		case "thumbnail_small":
-			paths["thumbnail_small"] = filepath.Join(variant.FilePath, variant.FileName)
-		case "thumbnail_medium":
-			paths["thumbnail_medium"] = filepath.Join(variant.FilePath, variant.FileName)
+		case "thumbnail_small_webp":
+			paths["thumbnail_small_webp"] = filepath.Join(variant.FilePath, variant.FileName)
+		case "thumbnail_small_avif":
+			paths["thumbnail_small_avif"] = filepath.Join(variant.FilePath, variant.FileName)
+		case "thumbnail_medium_webp":
+			paths["thumbnail_medium_webp"] = filepath.Join(variant.FilePath, variant.FileName)
+		case "thumbnail_medium_avif":
+			paths["thumbnail_medium_avif"] = filepath.Join(variant.FilePath, variant.FileName)
 		}
 	}
 

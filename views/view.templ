@@ -188,10 +188,12 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">HTML</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.SmallAVIFPath != "" {
 								<input id="html-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.SmallAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.SmallWebPPath != "" {
 								<input id="html-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.SmallWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
+							} else {
+								<input id="html-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewPath + "\" alt=\"" + model.DisplayName + "\" />"} />
 							}
 							<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#html-small">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -208,10 +210,12 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">BBCode</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.SmallAVIFPath != "" {
 								<input id="bbcode-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.SmallAVIFPath + "[/img]"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.SmallWebPPath != "" {
 								<input id="bbcode-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.SmallWebPPath + "[/img]"} />
+							} else {
+								<input id="bbcode-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewPath + "[/img]"} />
 							}
 							<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#bbcode-small">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -228,10 +232,12 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Markdown</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.SmallAVIFPath != "" {
 								<input id="markdown-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.SmallAVIFPath + ")"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.SmallWebPPath != "" {
 								<input id="markdown-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.SmallWebPPath + ")"} />
+							} else {
+								<input id="markdown-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewPath + ")"} />
 							}
 							<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#markdown-small">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -248,10 +254,12 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Direktlink</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.SmallAVIFPath != "" {
 								<input id="direktlink-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.SmallAVIFPath} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.SmallWebPPath != "" {
 								<input id="direktlink-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.SmallWebPPath} />
+							} else {
+								<input id="direktlink-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewPath} />
 							}
 							<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#direktlink-small">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
