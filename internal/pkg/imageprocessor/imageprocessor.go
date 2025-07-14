@@ -745,21 +745,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 	variantsBaseDir := filepath.Join(VariantsDir, relativePath)
 	baseFileName := imageModel.UUID
 
-	// Create original variant record
-	originalVariant := models.ImageVariant{
-		ImageID:     imageModel.ID,
-		VariantType: "original",
-		FilePath:    imageModel.FilePath,
-		FileName:    imageModel.FileName,
-		FileType:    imageModel.FileType,
-		FileSize:    imageModel.FileSize,
-		Width:       imageModel.Width,
-		Height:      imageModel.Height,
-	}
-	if err := db.Create(&originalVariant).Error; err != nil {
-		log.Errorf("[ImageProcessor] Failed to create original variant for %s: %v", imageModel.UUID, err)
-		return fmt.Errorf("failed to create original variant: %w", err)
-	}
+	// Original variant is NO LONGER created here - original data is stored in the images table
 
 	// Create WebP variant if available
 	if hasWebp {

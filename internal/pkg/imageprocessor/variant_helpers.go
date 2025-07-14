@@ -112,11 +112,14 @@ func BuildImagePaths(imageModel *models.Image) map[string]string {
 		return paths
 	}
 
-	// Build paths for each available variant
+	// Add original path from images table (not from variants anymore)
+	if imageModel.FilePath != "" && imageModel.FileName != "" {
+		paths["original"] = filepath.Join(imageModel.FilePath, imageModel.FileName)
+	}
+
+	// Build paths for each available variant (excluding original)
 	for _, variant := range variantInfo.AvailableVariants {
 		switch variant.VariantType {
-		case "original":
-			paths["original"] = filepath.Join(variant.FilePath, variant.FileName)
 		case "webp":
 			paths["webp_full"] = filepath.Join(variant.FilePath, variant.FileName)
 		case "avif":

@@ -30,8 +30,8 @@ func (ImageVariant) TableName() string {
 
 // BeforeCreate is called before creating a new record
 func (iv *ImageVariant) BeforeCreate(tx *gorm.DB) error {
-	// Validate variant type
-	validTypes := []string{"original", "thumbnail_small", "thumbnail_medium", "webp", "avif"}
+	// Validate variant type - "original" is NO LONGER valid, original data is stored in images table
+	validTypes := []string{"thumbnail_small", "thumbnail_medium", "webp", "avif"}
 	isValid := false
 	for _, validType := range validTypes {
 		if iv.VariantType == validType {
