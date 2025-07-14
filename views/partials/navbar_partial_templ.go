@@ -79,7 +79,7 @@ func Navbar(appName string, layout viewmodel.Layout) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/register\">Registrieren</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/login\">Einloggen</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/pricing\">Preise</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/register\">Registrieren</a> <a hx-swap=\"transition:true\" class=\"btn btn-ghost text-base hover:bg-base-200 hover:text-base-content\" href=\"/login\">Einloggen</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

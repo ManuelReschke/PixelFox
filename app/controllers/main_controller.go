@@ -86,6 +86,22 @@ func HandleContact(c *fiber.Ctx) error {
 	return handler(c)
 }
 
+func HandlePricing(c *fiber.Ctx) error {
+	// Überprüfe, ob der Benutzer ein Admin ist
+	isAdmin := false
+	if isLoggedIn(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
+	}
+
+	page := views.PricingPage()
+	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+
+	return handler(c)
+}
+
 func HandleJobs(c *fiber.Ctx) error {
 	// Überprüfe, ob der Benutzer ein Admin ist
 	isAdmin := false

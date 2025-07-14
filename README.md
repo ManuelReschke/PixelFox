@@ -54,3 +54,41 @@ PixelFox is an image sharing platform. Its build with the following technologies
 * [] Use Open Graph Meta-Tags (OG-Tags) for the image view page
 * [] Store images to B2 or other S3 services (or we use juicefs)
 * [] Admin Area
+
+
+## Packages
+
+### Basic
+
+Price: 0 EUR
+
+* Single Upload
+* 5 MB upload limit
+* 100 images per day
+* files never expire
+* Dark Mode
+* Ads
+
+### Premium
+
+Price: 5 EUR
+
+* Multi Upload
+* 50 MB upload limit
+* unlimited images per day
+* 100 image galleries
+* webp image conversions
+* files never expire
+* no Ads
+
+### Premium Max
+
+Price: 10 EUR
+
+* Multi Upload
+* 100 MB upload limit
+* unlimited images per day
+* unlimited image galleries
+* webp & avif image conversions
+* files never expire
+* no Ads

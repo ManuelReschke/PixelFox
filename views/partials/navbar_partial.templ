@@ -80,6 +80,9 @@ templ Navbar(appName string, layout viewmodel.Layout) {
                   </ul>
                 </div>
 			} else {
+				<a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/pricing">
+					Preise
+				</a>
 				<a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/register">
 					Registrieren
 				</a>
