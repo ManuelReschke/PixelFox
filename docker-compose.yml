@@ -45,7 +45,7 @@ services:
 
   # Dragonfly Cache
   cache:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:1.31
     container_name: pxlfox-cache
     ports:
       - "6379:6379"

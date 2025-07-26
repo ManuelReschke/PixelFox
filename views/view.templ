@@ -91,15 +91,46 @@ templ ImageOptions(model viewmodel.Image) {
 			
 			<!-- Tab-Inhalte -->
 			<div id="tab-content-medium" class="tab-content block">
+				<!-- Format-Selector für Medium -->
+				<div class="form-control mt-3">
+					<div class="flex items-center gap-2">
+						<label class="label w-24 justify-start p-0">
+							<span class="label-text font-semibold">Format:</span>
+						</label>
+						<div class="dropdown dropdown-hover">
+							<div tabindex="0" role="button" class="btn btn-sm btn-outline" id="format-selector-medium">
+								<span id="format-label-medium">
+									if model.HasAVIF && model.PreviewAVIFPath != "" {
+										AVIF
+									} else {
+										WebP
+									}
+								</span>
+								<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+								</svg>
+							</div>
+							<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10">
+								if model.HasAVIF && model.PreviewAVIFPath != "" {
+									<li><a class="format-option" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a></li>
+								}
+								if model.HasWebP && model.PreviewWebPPath != "" {
+									<li><a class="format-option" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a></li>
+								}
+							</ul>
+						</div>
+					</div>
+				</div>
+
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text">HTML</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.PreviewAVIFPath != "" {
 								<input id="html-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.PreviewWebPPath != "" {
 								<input id="html-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
 							} else {
 								<input id="html-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewPath + "\" alt=\"" + model.DisplayName + "\" />"} />
@@ -119,9 +150,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">BBCode</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.PreviewAVIFPath != "" {
 								<input id="bbcode-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewAVIFPath + "[/img]"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.PreviewWebPPath != "" {
 								<input id="bbcode-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewWebPPath + "[/img]"} />
 							} else {
 								<input id="bbcode-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewPath + "[/img]"} />
@@ -141,9 +172,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Markdown</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.PreviewAVIFPath != "" {
 								<input id="markdown-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewAVIFPath + ")"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.PreviewWebPPath != "" {
 								<input id="markdown-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewWebPPath + ")"} />
 							} else {
 								<input id="markdown-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewPath + ")"} />
@@ -163,9 +194,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Direktlink</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.PreviewAVIFPath != "" {
 								<input id="direktlink-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewAVIFPath} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.PreviewWebPPath != "" {
 								<input id="direktlink-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewWebPPath} />
 							} else {
 								<input id="direktlink-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewPath} />
@@ -182,6 +213,37 @@ templ ImageOptions(model viewmodel.Image) {
 			
 			<!-- Tab-Inhalte für Small -->
 			<div id="tab-content-small" class="tab-content hidden">
+				<!-- Format-Selector für Small -->
+				<div class="form-control mt-3">
+					<div class="flex items-center gap-2">
+						<label class="label w-24 justify-start p-0">
+							<span class="label-text font-semibold">Format:</span>
+						</label>
+						<div class="dropdown dropdown-hover">
+							<div tabindex="0" role="button" class="btn btn-sm btn-outline" id="format-selector-small">
+								<span id="format-label-small">
+									if model.HasAVIF && model.SmallAVIFPath != "" {
+										AVIF
+									} else {
+										WebP
+									}
+								</span>
+								<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+								</svg>
+							</div>
+							<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10">
+								if model.HasAVIF && model.SmallAVIFPath != "" {
+									<li><a class="format-option" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a></li>
+								}
+								if model.HasWebP && model.SmallWebPPath != "" {
+									<li><a class="format-option" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a></li>
+								}
+							</ul>
+						</div>
+					</div>
+				</div>
+
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
 						<label class="label w-24 justify-start p-0">
@@ -263,7 +325,7 @@ templ ImageOptions(model viewmodel.Image) {
 							}
 							<button class="btn btn-primary btn-sm join-item copy-btn" data-clipboard-target="#direktlink-small">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.30-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
 								</svg>
 							</button>
 						</div>
@@ -273,15 +335,49 @@ templ ImageOptions(model viewmodel.Image) {
 			
 			<!-- Tab-Inhalte für Original Optimiert -->
 			<div id="tab-content-optimized" class="tab-content hidden">
+				<!-- Format-Selector für Optimized -->
+				<div class="form-control mt-3">
+					<div class="flex items-center gap-2">
+						<label class="label w-24 justify-start p-0">
+							<span class="label-text font-semibold">Format:</span>
+						</label>
+						<div class="dropdown dropdown-hover">
+							<div tabindex="0" role="button" class="btn btn-sm btn-outline" id="format-selector-optimized">
+								<span id="format-label-optimized">
+									if model.HasAVIF && model.OptimizedAVIFPath != "" {
+										AVIF
+									} else if model.HasWebP && model.OptimizedWebPPath != "" {
+										WebP
+									} else {
+										Original
+									}
+								</span>
+								<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+								</svg>
+							</div>
+							<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10">
+								if model.HasAVIF && model.OptimizedAVIFPath != "" {
+									<li><a class="format-option" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath}>AVIF</a></li>
+								}
+								if model.HasWebP && model.OptimizedWebPPath != "" {
+									<li><a class="format-option" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath}>WebP</a></li>
+								}
+								<li><a class="format-option" data-format="original" data-size="optimized" data-path={model.OriginalPath}>Original</a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text">HTML</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.OptimizedAVIFPath != "" {
 								<input id="html-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.OptimizedAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.OptimizedWebPPath != "" {
 								<input id="html-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.OptimizedWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
 							} else {
 								<input id="html-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.OriginalPath + "\" alt=\"" + model.DisplayName + "\" />"} />
@@ -301,9 +397,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">BBCode</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.OptimizedAVIFPath != "" {
 								<input id="bbcode-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.OptimizedAVIFPath + "[/img]"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.OptimizedWebPPath != "" {
 								<input id="bbcode-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.OptimizedWebPPath + "[/img]"} />
 							} else {
 								<input id="bbcode-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.OriginalPath + "[/img]"} />
@@ -323,9 +419,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Markdown</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.OptimizedAVIFPath != "" {
 								<input id="markdown-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.OptimizedAVIFPath + ")"} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.OptimizedWebPPath != "" {
 								<input id="markdown-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.OptimizedWebPPath + ")"} />
 							} else {
 								<input id="markdown-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.OriginalPath + ")"} />
@@ -345,9 +441,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Direktlink</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF {
+							if model.HasAVIF && model.OptimizedAVIFPath != "" {
 								<input id="direktlink-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.OptimizedAVIFPath} />
-							} else if model.HasWebP {
+							} else if model.HasWebP && model.OptimizedWebPPath != "" {
 								<input id="direktlink-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.OptimizedWebPPath} />
 							} else {
 								<input id="direktlink-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.OriginalPath} />
@@ -683,6 +779,63 @@ templ ImageViewer(model viewmodel.Image) {
 					hasWebp: processedImageElement.getAttribute('data-has-webp') === 'true',
 					displayName: processedImageElement.getAttribute('data-display-name') || ''
 				};
+			}
+
+			// Initialize format dropdowns
+			initializeFormatDropdowns();
+		}
+
+		// Function to initialize format dropdown functionality
+		function initializeFormatDropdowns() {
+			// Handle format selection for all sizes
+			const formatOptions = document.querySelectorAll('.format-option');
+			formatOptions.forEach(option => {
+				option.addEventListener('click', function(e) {
+					e.preventDefault();
+					
+					const format = this.getAttribute('data-format');
+					const size = this.getAttribute('data-size');
+					const path = this.getAttribute('data-path');
+					
+					// Update the dropdown label
+					const labelElement = document.getElementById(`format-label-${size}`);
+					if (labelElement) {
+						labelElement.textContent = format.toUpperCase();
+					}
+					
+					// Update all input fields for this size
+					updateInputFields(size, format, path);
+				});
+			});
+		}
+
+		// Function to update input fields when format changes
+		function updateInputFields(size, format, path) {
+			const domain = "{{ model.Domain }}";
+			const displayName = "{{ model.DisplayName }}";
+			
+			// Update HTML input
+			const htmlInput = document.getElementById(`html-${size}`);
+			if (htmlInput) {
+				htmlInput.value = `<img src="${domain}${path}" alt="${displayName}" />`;
+			}
+			
+			// Update BBCode input  
+			const bbcodeInput = document.getElementById(`bbcode-${size}`);
+			if (bbcodeInput) {
+				bbcodeInput.value = `[img]${domain}${path}[/img]`;
+			}
+			
+			// Update Markdown input
+			const markdownInput = document.getElementById(`markdown-${size}`);
+			if (markdownInput) {
+				markdownInput.value = `![${displayName}](${domain}${path})`;
+			}
+			
+			// Update Direktlink input
+			const direktlinkInput = document.getElementById(`direktlink-${size}`);
+			if (direktlinkInput) {
+				direktlinkInput.value = `${domain}${path}`;
 			}
 		}
 
