@@ -16,13 +16,14 @@ import (
 )
 
 type GalleryImage struct {
-	ID           uint
-	UUID         string
-	Title        string
-	ShareLink    string
-	PreviewPath  string
-	OriginalPath string
-	CreatedAt    string
+	ID               uint
+	UUID             string
+	Title            string
+	ShareLink        string
+	PreviewPath      string
+	SmallPreviewPath string
+	OriginalPath     string
+	CreatedAt        string
 }
 
 func Images(
@@ -116,7 +117,7 @@ func ImagesGallery(username string, images []GalleryImage) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Bilder", len(images)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 45, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 46, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -175,7 +176,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var6 templ.SafeURL
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 219, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 220, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -188,7 +189,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(image.PreviewPath)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 220, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 221, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -201,7 +202,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 220, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 221, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -214,7 +215,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 223, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 224, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -227,7 +228,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(image.OriginalPath)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 226, Col: 129}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 227, Col: 129}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -240,7 +241,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var11 templ.SafeURL
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 233, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 234, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -253,7 +254,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var12 templ.SafeURL
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL("/user/images/edit/" + image.UUID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 240, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 241, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -276,7 +277,7 @@ func GalleryItems(images []GalleryImage, page int) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/user/images/load?page=%d", page+1))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 255, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 256, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {

@@ -144,6 +144,15 @@ The project uses OpenAPI 3.0 specifications for API documentation and oapi-codeg
 #### Database Models
 Main entities include User, Image, Album, Tag, News, and Comment models with GORM relationships.
 
+#### Album System
+The album functionality provides comprehensive photo organization capabilities:
+- **Album Management**: Users can create, edit, and delete private albums with title and description
+- **Photo Organization**: Add/remove existing images to/from albums via intuitive modal interface
+- **Cover Images**: Select any album photo as the cover image
+- **Responsive Display**: Custom CSS grid system adapts from 2 columns (mobile) to 7 columns (4K displays)
+- **Image Variants**: Utilizes optimized image formats (AVIF, WebP) with fallbacks for performance
+- **Navigation**: Accessible via "Meine Alben" in the user navigation bar
+
 ## Development Workflow
 
 1. **Environment Setup**: Use `make start` to spin up the Docker environment

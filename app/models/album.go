@@ -3,7 +3,10 @@ package models
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
 )
 
 type Album struct {
@@ -41,4 +44,25 @@ func (a *Album) AddImage(db *gorm.DB, imageID uint) error {
 // RemoveImage entfernt ein Bild aus dem Album
 func (a *Album) RemoveImage(db *gorm.DB, imageID uint) error {
 	return db.Exec("DELETE FROM album_images WHERE album_id = ? AND image_id = ?", a.ID, imageID).Error
+}
+
+// BeforeCreate wird vor dem Erstellen eines neuen Datensatzes aufgerufen
+func (a *Album) BeforeCreate(tx *gorm.DB) error {
+	// Generiere einen eindeutigen ShareLink, falls nicht vorhanden
+	if a.ShareLink == "" {
+		// Temporärer ShareLink für den Insert
+		a.ShareLink = "temp-" + uuid.New().String()[:8]
+	}
+	return nil
+}
+
+// AfterCreate wird nach dem Erstellen eines neuen Datensatzes aufgerufen
+func (a *Album) AfterCreate(tx *gorm.DB) error {
+	// Generiere den ShareLink basierend auf der ID
+	if a.ShareLink != "" && (a.ShareLink[:5] == "temp-" || a.ShareLink == "") {
+		a.ShareLink = shortener.EncodeID(a.ID)
+		// Aktualisiere den ShareLink in der Datenbank
+		return tx.Model(a).Update("share_link", a.ShareLink).Error
+	}
+	return nil
 }
