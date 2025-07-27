@@ -72,12 +72,12 @@ func (i *Image) AfterCreate(tx *gorm.DB) error {
 
 // IncrementViewCount erhöht den Zähler für Aufrufe
 func (i *Image) IncrementViewCount(db *gorm.DB) error {
-	return db.Model(i).Update("view_count", i.ViewCount+1).Error
+	return db.Model(i).UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
 }
 
 // IncrementDownloadCount erhöht den Zähler für Downloads
 func (i *Image) IncrementDownloadCount(db *gorm.DB) error {
-	return db.Model(i).Update("download_count", i.DownloadCount+1).Error
+	return db.Model(i).UpdateColumn("download_count", gorm.Expr("download_count + ?", 1)).Error
 }
 
 // TogglePublic ändert den öffentlichen Status des Bildes

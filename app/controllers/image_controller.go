@@ -339,6 +339,16 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		mediumThumbAvifPath = "/" + path
 	}
 
+	// Original format thumbnail paths
+	smallThumbOriginalPath := ""
+	mediumThumbOriginalPath := ""
+	if path, exists := imagePaths["thumbnail_small_original"]; exists {
+		smallThumbOriginalPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
+		mediumThumbOriginalPath = "/" + path
+	}
+
 	// Check if any optimized versions are available
 	hasOptimizedVersions := variantInfo.HasWebP || variantInfo.HasAVIF || variantInfo.HasThumbnailSmall || variantInfo.HasThumbnailMedium
 
@@ -348,29 +358,35 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	previewAvifPath := avifPath
 
 	if variantInfo.HasThumbnailMedium {
-		// Set the paths for medium thumbnails, if available
+		// Set the paths for medium thumbnails, with priority: AVIF > WebP > Original Format
 		if variantInfo.HasAVIF && mediumThumbAvifPath != "" {
 			previewPath = mediumThumbAvifPath
 			previewAvifPath = mediumThumbAvifPath
+		} else if variantInfo.HasWebP && mediumThumbWebpPath != "" {
+			previewPath = mediumThumbWebpPath
+			previewWebpPath = mediumThumbWebpPath
+		} else if mediumThumbOriginalPath != "" {
+			previewPath = mediumThumbOriginalPath
 		}
-		// Set the WebP path independently of AVIF
+
+		// Set the WebP path independently if available
 		if variantInfo.HasWebP && mediumThumbWebpPath != "" {
-			if !variantInfo.HasAVIF { // Only change the main path if no AVIF is available
-				previewPath = mediumThumbWebpPath
-			}
 			previewWebpPath = mediumThumbWebpPath
 		}
 	} else if variantInfo.HasThumbnailSmall {
-		// Fallback to small thumbnail if medium is not available
+		// Fallback to small thumbnail if medium is not available, with priority: AVIF > WebP > Original Format
 		if variantInfo.HasAVIF && smallThumbAvifPath != "" {
 			previewPath = smallThumbAvifPath
 			previewAvifPath = smallThumbAvifPath
+		} else if variantInfo.HasWebP && smallThumbWebpPath != "" {
+			previewPath = smallThumbWebpPath
+			previewWebpPath = smallThumbWebpPath
+		} else if smallThumbOriginalPath != "" {
+			previewPath = smallThumbOriginalPath
 		}
-		// Set the WebP path independently of AVIF
+
+		// Set the WebP path independently if available
 		if variantInfo.HasWebP && smallThumbWebpPath != "" {
-			if !variantInfo.HasAVIF { // Only change the main path if no AVIF is available
-				previewPath = smallThumbWebpPath
-			}
 			previewWebpPath = smallThumbWebpPath
 		}
 	}
@@ -410,24 +426,26 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// Create the ImageViewModel
 	imageModel := viewmodel.Image{
-		Domain:             domain,
-		PreviewPath:        previewPath,
-		FilePathWithDomain: filePathWithDomain,
-		DisplayName:        displayName,
-		ShareURL:           shareURL,
-		HasWebP:            variantInfo.HasWebP,
-		HasAVIF:            variantInfo.HasAVIF,
-		PreviewWebPPath:    previewWebpPath,
-		PreviewAVIFPath:    previewAvifPath,
-		SmallWebPPath:      smallThumbWebpPath,
-		SmallAVIFPath:      smallThumbAvifPath,
-		OptimizedWebPPath:  optimizedWebpPath,
-		OptimizedAVIFPath:  optimizedAvifPath,
-		OriginalPath:       filePathComplete,
-		Width:              image.Width,
-		Height:             image.Height,
-		UUID:               image.UUID,
-		IsProcessing:       true, // Wird später geprüft
+		Domain:              domain,
+		PreviewPath:         previewPath,
+		FilePathWithDomain:  filePathWithDomain,
+		DisplayName:         displayName,
+		ShareURL:            shareURL,
+		HasWebP:             variantInfo.HasWebP,
+		HasAVIF:             variantInfo.HasAVIF,
+		PreviewWebPPath:     previewWebpPath,
+		PreviewAVIFPath:     previewAvifPath,
+		PreviewOriginalPath: mediumThumbOriginalPath,
+		SmallWebPPath:       smallThumbWebpPath,
+		SmallAVIFPath:       smallThumbAvifPath,
+		SmallOriginalPath:   smallThumbOriginalPath,
+		OptimizedWebPPath:   optimizedWebpPath,
+		OptimizedAVIFPath:   optimizedAvifPath,
+		OriginalPath:        filePathComplete,
+		Width:               image.Width,
+		Height:              image.Height,
+		UUID:                image.UUID,
+		IsProcessing:        true, // Wird später geprüft
 		CameraModel: func() string {
 			if image.Metadata != nil && image.Metadata.CameraModel != nil {
 				return *image.Metadata.CameraModel

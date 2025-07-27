@@ -25,12 +25,14 @@ type Image struct {
 	HasOptimizedVersions bool
 
 	// Paths for optimized preview formats (medium thumbnails)
-	PreviewWebPPath string
-	PreviewAVIFPath string
+	PreviewWebPPath     string
+	PreviewAVIFPath     string
+	PreviewOriginalPath string
 
-	// Paths for small thumbnails (nur WebP und AVIF existieren)
-	SmallWebPPath string
-	SmallAVIFPath string
+	// Paths for small thumbnails (WebP, AVIF und Original)
+	SmallWebPPath     string
+	SmallAVIFPath     string
+	SmallOriginalPath string
 
 	// Paths for optimized full-size versions
 	OptimizedWebPPath string

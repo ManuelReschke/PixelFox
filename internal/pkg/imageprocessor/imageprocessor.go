@@ -266,6 +266,8 @@ func processImage(imageModel *models.Image) (errResult error) {
 	smallThumbAVIFPath := filepath.Join(variantsBaseDir, baseFileName+"_small.avif")
 	mediumThumbWebPPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.webp")
 	mediumThumbAVIFPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.avif")
+	smallThumbOriginalPath := filepath.Join(variantsBaseDir, baseFileName+"_small"+imageModel.FileType)
+	mediumThumbOriginalPath := filepath.Join(variantsBaseDir, baseFileName+"_medium"+imageModel.FileType)
 
 	var hasWebp, hasAvif, hasThumbnailSmall, hasThumbnailMedium bool
 	var width, height int
@@ -339,36 +341,59 @@ func processImage(imageModel *models.Image) (errResult error) {
 
 	// --- GIF Handling ---
 	if isGif {
-		log.Debugf("[ImageProcessor] GIF detected, creating WebP/AVIF thumbnails for %s", imageModel.UUID)
+		log.Debugf("[ImageProcessor] GIF detected, creating WebP/AVIF/Original thumbnails for %s", imageModel.UUID)
 		// Small Thumbnail
 		smallThumb = imaging.Resize(imgDecoded, SmallThumbnailSize, 0, imaging.Lanczos)
+
+		// Save WebP version
 		if err := saveWebP(smallThumb, smallThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save small WebP thumbnail for GIF %s: %v", imageModel.UUID, err)
 		} else {
 			hasThumbnailSmall = true
 			log.Debugf("[ImageProcessor] Saved small WebP thumbnail for GIF %s", imageModel.UUID)
-			if IsFFmpegAvailable {
-				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
-					log.Errorf("[ImageProcessor] Failed to create small AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
-				} else {
-					log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for GIF %s", smallThumbAVIFPath)
-				}
+		}
+
+		// Save original format version
+		if err := saveOriginalFormat(smallThumb, smallThumbOriginalPath, imageModel.FileType); err != nil {
+			log.Errorf("[ImageProcessor] Failed to save small original format thumbnail for GIF %s: %v", imageModel.UUID, err)
+		} else {
+			log.Debugf("[ImageProcessor] Saved small original format thumbnail for GIF %s", imageModel.UUID)
+		}
+
+		// Save AVIF version if available
+		if IsFFmpegAvailable {
+			if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
+				log.Errorf("[ImageProcessor] Failed to create small AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
+			} else {
+				log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for GIF %s", smallThumbAVIFPath)
 			}
 		}
 		smallThumb = nil
+
 		// Medium Thumbnail
 		mediumThumb = imaging.Resize(imgDecoded, MediumThumbnailSize, 0, imaging.Lanczos)
+
+		// Save WebP version
 		if err := saveWebP(mediumThumb, mediumThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save medium WebP thumbnail for GIF %s: %v", imageModel.UUID, err)
 		} else {
 			hasThumbnailMedium = true
 			log.Debugf("[ImageProcessor] Saved medium WebP thumbnail for GIF %s", imageModel.UUID)
-			if IsFFmpegAvailable {
-				if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
-					log.Errorf("[ImageProcessor] Failed to create medium AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
-				} else {
-					log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for GIF %s", mediumThumbAVIFPath)
-				}
+		}
+
+		// Save original format version
+		if err := saveOriginalFormat(mediumThumb, mediumThumbOriginalPath, imageModel.FileType); err != nil {
+			log.Errorf("[ImageProcessor] Failed to save medium original format thumbnail for GIF %s: %v", imageModel.UUID, err)
+		} else {
+			log.Debugf("[ImageProcessor] Saved medium original format thumbnail for GIF %s", imageModel.UUID)
+		}
+
+		// Save AVIF version if available
+		if IsFFmpegAvailable {
+			if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
+				log.Errorf("[ImageProcessor] Failed to create medium AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
+			} else {
+				log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for GIF %s", mediumThumbAVIFPath)
 			}
 		}
 		mediumThumb = nil
@@ -395,33 +420,56 @@ func processImage(imageModel *models.Image) (errResult error) {
 		}
 		// Small Thumbnail
 		smallThumb = imaging.Resize(imgDecoded, SmallThumbnailSize, 0, imaging.Lanczos)
+
+		// Save WebP version
 		if err := saveWebP(smallThumb, smallThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save small WebP thumbnail for %s: %v", imageModel.UUID, err)
 		} else {
 			hasThumbnailSmall = true
 			log.Debugf("[ImageProcessor] Saved small WebP thumbnail for %s", imageModel.UUID)
-			if IsFFmpegAvailable {
-				if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
-					log.Errorf("[ImageProcessor] Failed to save small AVIF thumbnail for %s: %v", imageModel.UUID, err)
-				} else {
-					log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for %s", imageModel.UUID)
-				}
+		}
+
+		// Save original format version
+		if err := saveOriginalFormat(smallThumb, smallThumbOriginalPath, imageModel.FileType); err != nil {
+			log.Errorf("[ImageProcessor] Failed to save small original format thumbnail for %s: %v", imageModel.UUID, err)
+		} else {
+			log.Debugf("[ImageProcessor] Saved small original format thumbnail for %s", imageModel.UUID)
+		}
+
+		// Save AVIF version if available
+		if IsFFmpegAvailable {
+			if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
+				log.Errorf("[ImageProcessor] Failed to save small AVIF thumbnail for %s: %v", imageModel.UUID, err)
+			} else {
+				log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for %s", imageModel.UUID)
 			}
 		}
 		smallThumb = nil
+
 		// Medium Thumbnail
 		mediumThumb = imaging.Resize(imgDecoded, MediumThumbnailSize, 0, imaging.Lanczos)
+
+		// Save WebP version
 		if err := saveWebP(mediumThumb, mediumThumbWebPPath); err != nil {
 			log.Errorf("[ImageProcessor] Failed to save medium WebP thumbnail for %s: %v", imageModel.UUID, err)
 		} else {
 			hasThumbnailMedium = true
 			log.Debugf("[ImageProcessor] Saved medium WebP thumbnail for %s", imageModel.UUID)
-			if IsFFmpegAvailable {
-				if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
-					log.Errorf("[ImageProcessor] Failed to save medium AVIF thumbnail for %s: %v", imageModel.UUID, err)
-				} else {
-					log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for %s", imageModel.UUID)
-				}
+		}
+
+		// Save original format version
+		if err := saveOriginalFormat(mediumThumb, mediumThumbOriginalPath, imageModel.FileType); err != nil {
+			log.Errorf("[ImageProcessor] Failed to save medium original format thumbnail for %s: %v", imageModel.UUID, err)
+		} else {
+			log.Debugf("[ImageProcessor] Saved medium original format thumbnail for %s", imageModel.UUID)
+		}
+
+		// Save AVIF version if available
+		if IsFFmpegAvailable {
+			if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
+				log.Errorf("[ImageProcessor] Failed to save medium AVIF thumbnail for %s: %v", imageModel.UUID, err)
+			} else {
+				log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for %s", imageModel.UUID)
 			}
 		}
 		mediumThumb = nil
@@ -628,6 +676,54 @@ func getImageDimensionsWithFFprobe(filePath string) (int, int, error) {
 	return width, height, nil
 }
 
+// saveOriginalFormat saves an image in its original format (JPEG/PNG)
+func saveOriginalFormat(img image.Image, outputPath, fileType string) error {
+	if img == nil {
+		return fmt.Errorf("input image for original format saving is nil")
+	}
+	outputDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("error creating directory '%s' for original format: %w", outputDir, err)
+	}
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("error creating original format file '%s': %w", outputPath, err)
+	}
+	defer outputFile.Close()
+
+	lowerFileType := strings.ToLower(fileType)
+
+	log.Debugf("[ImageProcessor] Encoding original format %s to %s", lowerFileType, outputPath)
+
+	switch lowerFileType {
+	case ".jpg", ".jpeg":
+		if err := imaging.Encode(outputFile, img, imaging.JPEG, imaging.JPEGQuality(90)); err != nil {
+			_ = outputFile.Close()
+			_ = os.Remove(outputPath)
+			log.Errorf("[ImageProcessor] Failed to encode JPEG image to %s: %v", outputPath, err)
+			return fmt.Errorf("error encoding JPEG image to '%s': %w", outputPath, err)
+		}
+	case ".png":
+		if err := imaging.Encode(outputFile, img, imaging.PNG); err != nil {
+			_ = outputFile.Close()
+			_ = os.Remove(outputPath)
+			log.Errorf("[ImageProcessor] Failed to encode PNG image to %s: %v", outputPath, err)
+			return fmt.Errorf("error encoding PNG image to '%s': %w", outputPath, err)
+		}
+	default:
+		// Fallback to PNG for unknown formats
+		if err := imaging.Encode(outputFile, img, imaging.PNG); err != nil {
+			_ = outputFile.Close()
+			_ = os.Remove(outputPath)
+			log.Errorf("[ImageProcessor] Failed to encode fallback PNG image to %s: %v", outputPath, err)
+			return fmt.Errorf("error encoding fallback PNG image to '%s': %w", outputPath, err)
+		}
+	}
+
+	log.Debugf("[ImageProcessor] Successfully saved original format: %s", outputPath)
+	return nil
+}
+
 // saveWebP saves an image in WebP format using the go-webp library.
 func saveWebP(img image.Image, outputPath string) error {
 	if img == nil {
@@ -728,6 +824,8 @@ func getVariantType(format, size string) string {
 			return "thumbnail_small_webp"
 		case "avif":
 			return "thumbnail_small_avif"
+		case "original":
+			return "thumbnail_small_original"
 		default:
 			// Default to WebP for backwards compatibility
 			return "thumbnail_small_webp"
@@ -739,6 +837,8 @@ func getVariantType(format, size string) string {
 			return "thumbnail_medium_webp"
 		case "avif":
 			return "thumbnail_medium_avif"
+		case "original":
+			return "thumbnail_medium_original"
 		default:
 			// Default to WebP for backwards compatibility
 			return "thumbnail_medium_webp"
@@ -830,6 +930,25 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 			}
 		}
 
+		// Create original format small thumbnail variant
+		smallOriginalPath := filepath.Join(variantsBaseDir, baseFileName+"_small"+imageModel.FileType)
+		if fileInfo, err := os.Stat(smallOriginalPath); err == nil {
+			smallOriginalVariant := models.ImageVariant{
+				ImageID:     imageModel.ID,
+				VariantType: "thumbnail_small_original",
+				FilePath:    variantsBaseDir,
+				FileName:    baseFileName + "_small" + imageModel.FileType,
+				FileType:    imageModel.FileType,
+				FileSize:    fileInfo.Size(),
+				Width:       SmallThumbnailSize,
+				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
+				Quality:     90, // Higher quality for original format
+			}
+			if err := db.Create(&smallOriginalVariant).Error; err != nil {
+				log.Errorf("[ImageProcessor] Failed to create small original format thumbnail variant for %s: %v", imageModel.UUID, err)
+			}
+		}
+
 		// Create AVIF small thumbnail variant if it exists
 		smallAvifPath := filepath.Join(variantsBaseDir, baseFileName+"_small.avif")
 		if fileInfo, err := os.Stat(smallAvifPath); err == nil {
@@ -868,6 +987,25 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 			}
 			if err := db.Create(&mediumVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create medium WebP thumbnail variant for %s: %v", imageModel.UUID, err)
+			}
+		}
+
+		// Create original format medium thumbnail variant
+		mediumOriginalPath := filepath.Join(variantsBaseDir, baseFileName+"_medium"+imageModel.FileType)
+		if fileInfo, err := os.Stat(mediumOriginalPath); err == nil {
+			mediumOriginalVariant := models.ImageVariant{
+				ImageID:     imageModel.ID,
+				VariantType: "thumbnail_medium_original",
+				FilePath:    variantsBaseDir,
+				FileName:    baseFileName + "_medium" + imageModel.FileType,
+				FileType:    imageModel.FileType,
+				FileSize:    fileInfo.Size(),
+				Width:       MediumThumbnailSize,
+				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
+				Quality:     90, // Higher quality for original format
+			}
+			if err := db.Create(&mediumOriginalVariant).Error; err != nil {
+				log.Errorf("[ImageProcessor] Failed to create medium original format thumbnail variant for %s: %v", imageModel.UUID, err)
 			}
 		}
 

@@ -96,13 +96,19 @@ func HandleUserImages(c *fiber.Ctx) error {
 			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 		}
 
-		if variantInfo.HasThumbnailSmall {
+		if variantInfo.HasThumbnailMedium {
 			if variantInfo.HasAVIF {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
 			} else if variantInfo.HasWebP {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else {
-				previewPath = filepath.Join("/", img.FilePath, img.FileName)
+				// Fallback to original format thumbnail
+				originalThumbnailPath := imageprocessor.GetImagePath(&img, "original", "medium")
+				if originalThumbnailPath != "" {
+					previewPath = "/" + originalThumbnailPath
+				} else {
+					previewPath = filepath.Join("/", img.FilePath, img.FileName)
+				}
 			}
 		} else {
 			previewPath = filepath.Join("/", img.FilePath, img.FileName)
@@ -162,13 +168,19 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 		}
 
-		if variantInfo.HasThumbnailSmall {
+		if variantInfo.HasThumbnailMedium {
 			if variantInfo.HasAVIF {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
 			} else if variantInfo.HasWebP {
 				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
 			} else {
-				previewPath = filepath.Join("/", img.FilePath, img.FileName)
+				// Fallback to original format thumbnail
+				originalThumbnailPath := imageprocessor.GetImagePath(&img, "original", "medium")
+				if originalThumbnailPath != "" {
+					previewPath = "/" + originalThumbnailPath
+				} else {
+					previewPath = filepath.Join("/", img.FilePath, img.FileName)
+				}
 			}
 		} else {
 			previewPath = filepath.Join("/", img.FilePath, img.FileName)
