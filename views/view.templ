@@ -83,7 +83,7 @@ templ ImageOptions(model viewmodel.Image) {
 				if model.HasOptimizedVersions {
 					<a role="tab" class="tab tab-active" id="tab-medium" data-size="medium">Mittel (500 px)</a>
 					<a role="tab" class="tab" id="tab-small" data-size="small">Klein (200 px)</a>
-					<a role="tab" class="tab" id="tab-optimized" data-size="optimized">Optimiert ({strconv.Itoa(model.Width)} px)</a>
+					<a role="tab" class="tab" id="tab-optimized" data-size="optimized">Original ({strconv.Itoa(model.Width)} px)</a>
 				} else {
 					<a role="tab" class="tab tab-active" id="tab-original" data-size="original">Original</a>
 				}
@@ -91,38 +91,26 @@ templ ImageOptions(model viewmodel.Image) {
 			
 			<!-- Tab-Inhalte -->
 			<div id="tab-content-medium" class="tab-content block">
-				<!-- Format-Selector für Medium -->
+				<!-- Format-Tabs für Medium -->
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text font-semibold">Format:</span>
 						</label>
-						<div class="dropdown dropdown-hover">
-							<div tabindex="0" role="button" class="btn btn-sm btn-outline" id="format-selector-medium">
-								<span id="format-label-medium">
-									if model.HasAVIF && model.PreviewAVIFPath != "" {
-										AVIF
-									} else if model.HasWebP && model.PreviewWebPPath != "" {
-										WebP
-									} else {
-										Original
-									}
-								</span>
-								<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-								</svg>
-							</div>
-							<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10">
-								if model.HasAVIF && model.PreviewAVIFPath != "" {
-									<li><a class="format-option" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a></li>
-								}
-								if model.HasWebP && model.PreviewWebPPath != "" {
-									<li><a class="format-option" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a></li>
-								}
-								if model.PreviewOriginalPath != "" {
-									<li><a class="format-option" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath}>Original</a></li>
-								}
-							</ul>
+						<div role="tablist" class="tabs tabs-bordered tabs-sm">
+							if model.PreviewOriginalPath != "" {
+								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-original" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath}>Original</a>
+							} else if model.HasWebP && model.PreviewWebPPath != "" {
+								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a>
+							} else if model.HasAVIF && model.PreviewAVIFPath != "" {
+								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a>
+							}
+							if model.HasWebP && model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
+								<a role="tab" class="tab tab-sm" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a>
+							}
+							if model.HasAVIF && model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || (model.HasWebP && model.PreviewWebPPath != "")) {
+								<a role="tab" class="tab tab-sm" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a>
+							}
 						</div>
 					</div>
 				</div>
@@ -226,38 +214,26 @@ templ ImageOptions(model viewmodel.Image) {
 			
 			<!-- Tab-Inhalte für Small -->
 			<div id="tab-content-small" class="tab-content hidden">
-				<!-- Format-Selector für Small -->
+				<!-- Format-Tabs für Small -->
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text font-semibold">Format:</span>
 						</label>
-						<div class="dropdown dropdown-hover">
-							<div tabindex="0" role="button" class="btn btn-sm btn-outline" id="format-selector-small">
-								<span id="format-label-small">
-									if model.HasAVIF && model.SmallAVIFPath != "" {
-										AVIF
-									} else if model.HasWebP && model.SmallWebPPath != "" {
-										WebP
-									} else {
-										Original
-									}
-								</span>
-								<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-								</svg>
-							</div>
-							<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10">
-								if model.HasAVIF && model.SmallAVIFPath != "" {
-									<li><a class="format-option" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a></li>
-								}
-								if model.HasWebP && model.SmallWebPPath != "" {
-									<li><a class="format-option" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a></li>
-								}
-								if model.SmallOriginalPath != "" {
-									<li><a class="format-option" data-format="original" data-size="small" data-path={model.SmallOriginalPath}>Original</a></li>
-								}
-							</ul>
+						<div role="tablist" class="tabs tabs-bordered tabs-sm">
+							if model.SmallOriginalPath != "" {
+								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-original" data-format="original" data-size="small" data-path={model.SmallOriginalPath}>Original</a>
+							} else if model.HasWebP && model.SmallWebPPath != "" {
+								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a>
+							} else if model.HasAVIF && model.SmallAVIFPath != "" {
+								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a>
+							}
+							if model.HasWebP && model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
+								<a role="tab" class="tab tab-sm" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a>
+							}
+							if model.HasAVIF && model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || (model.HasWebP && model.SmallWebPPath != "")) {
+								<a role="tab" class="tab tab-sm" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a>
+							}
 						</div>
 					</div>
 				</div>
@@ -361,36 +337,20 @@ templ ImageOptions(model viewmodel.Image) {
 			
 			<!-- Tab-Inhalte für Original Optimiert -->
 			<div id="tab-content-optimized" class="tab-content hidden">
-				<!-- Format-Selector für Optimized -->
+				<!-- Format-Tabs für Optimized -->
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text font-semibold">Format:</span>
 						</label>
-						<div class="dropdown dropdown-hover">
-							<div tabindex="0" role="button" class="btn btn-sm btn-outline" id="format-selector-optimized">
-								<span id="format-label-optimized">
-									if model.HasAVIF && model.OptimizedAVIFPath != "" {
-										AVIF
-									} else if model.HasWebP && model.OptimizedWebPPath != "" {
-										WebP
-									} else {
-										Original
-									}
-								</span>
-								<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-								</svg>
-							</div>
-							<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10">
-								if model.HasAVIF && model.OptimizedAVIFPath != "" {
-									<li><a class="format-option" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath}>AVIF</a></li>
-								}
-								if model.HasWebP && model.OptimizedWebPPath != "" {
-									<li><a class="format-option" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath}>WebP</a></li>
-								}
-								<li><a class="format-option" data-format="original" data-size="optimized" data-path={model.OriginalPath}>Original</a></li>
-							</ul>
+						<div role="tablist" class="tabs tabs-bordered tabs-sm">
+							<a role="tab" class="tab tab-sm tab-active" id="format-tab-optimized-original" data-format="original" data-size="optimized" data-path={model.OriginalPath}>Original</a>
+							if model.HasWebP && model.OptimizedWebPPath != "" {
+								<a role="tab" class="tab tab-sm" id="format-tab-optimized-webp" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath}>WebP</a>
+							}
+							if model.HasAVIF && model.OptimizedAVIFPath != "" {
+								<a role="tab" class="tab tab-sm" id="format-tab-optimized-avif" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath}>AVIF</a>
+							}
 						</div>
 					</div>
 				</div>
@@ -807,27 +767,28 @@ templ ImageViewer(model viewmodel.Image) {
 				};
 			}
 
-			// Initialize format dropdowns
-			initializeFormatDropdowns();
+			// Initialize format tabs
+			initializeFormatTabs();
 		}
 
-		// Function to initialize format dropdown functionality
-		function initializeFormatDropdowns() {
-			// Handle format selection for all sizes
-			const formatOptions = document.querySelectorAll('.format-option');
-			formatOptions.forEach(option => {
-				option.addEventListener('click', function(e) {
+		// Function to initialize format tab functionality
+		function initializeFormatTabs() {
+			// Handle format tab selection for all sizes
+			const formatTabs = document.querySelectorAll('[id^="format-tab-"]');
+			formatTabs.forEach(tab => {
+				tab.addEventListener('click', function(e) {
 					e.preventDefault();
 					
 					const format = this.getAttribute('data-format');
 					const size = this.getAttribute('data-size');
 					const path = this.getAttribute('data-path');
 					
-					// Update the dropdown label
-					const labelElement = document.getElementById(`format-label-${size}`);
-					if (labelElement) {
-						labelElement.textContent = format.toUpperCase();
-					}
+					// Remove active class from all format tabs for this size
+					const siblingTabs = document.querySelectorAll(`[id^="format-tab-${size}-"]`);
+					siblingTabs.forEach(sibling => sibling.classList.remove('tab-active'));
+					
+					// Add active class to clicked tab
+					this.classList.add('tab-active');
 					
 					// Update all input fields for this size
 					updateInputFields(size, format, path);
