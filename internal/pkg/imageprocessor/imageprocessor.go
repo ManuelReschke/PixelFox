@@ -786,7 +786,7 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 	}
 
 	// Handle original separately
-	if variantType == "original" {
+	if variantType == models.VariantTypeOriginal {
 		if imageModel.FilePath == "" || imageModel.FileName == "" {
 			log.Warnf("[GetImagePath] Cannot get original path for %s: FilePath or FileName is empty", imageModel.UUID)
 			return ""
@@ -814,34 +814,34 @@ func getVariantType(format, size string) string {
 
 	// Handle original
 	if lowerSize == "original" || (lowerFormat == "original" && lowerSize == "") {
-		return "original"
+		return models.VariantTypeOriginal
 	}
 
 	// Handle thumbnails with specific formats
 	if lowerSize == "small" {
 		switch lowerFormat {
 		case "webp":
-			return "thumbnail_small_webp"
+			return models.VariantTypeThumbnailSmallWebP
 		case "avif":
-			return "thumbnail_small_avif"
+			return models.VariantTypeThumbnailSmallAVIF
 		case "original":
-			return "thumbnail_small_original"
+			return models.VariantTypeThumbnailSmallOrig
 		default:
 			// Default to WebP for backwards compatibility
-			return "thumbnail_small_webp"
+			return models.VariantTypeThumbnailSmallWebP
 		}
 	}
 	if lowerSize == "medium" {
 		switch lowerFormat {
 		case "webp":
-			return "thumbnail_medium_webp"
+			return models.VariantTypeThumbnailMediumWebP
 		case "avif":
-			return "thumbnail_medium_avif"
+			return models.VariantTypeThumbnailMediumAVIF
 		case "original":
-			return "thumbnail_medium_original"
+			return models.VariantTypeThumbnailMediumOrig
 		default:
 			// Default to WebP for backwards compatibility
-			return "thumbnail_medium_webp"
+			return models.VariantTypeThumbnailMediumWebP
 		}
 	}
 
@@ -849,9 +849,9 @@ func getVariantType(format, size string) string {
 	if lowerSize == "" || lowerSize == "full" {
 		switch lowerFormat {
 		case "webp":
-			return "webp"
+			return models.VariantTypeWebP
 		case "avif":
-			return "avif"
+			return models.VariantTypeAVIF
 		}
 	}
 
@@ -873,7 +873,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(webpPath); err == nil {
 			webpVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "webp",
+				VariantType: models.VariantTypeWebP,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + ".webp",
 				FileType:    ".webp",
@@ -894,7 +894,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(avifPath); err == nil {
 			avifVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "avif",
+				VariantType: models.VariantTypeAVIF,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + ".avif",
 				FileType:    ".avif",
@@ -916,7 +916,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(smallWebpPath); err == nil {
 			smallVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "thumbnail_small_webp",
+				VariantType: models.VariantTypeThumbnailSmallWebP,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + "_small.webp",
 				FileType:    ".webp",
@@ -935,7 +935,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(smallOriginalPath); err == nil {
 			smallOriginalVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "thumbnail_small_original",
+				VariantType: models.VariantTypeThumbnailSmallOrig,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + "_small" + imageModel.FileType,
 				FileType:    imageModel.FileType,
@@ -954,7 +954,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(smallAvifPath); err == nil {
 			smallAvifVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "thumbnail_small_avif",
+				VariantType: models.VariantTypeThumbnailSmallAVIF,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + "_small.avif",
 				FileType:    ".avif",
@@ -976,7 +976,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(mediumWebpPath); err == nil {
 			mediumVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "thumbnail_medium_webp",
+				VariantType: models.VariantTypeThumbnailMediumWebP,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + "_medium.webp",
 				FileType:    ".webp",
@@ -995,7 +995,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(mediumOriginalPath); err == nil {
 			mediumOriginalVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "thumbnail_medium_original",
+				VariantType: models.VariantTypeThumbnailMediumOrig,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + "_medium" + imageModel.FileType,
 				FileType:    imageModel.FileType,
@@ -1014,7 +1014,7 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		if fileInfo, err := os.Stat(mediumAvifPath); err == nil {
 			mediumAvifVariant := models.ImageVariant{
 				ImageID:     imageModel.ID,
-				VariantType: "thumbnail_medium_avif",
+				VariantType: models.VariantTypeThumbnailMediumAVIF,
 				FilePath:    variantsBaseDir,
 				FileName:    baseFileName + "_medium.avif",
 				FileType:    ".avif",

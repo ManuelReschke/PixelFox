@@ -6,6 +6,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// Image variant type constants
+const (
+	VariantTypeWebP                = "webp"
+	VariantTypeAVIF                = "avif"
+	VariantTypeThumbnailSmallWebP  = "thumbnail_small_webp"
+	VariantTypeThumbnailSmallAVIF  = "thumbnail_small_avif"
+	VariantTypeThumbnailSmallOrig  = "thumbnail_small_original"
+	VariantTypeThumbnailMediumWebP = "thumbnail_medium_webp"
+	VariantTypeThumbnailMediumAVIF = "thumbnail_medium_avif"
+	VariantTypeThumbnailMediumOrig = "thumbnail_medium_original"
+	VariantTypeOriginal            = "original"
+)
+
 type ImageVariant struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
 	ImageID     uint           `gorm:"index;not null" json:"image_id"`
@@ -31,7 +44,7 @@ func (ImageVariant) TableName() string {
 // BeforeCreate is called before creating a new record
 func (iv *ImageVariant) BeforeCreate(tx *gorm.DB) error {
 	// Validate variant type - "original" is NO LONGER valid, original data is stored in images table
-	validTypes := []string{"thumbnail_small_webp", "thumbnail_small_avif", "thumbnail_medium_webp", "thumbnail_medium_avif", "webp", "avif"}
+	validTypes := []string{VariantTypeThumbnailSmallWebP, VariantTypeThumbnailSmallAVIF, VariantTypeThumbnailSmallOrig, VariantTypeThumbnailMediumWebP, VariantTypeThumbnailMediumAVIF, VariantTypeThumbnailMediumOrig, VariantTypeWebP, VariantTypeAVIF}
 	isValid := false
 	for _, validType := range validTypes {
 		if iv.VariantType == validType {

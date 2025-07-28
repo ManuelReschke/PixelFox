@@ -3,7 +3,7 @@ module github.com/ManuelReschke/PixelFox
 go 1.24
 
 require (
-	github.com/a-h/templ v0.3.920
+	github.com/a-h/templ v0.3.924
 	github.com/disintegration/imaging v1.6.2
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-playground/validator/v10 v10.27.0
