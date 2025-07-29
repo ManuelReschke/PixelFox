@@ -1559,7 +1559,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "</div></div><!-- JavaScript für die Tab-Funktionalität --><script>\n\t\t\t\tfunction initializeTabs() {\n\t\t\t\t\t// Tab-Elemente\n\t\t\t\t\tconst tabs = {\n\t\t\t\t\t\tmedium: document.getElementById('tab-medium'),\n\t\t\t\t\t\tsmall: document.getElementById('tab-small'),\n\t\t\t\t\t\toptimized: document.getElementById('tab-optimized')\n\t\t\t\t\t};\n\t\t\t\t\t\n\t\t\t\t\t// Tab-Inhalte\n\t\t\t\t\tconst contents = {\n\t\t\t\t\t\tmedium: document.getElementById('tab-content-medium'),\n\t\t\t\t\t\tsmall: document.getElementById('tab-content-small'),\n\t\t\t\t\t\toptimized: document.getElementById('tab-content-optimized')\n\t\t\t\t\t};\n\t\t\t\t\t\n\t\t\t\t\t// Abbruch, wenn nicht alle Elemente gefunden wurden\n\t\t\t\t\tif (!tabs.medium || !tabs.small || !tabs.optimized || \n\t\t\t\t\t    !contents.medium || !contents.small || !contents.optimized) {\n\t\t\t\t\t\treturn;\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Aktiviere einen Tab\n\t\t\t\t\tfunction activateTab(tabName) {\n\t\t\t\t\t\t// Deaktiviere alle Tabs\n\t\t\t\t\t\tObject.values(tabs).forEach(tab => tab.classList.remove('tab-active'));\n\t\t\t\t\t\t\n\t\t\t\t\t\t// Verstecke alle Inhalte (mit !important, um andere CSS zu überschreiben)\n\t\t\t\t\t\tObject.values(contents).forEach(content => {\n\t\t\t\t\t\t\tcontent.classList.add('hidden');\n\t\t\t\t\t\t\tcontent.style.display = 'none';\n\t\t\t\t\t\t});\n\t\t\t\t\t\t\n\t\t\t\t\t\t// Aktiviere den ausgewählten Tab\n\t\t\t\t\t\ttabs[tabName].classList.add('tab-active');\n\t\t\t\t\t\t\n\t\t\t\t\t\t// Zeige den ausgewählten Inhalt\n\t\t\t\t\t\tcontents[tabName].classList.remove('hidden');\n\t\t\t\t\t\tcontents[tabName].style.display = 'block';\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Event-Listener für Tabs\n\t\t\t\t\ttabs.medium.addEventListener('click', () => activateTab('medium'));\n\t\t\t\t\ttabs.small.addEventListener('click', () => activateTab('small'));\n\t\t\t\t\ttabs.optimized.addEventListener('click', () => activateTab('optimized'));\n\t\t\t\t\t\n\t\t\t\t\t// Initial Medium-Tab aktivieren\n\t\t\t\t\tactivateTab('medium');\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t// Bei Seitenladung initialisieren\n\t\t\t\tdocument.addEventListener('DOMContentLoaded', initializeTabs);\n\t\t\t\t\n\t\t\t\t// Nach HTMX-Swaps initialisieren\n\t\t\t\tdocument.body.addEventListener('htmx:afterSwap', initializeTabs);\n\t\t\t</script></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 169, "</div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1571,7 +1571,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			var templ_7745c5c3_Var81 string
 			templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(model.ShareURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 574, Col: 136}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 517, Col: 136}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
 			if templ_7745c5c3_Err != nil {
@@ -1619,7 +1619,7 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 			var templ_7745c5c3_Var83 string
 			templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinStringErrs("/image/status/" + model.UUID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 611, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 554, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
 			if templ_7745c5c3_Err != nil {
@@ -1651,7 +1651,7 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 			var templ_7745c5c3_Var84 templ.SafeURL
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(model.Domain + model.OriginalPath))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 627, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 570, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 			if templ_7745c5c3_Err != nil {
@@ -1664,7 +1664,7 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(model.DisplayName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 627, Col: 87}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 570, Col: 87}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 			if templ_7745c5c3_Err != nil {
@@ -1682,7 +1682,7 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 		var templ_7745c5c3_Var86 string
 		templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(model.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 635, Col: 79}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 578, Col: 79}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 		if templ_7745c5c3_Err != nil {
@@ -1695,7 +1695,7 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 		var templ_7745c5c3_Var87 string
 		templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(model.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 635, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 578, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 		if templ_7745c5c3_Err != nil {
@@ -1709,103 +1709,98 @@ func ImageViewer(model viewmodel.Image) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "</div></div></section><!-- Modal für Bildanzeige mit lazy loading --><dialog id=\"image-modal\" class=\"modal\"><div class=\"modal-box max-w-5xl\"><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost absolute right-2 top-2\">×</button></form><div class=\"py-4 flex justify-center\"><!-- Loading spinner that shows initially --><div id=\"loading-spinner\" class=\"flex flex-col items-center justify-center\"><span class=\"loading loading-spinner loading-lg text-primary\"></span><p class=\"mt-2\">Loading optimized image...</p></div><!-- Picture element that will be populated via JavaScript --><picture id=\"modal-picture\" class=\"hidden\"><!-- Sources will be added dynamically --><img id=\"modal-image\" class=\"max-h-[80vh] object-contain\" alt=\"\"></picture></div></div></dialog><script src=\"https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js\"></script><script>\n\t\t// Check if imagePaths is already defined to avoid redeclaration\n\t\tif (typeof window.pixelFoxImagePaths === 'undefined') {\n\t\t\t// Create a global variable to store image paths\n\t\t\twindow.pixelFoxImagePaths = {};\n\t\t}\n\n\t\t// Update image paths for current image\n\t\twindow.pixelFoxImagePaths = {\n\t\t\tavif: \"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 183, "</div></div></section><!-- Modal für Bildanzeige mit lazy loading --><dialog id=\"image-modal\" class=\"modal\"><div class=\"modal-box max-w-5xl\"><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost absolute right-2 top-2\">×</button></form><div class=\"py-4 flex justify-center\"><!-- Loading spinner that shows initially --><div id=\"loading-spinner\" class=\"flex flex-col items-center justify-center\"><span class=\"loading loading-spinner loading-lg text-primary\"></span><p class=\"mt-2\">Loading optimized image...</p></div><!-- Picture element that will be populated via JavaScript --><picture id=\"modal-picture\" class=\"hidden\"><!-- Sources will be added dynamically --><img id=\"modal-image\" class=\"max-h-[80vh] object-contain\" alt=\"\"></picture></div></div></dialog><!-- Load external JavaScript files --><script src=\"https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js\"></script><script src=\"/js/image-viewer.js\"></script><!-- Data container for JavaScript to read from --><div id=\"image-data\" data-domain=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var88, templ_7745c5c3_Err := templruntime.ScriptContentInsideStringLiteral(model.OptimizedAVIFPath)
+		var templ_7745c5c3_Var88 string
+		templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinStringErrs(model.Domain)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 675, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 614, Col: 27}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var88)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "\",\n\t\t\twebp: \"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var89, templ_7745c5c3_Err := templruntime.ScriptContentInsideStringLiteral(model.OptimizedWebPPath)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 676, Col: 36}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var89)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 184, "\" data-display-name=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "\",\n\t\t\toriginal: \"")
+		var templ_7745c5c3_Var89 string
+		templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(model.DisplayName)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 615, Col: 38}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var90, templ_7745c5c3_Err := templruntime.ScriptContentInsideStringLiteral(model.OriginalPath)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 677, Col: 35}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var90)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 185, "\" data-avif-path=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "\",\n\t\t\thasAvif: ")
+		var templ_7745c5c3_Var90 string
+		templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinStringErrs(model.OptimizedAVIFPath)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 616, Col: 41}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var91, templ_7745c5c3_Err := templruntime.ScriptContentOutsideStringLiteral(model.HasAVIF)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 678, Col: 28}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var91)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 186, "\" data-webp-path=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, ",\n\t\t\thasWebp: ")
+		var templ_7745c5c3_Var91 string
+		templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(model.OptimizedWebPPath)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 617, Col: 41}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var92, templ_7745c5c3_Err := templruntime.ScriptContentOutsideStringLiteral(model.HasWebP)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 679, Col: 28}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 187, "\" data-original-path=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, ",\n\t\t\tdisplayName: \"")
+		var templ_7745c5c3_Var92 string
+		templ_7745c5c3_Var92, templ_7745c5c3_Err = templ.JoinStringErrs(model.OriginalPath)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 618, Col: 40}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var92))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var93, templ_7745c5c3_Err := templruntime.ScriptContentInsideStringLiteral(model.DisplayName)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 680, Col: 37}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var93)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 188, "\" data-has-avif=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "\"\n\t\t};\n\n\t\t// Function to open the modal and load images on demand\n\t\tfunction openImageModal() {\n\t\t\t// Show the modal first\n\t\t\tconst modal = document.getElementById('image-modal');\n\t\t\tmodal.showModal();\n\t\t\t\n\t\t\t// Show loading spinner, hide picture\n\t\t\tconst spinner = document.getElementById('loading-spinner');\n\t\t\tconst picture = document.getElementById('modal-picture');\n\t\t\tspinner.classList.remove('hidden');\n\t\t\tpicture.classList.add('hidden');\n\t\t\t\n\t\t\t// Get the image element\n\t\t\tconst img = document.getElementById('modal-image');\n\t\t\t\n\t\t\t// Clear existing sources\n\t\t\twhile (picture.firstChild) {\n\t\t\t\tif (picture.firstChild !== img) {\n\t\t\t\t\tpicture.removeChild(picture.firstChild);\n\t\t\t\t} else {\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\t// Create image object to preload\n\t\t\tconst preloadImg = new Image();\n\t\t\t\n\t\t\t// Determine which optimized format to use\n\t\t\tlet imageSrc = \"\";\n\t\t\t// Check if AVIF is available and the path is valid\n\t\t\tif (window.pixelFoxImagePaths.hasAvif && window.pixelFoxImagePaths.avif && window.pixelFoxImagePaths.avif.trim() !== \"\") {\n\t\t\t\t// Use AVIF if available\n\t\t\t\timageSrc = window.pixelFoxImagePaths.avif;\n\t\t\t\tconst avifSource = document.createElement('source');\n\t\t\t\tavifSource.srcset = window.pixelFoxImagePaths.avif;\n\t\t\t\tavifSource.type = 'image/avif';\n\t\t\t\tpicture.insertBefore(avifSource, img);\n\t\t\t// Check if WebP is available and the path is valid\n\t\t\t} else if (window.pixelFoxImagePaths.hasWebp && window.pixelFoxImagePaths.webp && window.pixelFoxImagePaths.webp.trim() !== \"\") {\n\t\t\t\t// Use WebP if AVIF not available\n\t\t\t\timageSrc = window.pixelFoxImagePaths.webp;\n\t\t\t\tconst webpSource = document.createElement('source');\n\t\t\t\twebpSource.srcset = window.pixelFoxImagePaths.webp;\n\t\t\t\twebpSource.type = 'image/webp';\n\t\t\t\tpicture.insertBefore(webpSource, img);\n\t\t\t} else {\n\t\t\t\t// Fallback to original only if no optimized version exists or paths are invalid\n\t\t\t\timageSrc = window.pixelFoxImagePaths.original;\n\t\t\t}\n\t\t\t\n\t\t\t// When image loads, hide spinner and show image\n\t\t\tpreloadImg.onload = function() {\n\t\t\t\tspinner.classList.add('hidden');\n\t\t\t\tpicture.classList.remove('hidden');\n\t\t\t};\n\t\t\t\n\t\t\t// Set image src and alt\n\t\t\timg.alt = window.pixelFoxImagePaths.displayName;\n\t\t\timg.src = imageSrc; // Use the selected optimized format\n\t\t\tpreloadImg.src = imageSrc; // Start loading\n\t\t}\n\n\t\t// Function to initialize event listeners\n\t\tfunction initializeEventListeners() {\n\t\t\t// Add click event to preview image\n\t\t\tconst previewImage = document.getElementById('preview-image');\n\t\t\tif (previewImage) {\n\t\t\t\t// Remove any existing listeners to avoid duplicates\n\t\t\t\tpreviewImage.removeEventListener('click', openImageModal);\n\t\t\t\t// Add the click event listener\n\t\t\t\tpreviewImage.addEventListener('click', openImageModal);\n\t\t\t}\n\n\t\t\t// Update image paths when processed image element is loaded\n\t\t\tconst processedImageElement = document.getElementById('processed-image-element');\n\t\t\tif (processedImageElement) {\n\t\t\t\t// Extract paths from data attributes\n\t\t\t\twindow.pixelFoxImagePaths = {\n\t\t\t\t\tavif: processedImageElement.getAttribute('data-avif-path') || '',\n\t\t\t\t\twebp: processedImageElement.getAttribute('data-webp-path') || '',\n\t\t\t\t\toriginal: processedImageElement.getAttribute('data-original-path') || '',\n\t\t\t\t\thasAvif: processedImageElement.getAttribute('data-has-avif') === 'true',\n\t\t\t\t\thasWebp: processedImageElement.getAttribute('data-has-webp') === 'true',\n\t\t\t\t\tdisplayName: processedImageElement.getAttribute('data-display-name') || ''\n\t\t\t\t};\n\t\t\t}\n\n\t\t\t// Initialize format tabs\n\t\t\tinitializeFormatTabs();\n\t\t}\n\n\t\t// Function to initialize format tab functionality\n\t\tfunction initializeFormatTabs() {\n\t\t\t// Handle format tab selection for all sizes\n\t\t\tconst formatTabs = document.querySelectorAll('[id^=\"format-tab-\"]');\n\t\t\tformatTabs.forEach(tab => {\n\t\t\t\ttab.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\n\t\t\t\t\tconst format = this.getAttribute('data-format');\n\t\t\t\t\tconst size = this.getAttribute('data-size');\n\t\t\t\t\tconst path = this.getAttribute('data-path');\n\t\t\t\t\t\n\t\t\t\t\t// Remove active class from all format tabs for this size\n\t\t\t\t\tconst siblingTabs = document.querySelectorAll(`[id^=\"format-tab-${size}-\"]`);\n\t\t\t\t\tsiblingTabs.forEach(sibling => sibling.classList.remove('tab-active'));\n\t\t\t\t\t\n\t\t\t\t\t// Add active class to clicked tab\n\t\t\t\t\tthis.classList.add('tab-active');\n\t\t\t\t\t\n\t\t\t\t\t// Update all input fields for this size\n\t\t\t\t\tupdateInputFields(size, format, path);\n\t\t\t\t});\n\t\t\t});\n\n\t\t\t// Initialize input fields for all active tabs on page load\n\t\t\tconst activeTabs = document.querySelectorAll('[id^=\"format-tab-\"].tab-active');\n\t\t\tactiveTabs.forEach(tab => {\n\t\t\t\tconst format = tab.getAttribute('data-format');\n\t\t\t\tconst size = tab.getAttribute('data-size');\n\t\t\t\tconst path = tab.getAttribute('data-path');\n\t\t\t\tupdateInputFields(size, format, path);\n\t\t\t});\n\t\t}\n\n\t\t// Function to update input fields when format changes\n\t\tfunction updateInputFields(size, format, path) {\n\t\t\tconst domain = \"")
+		var templ_7745c5c3_Var93 string
+		templ_7745c5c3_Var93, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%t", model.HasAVIF))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 619, Col: 49}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var93))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var94, templ_7745c5c3_Err := templruntime.ScriptContentInsideStringLiteral(model.Domain)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 810, Col: 34}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var94)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 189, "\" data-has-webp=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "\";\n\t\t\tconst displayName = \"")
+		var templ_7745c5c3_Var94 string
+		templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%t", model.HasWebP))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 620, Col: 49}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Var95, templ_7745c5c3_Err := templruntime.ScriptContentInsideStringLiteral(model.DisplayName)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 811, Col: 44}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var95)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 191, "\";\n\t\t\t\n\t\t\t// Update HTML input\n\t\t\tconst htmlInput = document.getElementById(`html-${size}`);\n\t\t\tif (htmlInput) {\n\t\t\t\thtmlInput.value = `<img src=\"${domain}${path}\" alt=\"${displayName}\" />`;\n\t\t\t}\n\t\t\t\n\t\t\t// Update BBCode input  \n\t\t\tconst bbcodeInput = document.getElementById(`bbcode-${size}`);\n\t\t\tif (bbcodeInput) {\n\t\t\t\tbbcodeInput.value = `[img]${domain}${path}[/img]`;\n\t\t\t}\n\t\t\t\n\t\t\t// Update Markdown input\n\t\t\tconst markdownInput = document.getElementById(`markdown-${size}`);\n\t\t\tif (markdownInput) {\n\t\t\t\tmarkdownInput.value = `![${displayName}](${domain}${path})`;\n\t\t\t}\n\t\t\t\n\t\t\t// Update Direktlink input\n\t\t\tconst direktlinkInput = document.getElementById(`direktlink-${size}`);\n\t\t\tif (direktlinkInput) {\n\t\t\t\tdirektlinkInput.value = `${domain}${path}`;\n\t\t\t}\n\t\t}\n\n\t\t// Toggle Meta-Info initialization\n\t\tfunction initToggleMeta() {\n\t\t\tconst link = document.getElementById('toggle-meta');\n\t\t\tif (link) {\n\t\t\t\tlink.addEventListener('click', function(e) {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tconst info = document.getElementById('meta-info');\n\t\t\t\t\tconst icon = document.getElementById('toggle-meta-icon');\n\t\t\t\t\tinfo.classList.toggle('hidden');\n\t\t\t\t\ticon.classList.toggle('rotate-180');\n\t\t\t\t});\n\t\t\t}\n\t\t}\n\n\t\t// Initialize clipboard and event listeners when DOM is loaded\n\t\tdocument.addEventListener('DOMContentLoaded', function() {\n\t\t\tinitializeEventListeners();\n\t\t\tinitToggleMeta();\n\n\t\t\t// Initialize clipboard\n\t\t\tvar clipboard = new ClipboardJS('.copy-btn');\n\t\t\t\n\t\t\tclipboard.on('success', function(e) {\n\t\t\t\tconst button = e.trigger;\n\t\t\t\tconst originalHTML = button.innerHTML;\n\t\t\t\t\n\t\t\t\tbutton.innerHTML = `\n\t\t\t\t\t<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-4 h-4\">\n\t\t\t\t\t\t<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M4.5 12.75l6 6 9-13.5\" />\n\t\t\t\t\t</svg>\n\t\t\t\t`;\n\t\t\t\t\n\t\t\t\tsetTimeout(function() {\n\t\t\t\t\tbutton.innerHTML = originalHTML;\n\t\t\t\t}, 1500);\n\t\t\t\t\n\t\t\t\te.clearSelection();\n\t\t\t});\n\t\t\t\n\t\t\tclipboard.on('error', function(e) {\n\t\t\t\tconsole.error('Error copying: ', e.action);\n\t\t\t});\n\t\t});\n\n\t\t// Handle HTMX after-swap event to reinitialize event listeners\n\t\tdocument.body.addEventListener('htmx:afterSwap', function(event) {\n\t\t\tinitializeEventListeners();\n\t\t\tinitToggleMeta();\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 190, "\" style=\"display: none;\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
