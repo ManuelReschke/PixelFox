@@ -82,7 +82,37 @@ func settingsContent(settings models.AppSettings, csrfToken string) templ.Compon
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn deaktiviert, können Benutzer keine neuen Bilder hochladen.</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn deaktiviert, können Benutzer keine neuen Bilder hochladen.</span></label></div><!-- Thumbnail Format Settings --><div class=\"divider\">Thumbnail-Format Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Original-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_original_enabled\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if settings.ThumbnailOriginalEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert Thumbnails im ursprünglichen Dateiformat (JPG, PNG, etc.).</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">WebP-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_webp_enabled\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if settings.ThumbnailWebPEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert optimierte Thumbnails im WebP-Format für bessere Kompression.</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">AVIF-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_avif_enabled\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if settings.ThumbnailAVIFEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert hochoptimierte Thumbnails im AVIF-Format (erfordert FFmpeg).</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

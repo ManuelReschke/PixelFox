@@ -25,7 +25,11 @@ type AppSettings struct {
 	SiteTitle          string `json:"site_title" validate:"required,min=1,max=255"`
 	SiteDescription    string `json:"site_description" validate:"max=500"`
 	ImageUploadEnabled bool   `json:"image_upload_enabled"`
-	mu                 sync.RWMutex
+	// Thumbnail format settings
+	ThumbnailOriginalEnabled bool `json:"thumbnail_original_enabled"`
+	ThumbnailWebPEnabled     bool `json:"thumbnail_webp_enabled"`
+	ThumbnailAVIFEnabled     bool `json:"thumbnail_avif_enabled"`
+	mu                       sync.RWMutex
 }
 
 // Global settings instance
@@ -48,9 +52,12 @@ func LoadSettings(db *gorm.DB) error {
 
 	// Initialize with defaults
 	appSettings = &AppSettings{
-		SiteTitle:          "PixelFox",
-		SiteDescription:    "Image sharing platform",
-		ImageUploadEnabled: true,
+		SiteTitle:                "PixelFox",
+		SiteDescription:          "Image sharing platform",
+		ImageUploadEnabled:       true,
+		ThumbnailOriginalEnabled: true,
+		ThumbnailWebPEnabled:     true,
+		ThumbnailAVIFEnabled:     true,
 	}
 
 	// Load settings from database
@@ -68,6 +75,12 @@ func LoadSettings(db *gorm.DB) error {
 			appSettings.SiteDescription = setting.Value
 		case "image_upload_enabled":
 			appSettings.ImageUploadEnabled = setting.Value == "true"
+		case "thumbnail_original_enabled":
+			appSettings.ThumbnailOriginalEnabled = setting.Value == "true"
+		case "thumbnail_webp_enabled":
+			appSettings.ThumbnailWebPEnabled = setting.Value == "true"
+		case "thumbnail_avif_enabled":
+			appSettings.ThumbnailAVIFEnabled = setting.Value == "true"
 		}
 	}
 
@@ -86,9 +99,12 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 
 	// Convert settings to database format
 	settingsMap := map[string]interface{}{
-		"site_title":           settings.SiteTitle,
-		"site_description":     settings.SiteDescription,
-		"image_upload_enabled": fmt.Sprintf("%t", settings.ImageUploadEnabled),
+		"site_title":                 settings.SiteTitle,
+		"site_description":           settings.SiteDescription,
+		"image_upload_enabled":       fmt.Sprintf("%t", settings.ImageUploadEnabled),
+		"thumbnail_original_enabled": fmt.Sprintf("%t", settings.ThumbnailOriginalEnabled),
+		"thumbnail_webp_enabled":     fmt.Sprintf("%t", settings.ThumbnailWebPEnabled),
+		"thumbnail_avif_enabled":     fmt.Sprintf("%t", settings.ThumbnailAVIFEnabled),
 	}
 
 	// Save each setting
@@ -129,7 +145,7 @@ func getSettingType(key string) string {
 	switch key {
 	case "site_title", "site_description":
 		return "string"
-	case "image_upload_enabled":
+	case "image_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled":
 		return "boolean"
 	default:
 		return "string"
@@ -175,4 +191,25 @@ func (s *AppSettings) IsImageUploadEnabled() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.ImageUploadEnabled
+}
+
+// IsThumbnailOriginalEnabled returns whether original format thumbnails are enabled
+func (s *AppSettings) IsThumbnailOriginalEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ThumbnailOriginalEnabled
+}
+
+// IsThumbnailWebPEnabled returns whether WebP format thumbnails are enabled
+func (s *AppSettings) IsThumbnailWebPEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ThumbnailWebPEnabled
+}
+
+// IsThumbnailAVIFEnabled returns whether AVIF format thumbnails are enabled
+func (s *AppSettings) IsThumbnailAVIFEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ThumbnailAVIFEnabled
 }

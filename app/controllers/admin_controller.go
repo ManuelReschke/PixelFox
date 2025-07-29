@@ -752,11 +752,24 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 	imageUploadEnabledStr := c.FormValue("image_upload_enabled")
 	imageUploadEnabled := imageUploadEnabledStr == "on"
 
+	// Get thumbnail format settings
+	thumbnailOriginalEnabledStr := c.FormValue("thumbnail_original_enabled")
+	thumbnailOriginalEnabled := thumbnailOriginalEnabledStr == "on"
+
+	thumbnailWebPEnabledStr := c.FormValue("thumbnail_webp_enabled")
+	thumbnailWebPEnabled := thumbnailWebPEnabledStr == "on"
+
+	thumbnailAVIFEnabledStr := c.FormValue("thumbnail_avif_enabled")
+	thumbnailAVIFEnabled := thumbnailAVIFEnabledStr == "on"
+
 	// Create new settings
 	newSettings := &models.AppSettings{
-		SiteTitle:          siteTitle,
-		SiteDescription:    siteDescription,
-		ImageUploadEnabled: imageUploadEnabled,
+		SiteTitle:                siteTitle,
+		SiteDescription:          siteDescription,
+		ImageUploadEnabled:       imageUploadEnabled,
+		ThumbnailOriginalEnabled: thumbnailOriginalEnabled,
+		ThumbnailWebPEnabled:     thumbnailWebPEnabled,
+		ThumbnailAVIFEnabled:     thumbnailAVIFEnabled,
 	}
 
 	// Save settings

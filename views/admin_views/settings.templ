@@ -74,6 +74,60 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 					</label>
 				</div>
 
+				<!-- Thumbnail Format Settings -->
+				<div class="divider">Thumbnail-Format Einstellungen</div>
+				
+				<div class="form-control">
+					<label class="label cursor-pointer">
+						<span class="label-text font-semibold">Original-Format Thumbnails</span>
+						<input 
+							type="checkbox" 
+							name="thumbnail_original_enabled" 
+							class="checkbox"
+							if settings.ThumbnailOriginalEnabled {
+								checked
+							}
+						/>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Generiert Thumbnails im ursprünglichen Dateiformat (JPG, PNG, etc.).</span>
+					</label>
+				</div>
+
+				<div class="form-control">
+					<label class="label cursor-pointer">
+						<span class="label-text font-semibold">WebP-Format Thumbnails</span>
+						<input 
+							type="checkbox" 
+							name="thumbnail_webp_enabled" 
+							class="checkbox"
+							if settings.ThumbnailWebPEnabled {
+								checked
+							}
+						/>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Generiert optimierte Thumbnails im WebP-Format für bessere Kompression.</span>
+					</label>
+				</div>
+
+				<div class="form-control">
+					<label class="label cursor-pointer">
+						<span class="label-text font-semibold">AVIF-Format Thumbnails</span>
+						<input 
+							type="checkbox" 
+							name="thumbnail_avif_enabled" 
+							class="checkbox"
+							if settings.ThumbnailAVIFEnabled {
+								checked
+							}
+						/>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Generiert hochoptimierte Thumbnails im AVIF-Format (erfordert FFmpeg).</span>
+					</label>
+				</div>
+
 				<!-- Actions -->
 				<div class="flex justify-end space-x-4 pt-6">
 					<a href="/admin" class="btn btn-ghost">Abbrechen</a>

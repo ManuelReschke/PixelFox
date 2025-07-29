@@ -309,16 +309,21 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 	}
 
+	// Get admin settings to filter thumbnail formats
+	appSettings := models.GetAppSettings()
+
 	// Build all image paths using the new variant system
 	imagePaths := imageprocessor.BuildImagePaths(image)
 
-	// Extract paths with proper URL format
+	// Extract paths with proper URL format, respecting admin settings
 	webpPath := ""
 	avifPath := ""
 	smallThumbWebpPath := ""
 	smallThumbAvifPath := ""
 	mediumThumbWebpPath := ""
 	mediumThumbAvifPath := ""
+	smallThumbOriginalPath := ""
+	mediumThumbOriginalPath := ""
 
 	if path, exists := imagePaths["webp_full"]; exists {
 		webpPath = "/" + path
@@ -326,27 +331,35 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	if path, exists := imagePaths["avif_full"]; exists {
 		avifPath = "/" + path
 	}
-	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
-		smallThumbWebpPath = "/" + path
-	}
-	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
-		smallThumbAvifPath = "/" + path
-	}
-	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
-		mediumThumbWebpPath = "/" + path
-	}
-	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
-		mediumThumbAvifPath = "/" + path
+
+	// Only set WebP thumbnail paths if WebP thumbnails are enabled
+	if appSettings.IsThumbnailWebPEnabled() {
+		if path, exists := imagePaths["thumbnail_small_webp"]; exists {
+			smallThumbWebpPath = "/" + path
+		}
+		if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
+			mediumThumbWebpPath = "/" + path
+		}
 	}
 
-	// Original format thumbnail paths
-	smallThumbOriginalPath := ""
-	mediumThumbOriginalPath := ""
-	if path, exists := imagePaths["thumbnail_small_original"]; exists {
-		smallThumbOriginalPath = "/" + path
+	// Only set AVIF thumbnail paths if AVIF thumbnails are enabled
+	if appSettings.IsThumbnailAVIFEnabled() {
+		if path, exists := imagePaths["thumbnail_small_avif"]; exists {
+			smallThumbAvifPath = "/" + path
+		}
+		if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
+			mediumThumbAvifPath = "/" + path
+		}
 	}
-	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
-		mediumThumbOriginalPath = "/" + path
+
+	// Only set original format thumbnail paths if original thumbnails are enabled
+	if appSettings.IsThumbnailOriginalEnabled() {
+		if path, exists := imagePaths["thumbnail_small_original"]; exists {
+			smallThumbOriginalPath = "/" + path
+		}
+		if path, exists := imagePaths["thumbnail_medium_original"]; exists {
+			mediumThumbOriginalPath = "/" + path
+		}
 	}
 
 	// Use the medium thumbnail for the preview
@@ -611,16 +624,21 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 
 	// The image is complete and exists in the database
+	// Get admin settings to filter thumbnail formats
+	appSettings := models.GetAppSettings()
+
 	// Build all image paths using the new variant system
 	imagePaths := imageprocessor.BuildImagePaths(image)
 
-	// Extract paths with proper URL format
+	// Extract paths with proper URL format, respecting admin settings
 	webpPath := ""
 	avifPath := ""
 	smallThumbWebpPath := ""
 	smallThumbAvifPath := ""
 	mediumThumbWebpPath := ""
 	mediumThumbAvifPath := ""
+	smallThumbOriginalPath := ""
+	mediumThumbOriginalPath := ""
 
 	if path, exists := imagePaths["webp_full"]; exists {
 		webpPath = "/" + path
@@ -628,27 +646,35 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	if path, exists := imagePaths["avif_full"]; exists {
 		avifPath = "/" + path
 	}
-	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
-		smallThumbWebpPath = "/" + path
-	}
-	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
-		smallThumbAvifPath = "/" + path
-	}
-	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
-		mediumThumbWebpPath = "/" + path
-	}
-	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
-		mediumThumbAvifPath = "/" + path
+
+	// Only set WebP thumbnail paths if WebP thumbnails are enabled
+	if appSettings.IsThumbnailWebPEnabled() {
+		if path, exists := imagePaths["thumbnail_small_webp"]; exists {
+			smallThumbWebpPath = "/" + path
+		}
+		if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
+			mediumThumbWebpPath = "/" + path
+		}
 	}
 
-	// Original format thumbnail paths
-	smallThumbOriginalPath := ""
-	mediumThumbOriginalPath := ""
-	if path, exists := imagePaths["thumbnail_small_original"]; exists {
-		smallThumbOriginalPath = "/" + path
+	// Only set AVIF thumbnail paths if AVIF thumbnails are enabled
+	if appSettings.IsThumbnailAVIFEnabled() {
+		if path, exists := imagePaths["thumbnail_small_avif"]; exists {
+			smallThumbAvifPath = "/" + path
+		}
+		if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
+			mediumThumbAvifPath = "/" + path
+		}
 	}
-	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
-		mediumThumbOriginalPath = "/" + path
+
+	// Only set original format thumbnail paths if original thumbnails are enabled
+	if appSettings.IsThumbnailOriginalEnabled() {
+		if path, exists := imagePaths["thumbnail_small_original"]; exists {
+			smallThumbOriginalPath = "/" + path
+		}
+		if path, exists := imagePaths["thumbnail_medium_original"]; exists {
+			mediumThumbOriginalPath = "/" + path
+		}
 	}
 
 	// Original path for download
