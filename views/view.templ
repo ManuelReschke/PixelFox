@@ -794,6 +794,15 @@ templ ImageViewer(model viewmodel.Image) {
 					updateInputFields(size, format, path);
 				});
 			});
+
+			// Initialize input fields for all active tabs on page load
+			const activeTabs = document.querySelectorAll('[id^="format-tab-"].tab-active');
+			activeTabs.forEach(tab => {
+				const format = tab.getAttribute('data-format');
+				const size = tab.getAttribute('data-size');
+				const path = tab.getAttribute('data-path');
+				updateInputFields(size, format, path);
+			});
 		}
 
 		// Function to update input fields when format changes
@@ -875,6 +884,5 @@ templ ImageViewer(model viewmodel.Image) {
 			initializeEventListeners();
 			initToggleMeta();
 		});
-		initToggleMeta();
 	</script>
 }
