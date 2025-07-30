@@ -343,7 +343,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.PreviewWebPPath != "" {
+			} else if model.PreviewWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<a role=\"tab\" class=\"tab tab-sm tab-active\" id=\"format-tab-medium-webp\" data-format=\"webp\" data-size=\"medium\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -361,7 +361,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasAVIF && model.PreviewAVIFPath != "" {
+			} else if model.PreviewAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<a role=\"tab\" class=\"tab tab-sm tab-active\" id=\"format-tab-medium-avif\" data-format=\"avif\" data-size=\"medium\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -380,7 +380,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			if model.HasWebP && model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
+			if model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<a role=\"tab\" class=\"tab tab-sm\" id=\"format-tab-medium-webp\" data-format=\"webp\" data-size=\"medium\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -399,7 +399,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			if model.HasAVIF && model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || (model.HasWebP && model.PreviewWebPPath != "")) {
+			if model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || model.PreviewWebPPath != "") {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<a role=\"tab\" class=\"tab tab-sm\" id=\"format-tab-medium-avif\" data-format=\"avif\" data-size=\"medium\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -422,7 +422,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.PreviewAVIFPath != "" {
+			if model.PreviewAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<input id=\"html-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -440,7 +440,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.PreviewWebPPath != "" {
+			} else if model.PreviewWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<input id=\"html-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -499,7 +499,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.PreviewAVIFPath != "" {
+			if model.PreviewAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<input id=\"bbcode-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -517,7 +517,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.PreviewWebPPath != "" {
+			} else if model.PreviewWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<input id=\"bbcode-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -576,7 +576,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.PreviewAVIFPath != "" {
+			if model.PreviewAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<input id=\"markdown-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -594,7 +594,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.PreviewWebPPath != "" {
+			} else if model.PreviewWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 58, "<input id=\"markdown-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -653,7 +653,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.PreviewAVIFPath != "" {
+			if model.PreviewAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 65, "<input id=\"direktlink-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -671,7 +671,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.PreviewWebPPath != "" {
+			} else if model.PreviewWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 67, "<input id=\"direktlink-medium\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -748,7 +748,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.SmallWebPPath != "" {
+			} else if model.SmallWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "<a role=\"tab\" class=\"tab tab-sm tab-active\" id=\"format-tab-small-webp\" data-format=\"webp\" data-size=\"small\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -766,7 +766,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasAVIF && model.SmallAVIFPath != "" {
+			} else if model.SmallAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "<a role=\"tab\" class=\"tab tab-sm tab-active\" id=\"format-tab-small-avif\" data-format=\"avif\" data-size=\"small\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -785,7 +785,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			if model.HasWebP && model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
+			if model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<a role=\"tab\" class=\"tab tab-sm\" id=\"format-tab-small-webp\" data-format=\"webp\" data-size=\"small\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -804,7 +804,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			if model.HasAVIF && model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || (model.HasWebP && model.SmallWebPPath != "")) {
+			if model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || model.SmallWebPPath != "") {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "<a role=\"tab\" class=\"tab tab-sm\" id=\"format-tab-small-avif\" data-format=\"avif\" data-size=\"small\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -827,7 +827,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.SmallAVIFPath != "" {
+			if model.SmallAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<input id=\"html-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -845,7 +845,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.SmallWebPPath != "" {
+			} else if model.SmallWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<input id=\"html-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -904,7 +904,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.SmallAVIFPath != "" {
+			if model.SmallAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "<input id=\"bbcode-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -922,7 +922,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.SmallWebPPath != "" {
+			} else if model.SmallWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "<input id=\"bbcode-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -981,7 +981,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.SmallAVIFPath != "" {
+			if model.SmallAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<input id=\"markdown-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -999,7 +999,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.SmallWebPPath != "" {
+			} else if model.SmallWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "<input id=\"markdown-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1058,7 +1058,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.SmallAVIFPath != "" {
+			if model.SmallAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "<input id=\"direktlink-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1076,7 +1076,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.SmallWebPPath != "" {
+			} else if model.SmallWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<input id=\"direktlink-small\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1148,7 +1148,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasWebP && model.OptimizedWebPPath != "" {
+			if model.OptimizedWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<a role=\"tab\" class=\"tab tab-sm\" id=\"format-tab-optimized-webp\" data-format=\"webp\" data-size=\"optimized\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1167,7 +1167,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			if model.HasAVIF && model.OptimizedAVIFPath != "" {
+			if model.OptimizedAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 124, "<a role=\"tab\" class=\"tab tab-sm\" id=\"format-tab-optimized-avif\" data-format=\"avif\" data-size=\"optimized\" data-path=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1190,7 +1190,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.OptimizedAVIFPath != "" {
+			if model.OptimizedAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 127, "<input id=\"html-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1208,7 +1208,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.OptimizedWebPPath != "" {
+			} else if model.OptimizedWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 129, "<input id=\"html-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1249,7 +1249,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.OptimizedAVIFPath != "" {
+			if model.OptimizedAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "<input id=\"bbcode-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1267,7 +1267,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.OptimizedWebPPath != "" {
+			} else if model.OptimizedWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 136, "<input id=\"bbcode-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1308,7 +1308,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.OptimizedAVIFPath != "" {
+			if model.OptimizedAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 141, "<input id=\"markdown-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1326,7 +1326,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.OptimizedWebPPath != "" {
+			} else if model.OptimizedWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 143, "<input id=\"markdown-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1367,7 +1367,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if model.HasAVIF && model.OptimizedAVIFPath != "" {
+			if model.OptimizedAVIFPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 148, "<input id=\"direktlink-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1385,7 +1385,7 @@ func ImageOptions(model viewmodel.Image) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-			} else if model.HasWebP && model.OptimizedWebPPath != "" {
+			} else if model.OptimizedWebPPath != "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 150, "<input id=\"direktlink-optimized\" type=\"text\" readonly class=\"input input-bordered input-sm join-item w-full\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

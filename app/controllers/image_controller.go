@@ -309,13 +309,10 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 	}
 
-	// Get admin settings to filter thumbnail formats
-	appSettings := models.GetAppSettings()
-
 	// Build all image paths using the new variant system
 	imagePaths := imageprocessor.BuildImagePaths(image)
 
-	// Extract paths with proper URL format, respecting admin settings
+	// Extract paths with proper URL format for all available variants
 	webpPath := ""
 	avifPath := ""
 	smallThumbWebpPath := ""
@@ -332,47 +329,39 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		avifPath = "/" + path
 	}
 
-	// Only set WebP thumbnail paths if WebP thumbnails are enabled
-	if appSettings.IsThumbnailWebPEnabled() {
-		if path, exists := imagePaths["thumbnail_small_webp"]; exists {
-			smallThumbWebpPath = "/" + path
-		}
-		if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
-			mediumThumbWebpPath = "/" + path
-		}
+	// Set all available thumbnail paths regardless of admin settings
+	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
+		smallThumbWebpPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
+		mediumThumbWebpPath = "/" + path
 	}
 
-	// Only set AVIF thumbnail paths if AVIF thumbnails are enabled
-	if appSettings.IsThumbnailAVIFEnabled() {
-		if path, exists := imagePaths["thumbnail_small_avif"]; exists {
-			smallThumbAvifPath = "/" + path
-		}
-		if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
-			mediumThumbAvifPath = "/" + path
-		}
+	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
+		smallThumbAvifPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
+		mediumThumbAvifPath = "/" + path
 	}
 
-	// Only set original format thumbnail paths if original thumbnails are enabled
-	if appSettings.IsThumbnailOriginalEnabled() {
-		if path, exists := imagePaths["thumbnail_small_original"]; exists {
-			smallThumbOriginalPath = "/" + path
-		}
-		if path, exists := imagePaths["thumbnail_medium_original"]; exists {
-			mediumThumbOriginalPath = "/" + path
-		}
+	if path, exists := imagePaths["thumbnail_small_original"]; exists {
+		smallThumbOriginalPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
+		mediumThumbOriginalPath = "/" + path
 	}
 
 	// Use the medium thumbnail for the preview
 	previewPath := filePathComplete
-	previewWebpPath := webpPath
-	previewAvifPath := avifPath
+	previewWebpPath := ""
+	previewAvifPath := ""
 
 	if variantInfo.HasThumbnailMedium {
 		// Set the paths for medium thumbnails, with priority: AVIF > WebP > Original Format
-		if variantInfo.HasAVIF && mediumThumbAvifPath != "" {
+		if mediumThumbAvifPath != "" {
 			previewPath = mediumThumbAvifPath
 			previewAvifPath = mediumThumbAvifPath
-		} else if variantInfo.HasWebP && mediumThumbWebpPath != "" {
+		} else if mediumThumbWebpPath != "" {
 			previewPath = mediumThumbWebpPath
 			previewWebpPath = mediumThumbWebpPath
 		} else if mediumThumbOriginalPath != "" {
@@ -380,15 +369,15 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		}
 
 		// Set the WebP path independently if available
-		if variantInfo.HasWebP && mediumThumbWebpPath != "" {
+		if mediumThumbWebpPath != "" {
 			previewWebpPath = mediumThumbWebpPath
 		}
 	} else if variantInfo.HasThumbnailSmall {
 		// Fallback to small thumbnail if medium is not available, with priority: AVIF > WebP > Original Format
-		if variantInfo.HasAVIF && smallThumbAvifPath != "" {
+		if smallThumbAvifPath != "" {
 			previewPath = smallThumbAvifPath
 			previewAvifPath = smallThumbAvifPath
-		} else if variantInfo.HasWebP && smallThumbWebpPath != "" {
+		} else if smallThumbWebpPath != "" {
 			previewPath = smallThumbWebpPath
 			previewWebpPath = smallThumbWebpPath
 		} else if smallThumbOriginalPath != "" {
@@ -396,7 +385,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		}
 
 		// Set the WebP path independently if available
-		if variantInfo.HasWebP && smallThumbWebpPath != "" {
+		if smallThumbWebpPath != "" {
 			previewWebpPath = smallThumbWebpPath
 		}
 	}
@@ -409,9 +398,9 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	ogImage := ""
 	if variantInfo.HasThumbnailSmall {
 		// Use small thumbnail for OG tags
-		if variantInfo.HasAVIF && smallThumbAvifPath != "" {
+		if smallThumbAvifPath != "" {
 			ogImage = filepath.Join(domain, smallThumbAvifPath)
-		} else if variantInfo.HasWebP && smallThumbWebpPath != "" {
+		} else if smallThumbWebpPath != "" {
 			ogImage = filepath.Join(domain, smallThumbWebpPath)
 		}
 	} else {
@@ -624,13 +613,10 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 
 	// The image is complete and exists in the database
-	// Get admin settings to filter thumbnail formats
-	appSettings := models.GetAppSettings()
-
 	// Build all image paths using the new variant system
 	imagePaths := imageprocessor.BuildImagePaths(image)
 
-	// Extract paths with proper URL format, respecting admin settings
+	// Extract paths with proper URL format for all available variants
 	webpPath := ""
 	avifPath := ""
 	smallThumbWebpPath := ""
@@ -647,34 +633,26 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		avifPath = "/" + path
 	}
 
-	// Only set WebP thumbnail paths if WebP thumbnails are enabled
-	if appSettings.IsThumbnailWebPEnabled() {
-		if path, exists := imagePaths["thumbnail_small_webp"]; exists {
-			smallThumbWebpPath = "/" + path
-		}
-		if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
-			mediumThumbWebpPath = "/" + path
-		}
+	// Set all available thumbnail paths regardless of admin settings
+	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
+		smallThumbWebpPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
+		mediumThumbWebpPath = "/" + path
 	}
 
-	// Only set AVIF thumbnail paths if AVIF thumbnails are enabled
-	if appSettings.IsThumbnailAVIFEnabled() {
-		if path, exists := imagePaths["thumbnail_small_avif"]; exists {
-			smallThumbAvifPath = "/" + path
-		}
-		if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
-			mediumThumbAvifPath = "/" + path
-		}
+	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
+		smallThumbAvifPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
+		mediumThumbAvifPath = "/" + path
 	}
 
-	// Only set original format thumbnail paths if original thumbnails are enabled
-	if appSettings.IsThumbnailOriginalEnabled() {
-		if path, exists := imagePaths["thumbnail_small_original"]; exists {
-			smallThumbOriginalPath = "/" + path
-		}
-		if path, exists := imagePaths["thumbnail_medium_original"]; exists {
-			mediumThumbOriginalPath = "/" + path
-		}
+	if path, exists := imagePaths["thumbnail_small_original"]; exists {
+		smallThumbOriginalPath = "/" + path
+	}
+	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
+		mediumThumbOriginalPath = "/" + path
 	}
 
 	// Original path for download
@@ -682,15 +660,15 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 
 	// Use the medium thumbnail for the preview
 	previewPath := originalPath
-	previewWebPPath := webpPath
-	previewAVIFPath := avifPath
+	previewWebPPath := ""
+	previewAVIFPath := ""
 
 	if variantInfoAjax.HasThumbnailMedium {
 		// Set the paths for medium thumbnails, with priority: AVIF > WebP > Original Format
-		if variantInfoAjax.HasAVIF && mediumThumbAvifPath != "" {
+		if mediumThumbAvifPath != "" {
 			previewPath = mediumThumbAvifPath
 			previewAVIFPath = mediumThumbAvifPath
-		} else if variantInfoAjax.HasWebP && mediumThumbWebpPath != "" {
+		} else if mediumThumbWebpPath != "" {
 			previewPath = mediumThumbWebpPath
 			previewWebPPath = mediumThumbWebpPath
 		} else if mediumThumbOriginalPath != "" {
@@ -698,15 +676,15 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		}
 
 		// Set the WebP path independently if available
-		if variantInfoAjax.HasWebP && mediumThumbWebpPath != "" {
+		if mediumThumbWebpPath != "" {
 			previewWebPPath = mediumThumbWebpPath
 		}
 	} else if variantInfoAjax.HasThumbnailSmall {
 		// Fallback to small thumbnail if medium is not available, with priority: AVIF > WebP > Original Format
-		if variantInfoAjax.HasAVIF && smallThumbAvifPath != "" {
+		if smallThumbAvifPath != "" {
 			previewPath = smallThumbAvifPath
 			previewAVIFPath = smallThumbAvifPath
-		} else if variantInfoAjax.HasWebP && smallThumbWebpPath != "" {
+		} else if smallThumbWebpPath != "" {
 			previewPath = smallThumbWebpPath
 			previewWebPPath = smallThumbWebpPath
 		} else if smallThumbOriginalPath != "" {
@@ -714,7 +692,7 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		}
 
 		// Set the WebP path independently if available
-		if variantInfoAjax.HasWebP && smallThumbWebpPath != "" {
+		if smallThumbWebpPath != "" {
 			previewWebPPath = smallThumbWebpPath
 		}
 	}

@@ -100,15 +100,15 @@ templ ImageOptions(model viewmodel.Image) {
 						<div role="tablist" class="tabs tabs-bordered tabs-sm">
 							if model.PreviewOriginalPath != "" {
 								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-original" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath}>Original</a>
-							} else if model.HasWebP && model.PreviewWebPPath != "" {
+							} else if model.PreviewWebPPath != "" {
 								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a>
-							} else if model.HasAVIF && model.PreviewAVIFPath != "" {
+							} else if model.PreviewAVIFPath != "" {
 								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a>
 							}
-							if model.HasWebP && model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
+							if model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
 								<a role="tab" class="tab tab-sm" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a>
 							}
-							if model.HasAVIF && model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || (model.HasWebP && model.PreviewWebPPath != "")) {
+							if model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || model.PreviewWebPPath != "") {
 								<a role="tab" class="tab tab-sm" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a>
 							}
 						</div>
@@ -121,9 +121,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">HTML</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.PreviewAVIFPath != "" {
+							if model.PreviewAVIFPath != "" {
 								<input id="html-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
-							} else if model.HasWebP && model.PreviewWebPPath != "" {
+							} else if model.PreviewWebPPath != "" {
 								<input id="html-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
 							} else if model.PreviewOriginalPath != "" {
 								<input id="html-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.PreviewOriginalPath + "\" alt=\"" + model.DisplayName + "\" />"} />
@@ -145,9 +145,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">BBCode</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.PreviewAVIFPath != "" {
+							if model.PreviewAVIFPath != "" {
 								<input id="bbcode-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewAVIFPath + "[/img]"} />
-							} else if model.HasWebP && model.PreviewWebPPath != "" {
+							} else if model.PreviewWebPPath != "" {
 								<input id="bbcode-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewWebPPath + "[/img]"} />
 							} else if model.PreviewOriginalPath != "" {
 								<input id="bbcode-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.PreviewOriginalPath + "[/img]"} />
@@ -169,9 +169,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Markdown</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.PreviewAVIFPath != "" {
+							if model.PreviewAVIFPath != "" {
 								<input id="markdown-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewAVIFPath + ")"} />
-							} else if model.HasWebP && model.PreviewWebPPath != "" {
+							} else if model.PreviewWebPPath != "" {
 								<input id="markdown-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewWebPPath + ")"} />
 							} else if model.PreviewOriginalPath != "" {
 								<input id="markdown-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.PreviewOriginalPath + ")"} />
@@ -193,9 +193,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Direktlink</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.PreviewAVIFPath != "" {
+							if model.PreviewAVIFPath != "" {
 								<input id="direktlink-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewAVIFPath} />
-							} else if model.HasWebP && model.PreviewWebPPath != "" {
+							} else if model.PreviewWebPPath != "" {
 								<input id="direktlink-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewWebPPath} />
 							} else if model.PreviewOriginalPath != "" {
 								<input id="direktlink-medium" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.PreviewOriginalPath} />
@@ -223,15 +223,15 @@ templ ImageOptions(model viewmodel.Image) {
 						<div role="tablist" class="tabs tabs-bordered tabs-sm">
 							if model.SmallOriginalPath != "" {
 								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-original" data-format="original" data-size="small" data-path={model.SmallOriginalPath}>Original</a>
-							} else if model.HasWebP && model.SmallWebPPath != "" {
+							} else if model.SmallWebPPath != "" {
 								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a>
-							} else if model.HasAVIF && model.SmallAVIFPath != "" {
+							} else if model.SmallAVIFPath != "" {
 								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a>
 							}
-							if model.HasWebP && model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
+							if model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
 								<a role="tab" class="tab tab-sm" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a>
 							}
-							if model.HasAVIF && model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || (model.HasWebP && model.SmallWebPPath != "")) {
+							if model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || model.SmallWebPPath != "") {
 								<a role="tab" class="tab tab-sm" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a>
 							}
 						</div>
@@ -244,9 +244,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">HTML</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.SmallAVIFPath != "" {
+							if model.SmallAVIFPath != "" {
 								<input id="html-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.SmallAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
-							} else if model.HasWebP && model.SmallWebPPath != "" {
+							} else if model.SmallWebPPath != "" {
 								<input id="html-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.SmallWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
 							} else if model.SmallOriginalPath != "" {
 								<input id="html-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.SmallOriginalPath + "\" alt=\"" + model.DisplayName + "\" />"} />
@@ -268,9 +268,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">BBCode</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.SmallAVIFPath != "" {
+							if model.SmallAVIFPath != "" {
 								<input id="bbcode-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.SmallAVIFPath + "[/img]"} />
-							} else if model.HasWebP && model.SmallWebPPath != "" {
+							} else if model.SmallWebPPath != "" {
 								<input id="bbcode-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.SmallWebPPath + "[/img]"} />
 							} else if model.SmallOriginalPath != "" {
 								<input id="bbcode-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.SmallOriginalPath + "[/img]"} />
@@ -292,9 +292,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Markdown</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.SmallAVIFPath != "" {
+							if model.SmallAVIFPath != "" {
 								<input id="markdown-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.SmallAVIFPath + ")"} />
-							} else if model.HasWebP && model.SmallWebPPath != "" {
+							} else if model.SmallWebPPath != "" {
 								<input id="markdown-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.SmallWebPPath + ")"} />
 							} else if model.SmallOriginalPath != "" {
 								<input id="markdown-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.SmallOriginalPath + ")"} />
@@ -316,9 +316,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Direktlink</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.SmallAVIFPath != "" {
+							if model.SmallAVIFPath != "" {
 								<input id="direktlink-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.SmallAVIFPath} />
-							} else if model.HasWebP && model.SmallWebPPath != "" {
+							} else if model.SmallWebPPath != "" {
 								<input id="direktlink-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.SmallWebPPath} />
 							} else if model.SmallOriginalPath != "" {
 								<input id="direktlink-small" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.SmallOriginalPath} />
@@ -345,10 +345,10 @@ templ ImageOptions(model viewmodel.Image) {
 						</label>
 						<div role="tablist" class="tabs tabs-bordered tabs-sm">
 							<a role="tab" class="tab tab-sm tab-active" id="format-tab-optimized-original" data-format="original" data-size="optimized" data-path={model.OriginalPath}>Original</a>
-							if model.HasWebP && model.OptimizedWebPPath != "" {
+							if model.OptimizedWebPPath != "" {
 								<a role="tab" class="tab tab-sm" id="format-tab-optimized-webp" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath}>WebP</a>
 							}
-							if model.HasAVIF && model.OptimizedAVIFPath != "" {
+							if model.OptimizedAVIFPath != "" {
 								<a role="tab" class="tab tab-sm" id="format-tab-optimized-avif" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath}>AVIF</a>
 							}
 						</div>
@@ -361,9 +361,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">HTML</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.OptimizedAVIFPath != "" {
+							if model.OptimizedAVIFPath != "" {
 								<input id="html-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.OptimizedAVIFPath + "\" alt=\"" + model.DisplayName + "\" />"} />
-							} else if model.HasWebP && model.OptimizedWebPPath != "" {
+							} else if model.OptimizedWebPPath != "" {
 								<input id="html-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.OptimizedWebPPath + "\" alt=\"" + model.DisplayName + "\" />"} />
 							} else {
 								<input id="html-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"<img src=\"" + model.Domain + model.OriginalPath + "\" alt=\"" + model.DisplayName + "\" />"} />
@@ -383,9 +383,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">BBCode</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.OptimizedAVIFPath != "" {
+							if model.OptimizedAVIFPath != "" {
 								<input id="bbcode-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.OptimizedAVIFPath + "[/img]"} />
-							} else if model.HasWebP && model.OptimizedWebPPath != "" {
+							} else if model.OptimizedWebPPath != "" {
 								<input id="bbcode-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.OptimizedWebPPath + "[/img]"} />
 							} else {
 								<input id="bbcode-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"[img]" + model.Domain + model.OriginalPath + "[/img]"} />
@@ -405,9 +405,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Markdown</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.OptimizedAVIFPath != "" {
+							if model.OptimizedAVIFPath != "" {
 								<input id="markdown-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.OptimizedAVIFPath + ")"} />
-							} else if model.HasWebP && model.OptimizedWebPPath != "" {
+							} else if model.OptimizedWebPPath != "" {
 								<input id="markdown-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.OptimizedWebPPath + ")"} />
 							} else {
 								<input id="markdown-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={"![" + model.DisplayName + "](" + model.Domain + model.OriginalPath + ")"} />
@@ -427,9 +427,9 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text">Direktlink</span>
 						</label>
 						<div class="join w-full">
-							if model.HasAVIF && model.OptimizedAVIFPath != "" {
+							if model.OptimizedAVIFPath != "" {
 								<input id="direktlink-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.OptimizedAVIFPath} />
-							} else if model.HasWebP && model.OptimizedWebPPath != "" {
+							} else if model.OptimizedWebPPath != "" {
 								<input id="direktlink-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.OptimizedWebPPath} />
 							} else {
 								<input id="direktlink-optimized" type="text" readonly class="input input-bordered input-sm join-item w-full" value={model.Domain + model.OriginalPath} />
