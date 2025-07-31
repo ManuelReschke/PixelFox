@@ -2,6 +2,7 @@ package admin_views
 
 import (
 	"fmt"
+	"path/filepath"
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
@@ -18,6 +19,32 @@ func formatFileSize(size int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "KMGTPE"[exp])
+}
+
+// getThumbnailPath returns the best available thumbnail path with fallback
+func getThumbnailPath(image models.Image) string {
+	// Get variant info for this image
+	variantInfo, err := imageprocessor.GetImageVariantInfo(image.ID)
+	if err != nil {
+		// Fallback to original if no variant info available
+		return "/" + filepath.Join(image.FilePath, image.FileName)
+	}
+
+	// Try small thumbnails with priority: AVIF -> WebP -> Original format
+	if variantInfo.HasThumbnailSmall {
+		if avifPath := imageprocessor.GetImagePath(&image, "avif", "small"); avifPath != "" {
+			return "/" + avifPath
+		}
+		if webpPath := imageprocessor.GetImagePath(&image, "webp", "small"); webpPath != "" {
+			return "/" + webpPath
+		}
+		if originalPath := imageprocessor.GetImagePath(&image, "original", "small"); originalPath != "" {
+			return "/" + originalPath
+		}
+	}
+
+	// Final fallback to original image
+	return "/" + filepath.Join(image.FilePath, image.FileName)
 }
 
 templ imageContent(images []models.Image, currentPage int, totalPages int) {
@@ -54,7 +81,7 @@ templ imageContent(images []models.Image, currentPage int, totalPages int) {
 								<div class="flex-shrink-0 h-20 w-20">
 									<a href={ templ.SafeURL("/image/" + image.UUID) } target="_blank">
 										<img class="h-20 w-20 object-cover rounded-md" 
-											src={ "/" + imageprocessor.GetImagePath(&image, "webp", "small") } 
+											src={ getThumbnailPath(image) } 
 											alt={ image.Title }/>
 									</a>
 								</div>

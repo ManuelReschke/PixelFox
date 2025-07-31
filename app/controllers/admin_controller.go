@@ -116,6 +116,29 @@ func HandleAdminUsers(c *fiber.Ctx) error {
 	// Fetch users for current page
 	var users []models.User
 	db.Order("created_at DESC").Offset(offset).Limit(perPage).Find(&users)
+
+	// Fetch statistics for each user
+	var usersWithStats []admin_views.UserWithStats
+	for _, user := range users {
+		// Get user statistics
+		var imageCount int64
+		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Count(&imageCount)
+
+		var albumCount int64
+		db.Model(&models.Album{}).Where("user_id = ?", user.ID).Count(&albumCount)
+
+		// Calculate storage usage
+		var totalStorage int64
+		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Select("SUM(file_size)").Row().Scan(&totalStorage)
+
+		usersWithStats = append(usersWithStats, admin_views.UserWithStats{
+			User:         user,
+			ImageCount:   imageCount,
+			AlbumCount:   albumCount,
+			StorageUsage: totalStorage,
+		})
+	}
+
 	// Generate pages slice
 	totalPages := int(totalUsers) / perPage
 	if int(totalUsers)%perPage > 0 {
@@ -127,7 +150,7 @@ func HandleAdminUsers(c *fiber.Ctx) error {
 	}
 
 	// Render user management page
-	userManagement := admin_views.UserManagement(users, page, pages)
+	userManagement := admin_views.UserManagement(usersWithStats, page, pages)
 	home := views.Home(" | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -477,6 +500,28 @@ func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 	var users []models.User
 	db.Where("name LIKE ? OR email LIKE ?", "%"+query+"%", "%"+query+"%").Find(&users)
 
+	// Fetch statistics for each user
+	var usersWithStats []admin_views.UserWithStats
+	for _, user := range users {
+		// Get user statistics
+		var imageCount int64
+		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Count(&imageCount)
+
+		var albumCount int64
+		db.Model(&models.Album{}).Where("user_id = ?", user.ID).Count(&albumCount)
+
+		// Calculate storage usage
+		var totalStorage int64
+		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Select("SUM(file_size)").Row().Scan(&totalStorage)
+
+		usersWithStats = append(usersWithStats, admin_views.UserWithStats{
+			User:         user,
+			ImageCount:   imageCount,
+			AlbumCount:   albumCount,
+			StorageUsage: totalStorage,
+		})
+	}
+
 	// Set flash message with search info
 	fm := fiber.Map{
 		"type":    "info",
@@ -489,7 +534,7 @@ func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 	currentPage := 1
 	pages := []int{1}
 	// Render user management page with search results
-	userManagement := admin_views.UserManagement(users, currentPage, pages)
+	userManagement := admin_views.UserManagement(usersWithStats, currentPage, pages)
 	home := views.Home(" | Benutzersuche", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
