@@ -96,21 +96,32 @@ func HandleUserImages(c *fiber.Ctx) error {
 			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 		}
 
+		// Try medium thumbnails first
 		if variantInfo.HasThumbnailMedium {
-			if variantInfo.HasAVIF {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
-			} else if variantInfo.HasWebP {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
-			} else {
-				// Fallback to original format thumbnail
-				originalThumbnailPath := imageprocessor.GetImagePath(&img, "original", "medium")
-				if originalThumbnailPath != "" {
-					previewPath = "/" + originalThumbnailPath
-				} else {
-					previewPath = filepath.Join("/", img.FilePath, img.FileName)
-				}
+			// Priority: AVIF -> WebP -> Original format
+			if avifPath := imageprocessor.GetImagePath(&img, "avif", "medium"); avifPath != "" {
+				previewPath = "/" + avifPath
+			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "medium"); webpPath != "" {
+				previewPath = "/" + webpPath
+			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "medium"); originalPath != "" {
+				previewPath = "/" + originalPath
 			}
-		} else {
+		}
+
+		// Fallback to small thumbnails if medium not available
+		if previewPath == "" && variantInfo.HasThumbnailSmall {
+			// Priority: AVIF -> WebP -> Original format
+			if avifPath := imageprocessor.GetImagePath(&img, "avif", "small"); avifPath != "" {
+				previewPath = "/" + avifPath
+			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "small"); webpPath != "" {
+				previewPath = "/" + webpPath
+			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "small"); originalPath != "" {
+				previewPath = "/" + originalPath
+			}
+		}
+
+		// Final fallback to original image
+		if previewPath == "" {
 			previewPath = filepath.Join("/", img.FilePath, img.FileName)
 		}
 
@@ -168,21 +179,32 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 		}
 
+		// Try medium thumbnails first
 		if variantInfo.HasThumbnailMedium {
-			if variantInfo.HasAVIF {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
-			} else if variantInfo.HasWebP {
-				previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
-			} else {
-				// Fallback to original format thumbnail
-				originalThumbnailPath := imageprocessor.GetImagePath(&img, "original", "medium")
-				if originalThumbnailPath != "" {
-					previewPath = "/" + originalThumbnailPath
-				} else {
-					previewPath = filepath.Join("/", img.FilePath, img.FileName)
-				}
+			// Priority: AVIF -> WebP -> Original format
+			if avifPath := imageprocessor.GetImagePath(&img, "avif", "medium"); avifPath != "" {
+				previewPath = "/" + avifPath
+			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "medium"); webpPath != "" {
+				previewPath = "/" + webpPath
+			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "medium"); originalPath != "" {
+				previewPath = "/" + originalPath
 			}
-		} else {
+		}
+
+		// Fallback to small thumbnails if medium not available
+		if previewPath == "" && variantInfo.HasThumbnailSmall {
+			// Priority: AVIF -> WebP -> Original format
+			if avifPath := imageprocessor.GetImagePath(&img, "avif", "small"); avifPath != "" {
+				previewPath = "/" + avifPath
+			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "small"); webpPath != "" {
+				previewPath = "/" + webpPath
+			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "small"); originalPath != "" {
+				previewPath = "/" + originalPath
+			}
+		}
+
+		// Final fallback to original image
+		if previewPath == "" {
 			previewPath = filepath.Join("/", img.FilePath, img.FileName)
 		}
 
