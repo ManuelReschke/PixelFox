@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gofiber/contrib/swagger"
@@ -18,13 +20,34 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/router"
 )
 
 func main() {
 	app := NewApplication()
+
+	// Start job queue manager
+	jobManager := jobqueue.GetManager()
+	jobManager.Start()
+
+	// Setup graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-c
+		log.Println("Gracefully shutting down...")
+		jobManager.Stop()
+		app.Shutdown()
+	}()
+
+	// Start server
+	log.Printf("Starting server on %s:%s", env.GetEnv("APP_HOST", "localhost"), env.GetEnv("APP_PORT", "4000"))
 	err := app.Listen(fmt.Sprintf("%s:%s", env.GetEnv("APP_HOST", "localhost"), env.GetEnv("APP_PORT", "4000")))
-	log.Fatal(err)
+	if err != nil {
+		log.Printf("Server stopped: %v", err)
+	}
 }
 
 func NewApplication() *fiber.App {

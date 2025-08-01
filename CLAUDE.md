@@ -16,6 +16,7 @@ PixelFox is an image sharing platform built with Go, using GoFiber as the web fr
 - **Frontend**: HTMX, Hyperscript, TailwindCSS, DaisyUI, SweetAlert2
 - **Infrastructure**: Docker, Docker Compose
 - **Migrations**: golang-migrate/migrate
+- **Backup**: S3-compatible storage (Backblaze B2) with automatic background jobs
 
 ## Development Commands
 
@@ -116,6 +117,8 @@ make test-in-docker-internal
     - `imageprocessor/` - Image processing utilities
     - `session/` - Session management
     - `mail/` - Email utilities
+    - `jobqueue/` - Background job processing system
+    - `s3backup/` - S3-compatible backup functionality
 - `views/` - Templ templates
   - `admin_views/` - Admin panel templates
   - `auth/` - Authentication templates
@@ -142,7 +145,25 @@ Uses Templ for type-safe HTML templating. Templates are in `.templ` files and mu
 The project uses OpenAPI 3.0 specifications for API documentation and oapi-codegen for generating type-safe Go code. API handlers and models are auto-generated from the OpenAPI spec located in `public/docs/v1/openapi.yml`.
 
 #### Database Models
-Main entities include User, Image, Album, Tag, News, and Comment models with GORM relationships.
+Main entities include User, Image, Album, Tag, News, Comment, and ImageBackup models with GORM relationships.
+
+#### S3 Backup System
+The S3 backup system provides automatic cloud backup functionality:
+- **Automatic Backups**: Every uploaded image is automatically backed up to S3-compatible storage
+- **Background Processing**: Uses a Redis-based job queue system with worker pools
+- **Retry Mechanism**: Failed backups are automatically retried every 2 minutes
+- **Provider Support**: Currently supports Backblaze B2 (S3-compatible API)
+- **Status Tracking**: All backup operations are tracked in the `image_backups` table
+- **Configuration**: Controlled via environment variables (S3_BACKUP_ENABLED, S3_ACCESS_KEY_ID, etc.)
+
+#### Job Queue System
+Background job processing using Redis/Dragonfly:
+- **Automatic Startup**: Job queue starts automatically with the application
+- **Worker Pool**: Configurable number of worker processes (default: 3)
+- **Job Types**: Currently supports S3 backup jobs, extensible for other background tasks
+- **Retry Logic**: Configurable retry attempts with exponential backoff
+- **Graceful Shutdown**: Properly shuts down with the application to prevent job loss
+- **Job Cleanup**: Completed jobs are automatically removed from Redis to save memory
 
 #### Album System
 The album functionality provides comprehensive photo organization capabilities:
@@ -176,6 +197,19 @@ The development environment uses Air for hot reloading and automatic template co
 - Use `make prepare-env-prod` for production environment
 - Docker services include app, database, cache, PHPMyAdmin, and MailHog
 
+### S3 Backup Configuration
+```bash
+# S3/Backblaze B2 backup settings
+S3_BACKUP_ENABLED=true
+S3_ACCESS_KEY_ID=your_access_key
+S3_SECRET_ACCESS_KEY=your_secret_key
+S3_REGION=us-west-001  # Must match your bucket region
+S3_BUCKET_NAME=your-bucket-name
+S3_ENDPOINT_URL=https://s3.us-west-001.backblazeb2.com  # For Backblaze B2
+```
+
+**Important**: For Backblaze B2 compatibility, use AWS SDK Go v2 versions ≤ 1.27.2 to avoid checksum header conflicts.
+
 ## Container Access
 
 - **App**: `docker-compose exec app bash`
@@ -193,3 +227,11 @@ The development environment uses Air for hot reloading and automatic template co
 - Database migrations are managed through the custom migrate command
 - API code is auto-generated from OpenAPI specs - modify the spec, not the generated code
 - API documentation is available at `/api/v1/docs` when running
+
+### Backup System Notes
+- S3 backups are triggered automatically on every image upload
+- Failed backups are retried every 2 minutes automatically
+- Job queue starts automatically with the application and handles graceful shutdown
+- Backup status can be monitored in the admin queue dashboard
+- For Backblaze B2: Use AWS SDK Go v2 ≤ 1.27.2, set region to bucket region, enable path-style URLs
+- Completed backup jobs are automatically cleaned from Redis to prevent memory bloat

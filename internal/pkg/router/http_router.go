@@ -70,6 +70,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// Admin Queue Monitor Route
 	adminGroup.Get("/queues", controllers.HandleAdminQueues)
 	adminGroup.Get("/queues/data", controllers.HandleAdminQueuesData)
+	adminGroup.Delete("/queues/delete/:key", controllers.HandleAdminQueueDelete)
 	// Admin Page Management Routes (moved to CSRF protected routes below)
 
 	csrfConf := csrf.Config{

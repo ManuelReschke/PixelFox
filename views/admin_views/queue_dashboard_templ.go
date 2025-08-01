@@ -80,7 +80,7 @@ func QueueItemView(item QueueItem) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<tr class=\"hover\"><td><div class=\"flex items-center gap-3\"><div><div class=\"font-bold truncate max-w-xs\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<tr class=\"hover\"><td class=\"w-1/3\"><div class=\"flex items-center gap-3\"><div class=\"flex-1 min-w-0\"><div class=\"font-bold break-all text-sm\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -93,33 +93,33 @@ func QueueItemView(item QueueItem) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div class=\"text-sm opacity-70\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div class=\"text-xs break-all text-gray-600 mt-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
-		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(time.Since(item.CreatedAt).Round(time.Second).String())
+		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(item.Value)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 60, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 60, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div></div></td><td><span class=\"truncate max-w-xs block\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div class=\"text-xs opacity-70 mt-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(item.Value)
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(time.Since(item.CreatedAt).Round(time.Second).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 65, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 61, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></td><td>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div></div></td><td class=\"w-1/6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -148,39 +148,52 @@ func QueueItemView(item QueueItem) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(item.Type)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 68, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 66, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span></td><td>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span></td><td class=\"w-1/6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(formatDuration(item.TTL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 70, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 68, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</td><td>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</td><td class=\"w-1/6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(item.Size))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 71, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 69, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</td></tr>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</td><td class=\"w-1/12\"><button class=\"btn btn-sm btn-circle btn-error\" hx-delete=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var10 string
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("/admin/queues/delete/" + item.Key)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 73, Col: 49}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" hx-target=\"closest tr\" hx-swap=\"outerHTML\" hx-confirm=\"Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?\" title=\"Eintrag löschen\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-4 w-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></td></tr>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -191,8 +204,16 @@ func QueueItemView(item QueueItem) templ.Component {
 // Helper function to get badge class based on type
 func getBadgeClass(itemType string) string {
 	switch itemType {
-	case "status":
+	case "image_status":
 		return "badge-primary"
+	case "s3_backup_job":
+		return "badge-warning"
+	case "job_queue":
+		return "badge-info"
+	case "job_processing":
+		return "badge-success"
+	case "job_stats":
+		return "badge-neutral"
 	case "analytics":
 		return "badge-secondary"
 	case "session":
@@ -219,43 +240,43 @@ func QueueItemsTable(items []QueueItem, currentTime time.Time) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var10 == nil {
-			templ_7745c5c3_Var10 = templ.NopComponent
+		templ_7745c5c3_Var11 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var11 == nil {
+			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"stats shadow mb-4\"><div class=\"stat\"><div class=\"stat-title\">Aktuelle Einträge</div><div class=\"stat-value\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(items)))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 94, Col: 52}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div><div class=\"stat-desc\">Letzte Aktualisierung: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"stats shadow mb-4\"><div class=\"stat\"><div class=\"stat-title\">Aktuelle Einträge</div><div class=\"stat-value\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(currentTime.Format("15:04:05"))
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(items)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 95, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 114, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div><div class=\"overflow-x-auto\"><table class=\"table table-zebra\"><thead><tr><th>Schlüssel & Alter</th><th>Wert</th><th>Typ</th><th>TTL</th><th>Größe</th></tr></thead> <tbody>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div><div class=\"stat-desc\">Letzte Aktualisierung: ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var13 string
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(currentTime.Format("15:04:05"))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 115, Col: 80}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div></div></div><div class=\"overflow-x-auto\"><table class=\"table table-zebra w-full\"><thead><tr><th class=\"w-1/3\">Schlüssel & Wert</th><th class=\"w-1/6\">Typ</th><th class=\"w-1/6\">TTL</th><th class=\"w-1/6\">Größe</th><th class=\"w-1/12\">Aktion</th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(items) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<tr><td colspan=\"5\" class=\"text-center py-4\">Keine Cache-Einträge gefunden</td></tr>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<tr><td colspan=\"5\" class=\"text-center py-4\">Keine Cache-Einträge gefunden</td></tr>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -267,7 +288,7 @@ func QueueItemsTable(items []QueueItem, currentTime time.Time) templ.Component {
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</tbody></table></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</tbody></table></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -292,12 +313,12 @@ func QueueItems(items []QueueItem, currentTime time.Time) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var13 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var13 == nil {
-			templ_7745c5c3_Var13 = templ.NopComponent
+		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var14 == nil {
+			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"container mx-auto px-4 py-4\"><!-- Admin Navigation -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"container mx-auto px-4 py-4\"><!-- Admin Navigation -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -305,7 +326,7 @@ func QueueItems(items []QueueItem, currentTime time.Time) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-2xl font-bold\">Cache & Queue Monitor</h1><button class=\"btn btn-primary\" hx-get=\"/admin/queues/data\" hx-trigger=\"click, every 5s\" hx-target=\"#queue-items-table\" hx-indicator=\"#refresh-indicator\"><span id=\"refresh-indicator\" class=\"loading loading-spinner loading-xs htmx-indicator\"></span> Aktualisieren</button></div><div class=\"mb-6\"><div class=\"alert alert-info shadow-lg\"><div><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" class=\"stroke-current flex-shrink-0 w-6 h-6\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg><div><h3 class=\"font-bold\">Hinweis</h3><div class=\"text-sm\">Hier siehst du alle Einträge aus dem Redis/Dragonfly Cache in Echtzeit. Der Status aktualisiert sich alle 5 Sekunden automatisch.</div></div></div></div></div><div id=\"queue-items-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-2xl font-bold\">Cache & Queue Monitor</h1><button class=\"btn btn-primary\" hx-get=\"/admin/queues/data\" hx-trigger=\"click, every 5s\" hx-target=\"#queue-items-table\" hx-indicator=\"#refresh-indicator\"><span id=\"refresh-indicator\" class=\"loading loading-spinner loading-xs htmx-indicator\"></span> Aktualisieren</button></div><div id=\"queue-items-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -313,7 +334,7 @@ func QueueItems(items []QueueItem, currentTime time.Time) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

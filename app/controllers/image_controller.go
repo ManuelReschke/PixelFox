@@ -20,6 +20,8 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
@@ -227,6 +229,14 @@ func HandleUpload(c *fiber.Ctx) error {
 		fiberlog.Info(fmt.Sprintf("[Upload] Starting asynchronous image processing for %s", image.UUID))
 		if err := imageprocessor.ProcessImage(&image); err != nil {
 			fiberlog.Error(fmt.Sprintf("Error during image processing: %v", err))
+		}
+	}()
+
+	// Start S3 backup process if enabled
+	go func() {
+		fiberlog.Info(fmt.Sprintf("[Upload] Checking S3 backup for image %s", image.UUID))
+		if err := enqueueS3BackupIfEnabled(&image); err != nil {
+			fiberlog.Error(fmt.Sprintf("Error enqueuing S3 backup for %s: %v", image.UUID, err))
 		}
 	}()
 
@@ -775,4 +785,52 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 
 	// Render the entire card with the ImageViewer
 	return views.ImageViewer(imageModel).Render(c.Context(), c.Response().BodyWriter())
+}
+
+// enqueueS3BackupIfEnabled creates an S3 backup job if S3 backup is enabled
+func enqueueS3BackupIfEnabled(image *models.Image) error {
+	// Check if S3 backup is enabled
+	config, err := s3backup.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load S3 config: %w", err)
+	}
+
+	if !config.IsEnabled() {
+		fiberlog.Debugf("[S3Backup] S3 backup disabled, skipping backup for image %s", image.UUID)
+		return nil
+	}
+
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	// Create backup record
+	backup, err := models.CreateBackupRecord(db, image.ID, models.BackupProviderS3)
+	if err != nil {
+		return fmt.Errorf("failed to create backup record: %w", err)
+	}
+
+	// Get job queue from manager
+	queue := jobqueue.GetManager().GetQueue()
+
+	// Enqueue S3 backup job
+	job, err := queue.EnqueueS3BackupJob(
+		image.ID,
+		image.UUID,
+		image.FilePath,
+		image.FileName,
+		image.FileSize,
+		backup.ID,
+	)
+	if err != nil {
+		// Mark backup as failed if we can't enqueue the job
+		if markErr := backup.MarkAsFailed(db, fmt.Sprintf("Failed to enqueue job: %v", err)); markErr != nil {
+			fiberlog.Errorf("[S3Backup] Failed to mark backup as failed: %v", markErr)
+		}
+		return fmt.Errorf("failed to enqueue S3 backup job: %w", err)
+	}
+
+	fiberlog.Infof("[S3Backup] Successfully enqueued backup job %s for image %s", job.ID, image.UUID)
+	return nil
 }
