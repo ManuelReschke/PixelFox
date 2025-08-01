@@ -23,6 +23,7 @@ const (
 	BackupStatusUploading BackupStatus = "uploading"
 	BackupStatusCompleted BackupStatus = "completed"
 	BackupStatusFailed    BackupStatus = "failed"
+	BackupStatusDeleted   BackupStatus = "deleted"
 )
 
 // ImageBackup represents a backup of an image to cloud storage
@@ -30,8 +31,8 @@ type ImageBackup struct {
 	ID           uint           `gorm:"primaryKey" json:"id"`
 	ImageID      uint           `gorm:"not null;index:idx_image_id" json:"image_id"`
 	Image        Image          `gorm:"foreignKey:ImageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"image,omitempty"`
-	Provider     BackupProvider `gorm:"type:enum('s3','gcs','azure');not null;default:'s3';index:idx_provider" json:"provider"`
-	Status       BackupStatus   `gorm:"type:enum('pending','uploading','completed','failed');not null;default:'pending';index:idx_status" json:"status"`
+	Provider     BackupProvider `gorm:"type:varchar(20);not null;default:'s3';index:idx_provider" json:"provider"`
+	Status       BackupStatus   `gorm:"type:varchar(20);not null;default:'pending';index:idx_status" json:"status"`
 	BucketName   string         `gorm:"type:varchar(100)" json:"bucket_name"`
 	ObjectKey    string         `gorm:"type:varchar(500)" json:"object_key"`
 	BackupSize   int64          `gorm:"type:bigint unsigned" json:"backup_size"`
@@ -84,6 +85,13 @@ func (ib *ImageBackup) MarkAsFailed(db *gorm.DB, errorMsg string) error {
 	return db.Save(ib).Error
 }
 
+// MarkAsDeleted updates the backup status to deleted
+func (ib *ImageBackup) MarkAsDeleted(db *gorm.DB, message string) error {
+	ib.Status = BackupStatusDeleted
+	ib.ErrorMessage = message
+	return db.Save(ib).Error
+}
+
 // IsRetryable checks if the backup can be retried (max 3 retries)
 func (ib *ImageBackup) IsRetryable() bool {
 	return ib.Status == BackupStatusFailed && ib.RetryCount < 3
@@ -131,6 +139,7 @@ func GetBackupStats(db *gorm.DB) (map[BackupStatus]int64, error) {
 		BackupStatusUploading,
 		BackupStatusCompleted,
 		BackupStatusFailed,
+		BackupStatusDeleted,
 	}
 
 	for _, status := range statuses {
@@ -154,4 +163,11 @@ func CreateBackupRecord(db *gorm.DB, imageID uint, provider BackupProvider) (*Im
 
 	err := db.Create(backup).Error
 	return backup, err
+}
+
+// FindCompletedBackupsByImageID finds all completed backup records for an image
+func FindCompletedBackupsByImageID(db *gorm.DB, imageID uint) ([]ImageBackup, error) {
+	var backups []ImageBackup
+	err := db.Where("image_id = ? AND status = ?", imageID, BackupStatusCompleted).Find(&backups).Error
+	return backups, err
 }

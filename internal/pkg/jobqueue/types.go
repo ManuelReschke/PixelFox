@@ -12,6 +12,7 @@ type JobType string
 
 const (
 	JobTypeS3Backup JobType = "s3_backup"
+	JobTypeS3Delete JobType = "s3_delete"
 )
 
 // JobStatus defines the status of a job
@@ -72,6 +73,40 @@ func S3BackupJobPayloadFromMap(data map[string]interface{}) (*S3BackupJobPayload
 	}
 
 	var payload S3BackupJobPayload
+	err = json.Unmarshal(jsonData, &payload)
+	return &payload, err
+}
+
+// S3DeleteJobPayload contains the payload for S3 delete jobs
+type S3DeleteJobPayload struct {
+	ImageID    uint                  `json:"image_id"`
+	ImageUUID  string                `json:"image_uuid"`
+	ObjectKey  string                `json:"object_key"`
+	BucketName string                `json:"bucket_name"`
+	Provider   models.BackupProvider `json:"provider"`
+	BackupID   uint                  `json:"backup_id"`
+}
+
+// ToMap converts the payload to a map for storage
+func (p S3DeleteJobPayload) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"image_id":    p.ImageID,
+		"image_uuid":  p.ImageUUID,
+		"object_key":  p.ObjectKey,
+		"bucket_name": p.BucketName,
+		"provider":    string(p.Provider),
+		"backup_id":   p.BackupID,
+	}
+}
+
+// FromMap creates a delete payload from a map
+func S3DeleteJobPayloadFromMap(data map[string]interface{}) (*S3DeleteJobPayload, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	var payload S3DeleteJobPayload
 	err = json.Unmarshal(jsonData, &payload)
 	return &payload, err
 }

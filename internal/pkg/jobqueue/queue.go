@@ -205,6 +205,8 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 	switch job.Type {
 	case JobTypeS3Backup:
 		err = q.processS3BackupJob(ctx, job)
+	case JobTypeS3Delete:
+		err = q.processS3DeleteJob(ctx, job)
 	default:
 		err = fmt.Errorf("unknown job type: %s", job.Type)
 	}

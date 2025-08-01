@@ -41,6 +41,7 @@ func SetupDatabase() {
 				&models.Image{},
 				&models.ImageVariant{},
 				&models.ImageMetadata{},
+				&models.ImageBackup{},
 				&models.Album{},
 				&models.Tag{},
 				&models.Comment{},

@@ -13,6 +13,8 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/views"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
@@ -287,6 +289,11 @@ func HandleUserImageDelete(c *fiber.Ctx) error {
 		return c.Redirect("/user/images")
 	}
 
+	// Enqueue S3 delete jobs for completed backups before deleting the image
+	go func() {
+		enqueueUserS3DeleteJobsIfEnabled(image)
+	}()
+
 	// Use the new function to delete image and all variants (files and database records)
 	if err := imageprocessor.DeleteImageAndVariants(image); err != nil {
 		flash.WithError(c, fiber.Map{"type": "error", "message": "Fehler beim Löschen des Bildes"})
@@ -295,4 +302,57 @@ func HandleUserImageDelete(c *fiber.Ctx) error {
 
 	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild und alle Varianten gelöscht"})
 	return c.Redirect("/user/images")
+}
+
+// enqueueUserS3DeleteJobsIfEnabled creates S3 delete jobs for completed backups if S3 backup is enabled
+func enqueueUserS3DeleteJobsIfEnabled(image *models.Image) {
+	// Check if S3 backup is enabled
+	config, err := s3backup.LoadConfig()
+	if err != nil {
+		fmt.Printf("[S3Delete] Failed to load S3 config: %v\n", err)
+		return
+	}
+
+	if !config.IsEnabled() {
+		fmt.Printf("[S3Delete] S3 backup disabled, skipping delete for image %s\n", image.UUID)
+		return
+	}
+
+	db := database.GetDB()
+	if db == nil {
+		fmt.Printf("[S3Delete] Database connection is nil\n")
+		return
+	}
+
+	// Find all completed backups for this image
+	backups, err := models.FindCompletedBackupsByImageID(db, image.ID)
+	if err != nil {
+		fmt.Printf("[S3Delete] Failed to find backups for image %d: %v\n", image.ID, err)
+		return
+	}
+
+	if len(backups) == 0 {
+		fmt.Printf("[S3Delete] No completed backups found for image %s\n", image.UUID)
+		return
+	}
+
+	// Get job queue from manager
+	queue := jobqueue.GetManager().GetQueue()
+
+	// Enqueue delete jobs for each completed backup
+	for _, backup := range backups {
+		job, err := queue.EnqueueS3DeleteJob(
+			image.ID,
+			image.UUID,
+			backup.ObjectKey,
+			backup.BucketName,
+			backup.ID,
+		)
+		if err != nil {
+			fmt.Printf("[S3Delete] Failed to enqueue delete job for backup %d: %v\n", backup.ID, err)
+			continue
+		}
+
+		fmt.Printf("[S3Delete] Successfully enqueued delete job %s for image %s\n", job.ID, image.UUID)
+	}
 }
