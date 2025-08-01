@@ -81,7 +81,7 @@ func HandleUpload(c *fiber.Ctx) error {
 	file := files[0]
 
 	// Check if the file is an image
-	fileExt := filepath.Ext(file.Filename)
+	fileExt := strings.ToLower(filepath.Ext(file.Filename))
 	validImageExtensions := map[string]bool{
 		".jpg":  true,
 		".jpeg": true,
@@ -93,15 +93,35 @@ func HandleUpload(c *fiber.Ctx) error {
 		".bmp":  true,
 	}
 
+	// Check for unsupported but common image formats for better error messages
+	unsupportedButCommon := map[string]string{
+		".heic": "HEIC-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".heif": "HEIF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".tiff": "TIFF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".tif":  "TIF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".raw":  "RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".cr2":  "Canon RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".nef":  "Nikon RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".arw":  "Sony RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+		".dng":  "DNG RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+	}
+
 	if !validImageExtensions[fileExt] {
+		var errorMessage string
+		if specificMessage, exists := unsupportedButCommon[fileExt]; exists {
+			errorMessage = specificMessage
+		} else {
+			errorMessage = "Nur folgende Bildformate werden unterstützt: JPG, JPEG, PNG, GIF, WEBP, AVIF, SVG, BMP"
+		}
+
 		fm := fiber.Map{
 			"type":    "error",
-			"message": "Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)",
+			"message": errorMessage,
 		}
 		flash.WithError(c, fm)
 
 		if c.Get("HX-Request") == "true" {
-			return c.Status(fiber.StatusBadRequest).SendString("Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, AVIF, SVG, BMP)")
+			return c.Status(fiber.StatusUnsupportedMediaType).SendString(errorMessage)
 		}
 		return c.Redirect("/")
 	}
