@@ -33,14 +33,13 @@ const (
 
 // Directory paths and worker settings
 var (
-	// Processing limits to avoid overloading the server
+	// DEPRECATED: MaxWorkers - old in-memory queue used unified job queue now
 	MaxWorkers = 3
-	Throttler  = make(chan struct{}, MaxWorkers)
 
-	// Image quality settings for WebP conversion - can be adjusted via config
-	WebPQuality     = 90 // Default quality for WebP conversion (1-100)
-	SmallThumbSize  = 200
-	MediumThumbSize = 500
+	// DEPRECATED: Old quality settings - now handled in functions directly
+	WebPQuality     = 90  // DEPRECATED: Default quality for WebP conversion (1-100)
+	SmallThumbSize  = 200 // DEPRECATED: Use SmallThumbnailSize constant instead
+	MediumThumbSize = 500 // DEPRECATED: Use MediumThumbnailSize constant instead
 
 	// Directory Paths
 	OriginalDir = "uploads/original"
@@ -86,6 +85,7 @@ var processor *ImageProcessor
 var once sync.Once
 
 // GetProcessor returns the singleton image processor instance
+// DEPRECATED: Use jobqueue.ProcessImageUnified instead of the old in-memory queue
 func GetProcessor() *ImageProcessor {
 	once.Do(func() {
 		processor = &ImageProcessor{
@@ -194,8 +194,11 @@ func (p *ImageProcessor) EnqueueImage(image *models.Image) error {
 	}
 }
 
-// ProcessImage queues an image for processing (convenience function)
+// ProcessImage is DEPRECATED - use jobqueue.ProcessImageUnified instead
+// This function still works but uses the old in-memory queue system
+// The new unified Redis-based queue is preferred for better reliability and features
 func ProcessImage(image *models.Image) error {
+	log.Warnf("[ImageProcessor] DEPRECATED: ProcessImage called for %s. Use jobqueue.ProcessImageUnified instead", image.UUID)
 	if image == nil || image.UUID == "" {
 		return fmt.Errorf("cannot process invalid image data")
 	}
@@ -209,35 +212,31 @@ func ProcessImage(image *models.Image) error {
 	return GetProcessor().EnqueueImage(image)
 }
 
-// processImage handles the actual image processing
-func processImage(imageModel *models.Image) (errResult error) {
-	log.Debugf("[ImageProcessor] Processing image: %s", imageModel.UUID)
+// ProcessImageSync processes an image synchronously without using the queue
+// This is used by the unified job queue system
+func ProcessImageSync(imageModel *models.Image) error {
+	log.Debugf("[ImageProcessor] Processing image synchronously: %s", imageModel.UUID)
 
-	// Defer function to handle panics and ensure status is set to FAILED in cache on any error exit.
+	// Call the core processing function without status updates (handled by job queue)
+	return processImageCore(imageModel)
+}
+
+// processImageCore handles the core image processing logic without status updates
+// This is used by the unified job queue system
+func processImageCore(imageModel *models.Image) (errResult error) {
+	log.Debugf("[ImageProcessor] Processing image without status updates: %s", imageModel.UUID)
+
+	// Defer function to handle panics
 	defer func() {
 		if r := recover(); r != nil {
 			log.Errorf("[ImageProcessor] PANIC while processing image %s: %v", imageModel.UUID, r)
 			errResult = fmt.Errorf("panic occurred during processing: %v", r)
 		}
-		if errResult != nil {
-			log.Errorf("[ImageProcessor] Final Error for image %s: %v", imageModel.UUID, errResult)
-			// Use the new SetImageStatus (cache)
-			if statusErr := SetImageStatus(imageModel.UUID, STATUS_FAILED); statusErr != nil {
-				log.Errorf("[ImageProcessor] Additionally failed to set FAILED status in cache for %s: %v", imageModel.UUID, statusErr)
-			}
-		}
 	}()
-
-	// Set status to PROCESSING in cache at the beginning of actual work
-	if err := SetImageStatus(imageModel.UUID, STATUS_PROCESSING); err != nil {
-		log.Errorf("[ImageProcessor] Failed to set PROCESSING status in cache for %s: %v", imageModel.UUID, err)
-		// Continue processing, but return this error if nothing else fails
-		errResult = fmt.Errorf("failed to set processing status: %w", err)
-	}
 
 	// Validation
 	if imageModel == nil || imageModel.UUID == "" || imageModel.FilePath == "" || imageModel.FileName == "" {
-		return fmt.Errorf("invalid image data provided") // Assign to errResult implicitly
+		return fmt.Errorf("invalid image data provided")
 	}
 
 	originalFilePath := filepath.Join(imageModel.FilePath, imageModel.FileName)
@@ -311,12 +310,6 @@ func processImage(imageModel *models.Image) (errResult error) {
 			return err // Return DB update error
 		}
 		log.Infof("[ImageProcessor] AVIF input file %s processed successfully (DB updated).", imageModel.UUID)
-
-		// Set completed status in cache
-		if err := SetImageStatus(imageModel.UUID, STATUS_COMPLETED); err != nil {
-			log.Errorf("[ImageProcessor] Failed to set COMPLETED status in cache for AVIF input %s: %v", imageModel.UUID, err)
-			return fmt.Errorf("failed to set final status for AVIF input: %w", err)
-		}
 		return nil // Success for AVIF handling
 	}
 
@@ -538,8 +531,43 @@ func processImage(imageModel *models.Image) (errResult error) {
 		return err // Return DB update error
 	}
 
-	// If we reached here, processing was successful (or errors were logged but didn't stop processing)
+	// If we reached here, processing was successful
 	log.Infof("[ImageProcessor] Successfully processed image %s (DB updated).", imageModel.UUID)
+	return nil
+}
+
+// processImage handles the actual image processing with status updates
+// DEPRECATED: This function is only used by the old in-memory queue system
+func processImage(imageModel *models.Image) (errResult error) {
+	log.Debugf("[ImageProcessor] Processing image: %s", imageModel.UUID)
+
+	// Defer function to handle panics and ensure status is set to FAILED in cache on any error exit.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("[ImageProcessor] PANIC while processing image %s: %v", imageModel.UUID, r)
+			errResult = fmt.Errorf("panic occurred during processing: %v", r)
+		}
+		if errResult != nil {
+			log.Errorf("[ImageProcessor] Final Error for image %s: %v", imageModel.UUID, errResult)
+			// Use the new SetImageStatus (cache)
+			if statusErr := SetImageStatus(imageModel.UUID, STATUS_FAILED); statusErr != nil {
+				log.Errorf("[ImageProcessor] Additionally failed to set FAILED status in cache for %s: %v", imageModel.UUID, statusErr)
+			}
+		}
+	}()
+
+	// Set status to PROCESSING in cache at the beginning of actual work
+	if err := SetImageStatus(imageModel.UUID, STATUS_PROCESSING); err != nil {
+		log.Errorf("[ImageProcessor] Failed to set PROCESSING status in cache for %s: %v", imageModel.UUID, err)
+		// Continue processing, but return this error if nothing else fails
+		errResult = fmt.Errorf("failed to set processing status: %w", err)
+	}
+
+	// Call the core processing logic
+	coreErr := processImageCore(imageModel)
+	if coreErr != nil {
+		return coreErr
+	}
 
 	// Set final status to COMPLETED in cache
 	if err := SetImageStatus(imageModel.UUID, STATUS_COMPLETED); err != nil {

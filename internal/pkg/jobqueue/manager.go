@@ -26,7 +26,7 @@ var (
 func GetManager() *Manager {
 	managerOnce.Do(func() {
 		globalManager = &Manager{
-			queue:  NewQueue(3), // 3 workers for backup jobs
+			queue:  NewQueue(5), // 5 workers for image processing + backup jobs (unified)
 			stopCh: make(chan struct{}),
 		}
 	})

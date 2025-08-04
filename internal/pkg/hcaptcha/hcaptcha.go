@@ -44,11 +44,10 @@ func Verify(token string) (bool, error) {
 	}
 
 	if !response.Success {
-		errorMsg := "hCaptcha validation failed"
 		if len(response.ErrorCodes) > 0 {
-			errorMsg = errorMsg + ": " + strings.Join(response.ErrorCodes, ", ")
+			return false, fmt.Errorf("hCaptcha validation failed: %s", strings.Join(response.ErrorCodes, ", "))
 		}
-		return false, fmt.Errorf(errorMsg)
+		return false, fmt.Errorf("hCaptcha validation failed")
 	}
 
 	return true, nil

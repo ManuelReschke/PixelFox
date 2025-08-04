@@ -156,14 +156,20 @@ The S3 backup system provides automatic cloud backup functionality:
 - **Status Tracking**: All backup operations are tracked in the `image_backups` table
 - **Configuration**: Controlled via environment variables (S3_BACKUP_ENABLED, S3_ACCESS_KEY_ID, etc.)
 
-#### Job Queue System
-Background job processing using Redis/Dragonfly:
-- **Automatic Startup**: Job queue starts automatically with the application
-- **Worker Pool**: Configurable number of worker processes (default: 3)
-- **Job Types**: Currently supports S3 backup jobs, extensible for other background tasks
-- **Retry Logic**: Configurable retry attempts with exponential backoff
+#### Unified Job Queue System
+Centralized Redis-based background job processing system:
+- **Unified Architecture**: Replaced dual queue system (ImageProcessor + JobQueue) with single Redis-based solution
+- **Worker Pool**: 5 configurable worker processes handling all job types
+- **Job Types**: 
+  - `image_processing`: Image optimization, thumbnail generation, and variant creation
+  - `s3_backup`: Automatic cloud backup of processed images  
+  - `s3_delete`: Cloud backup cleanup jobs
+- **Sequential Pipeline**: Image processing automatically triggers S3 backup when enabled
+- **Retry Logic**: Configurable retry attempts with exponential backoff for all job types
+- **Status Tracking**: Real-time processing status cached in Redis with TTL
 - **Graceful Shutdown**: Properly shuts down with the application to prevent job loss
 - **Job Cleanup**: Completed jobs are automatically removed from Redis to save memory
+- **Migration**: Use `jobqueue.ProcessImageUnified()` instead of deprecated `imageprocessor.ProcessImage()`
 
 #### Album System
 The album functionality provides comprehensive photo organization capabilities:

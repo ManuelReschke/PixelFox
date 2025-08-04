@@ -203,6 +203,8 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 
 	var err error
 	switch job.Type {
+	case JobTypeImageProcessing:
+		err = q.processImageProcessingJob(ctx, job)
 	case JobTypeS3Backup:
 		err = q.processS3BackupJob(ctx, job)
 	case JobTypeS3Delete:

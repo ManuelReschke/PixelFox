@@ -11,8 +11,9 @@ import (
 type JobType string
 
 const (
-	JobTypeS3Backup JobType = "s3_backup"
-	JobTypeS3Delete JobType = "s3_delete"
+	JobTypeImageProcessing JobType = "image_processing"
+	JobTypeS3Backup        JobType = "s3_backup"
+	JobTypeS3Delete        JobType = "s3_delete"
 )
 
 // JobStatus defines the status of a job
@@ -39,6 +40,40 @@ type Job struct {
 	ErrorMsg    string                 `json:"error_msg,omitempty"`
 	RetryCount  int                    `json:"retry_count"`
 	MaxRetries  int                    `json:"max_retries"`
+}
+
+// ImageProcessingJobPayload contains the payload for image processing jobs
+type ImageProcessingJobPayload struct {
+	ImageID      uint   `json:"image_id"`
+	ImageUUID    string `json:"image_uuid"`
+	FilePath     string `json:"file_path"`     // Original file path
+	FileName     string `json:"file_name"`     // Original file name
+	FileType     string `json:"file_type"`     // File extension (.jpg, .png, etc.)
+	EnableBackup bool   `json:"enable_backup"` // Whether to trigger S3 backup after processing
+}
+
+// ToMap converts the payload to a map for storage
+func (p ImageProcessingJobPayload) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"image_id":      p.ImageID,
+		"image_uuid":    p.ImageUUID,
+		"file_path":     p.FilePath,
+		"file_name":     p.FileName,
+		"file_type":     p.FileType,
+		"enable_backup": p.EnableBackup,
+	}
+}
+
+// FromMap creates a payload from a map
+func ImageProcessingJobPayloadFromMap(data map[string]interface{}) (*ImageProcessingJobPayload, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	var payload ImageProcessingJobPayload
+	err = json.Unmarshal(jsonData, &payload)
+	return &payload, err
 }
 
 // S3BackupJobPayload contains the payload for S3 backup jobs

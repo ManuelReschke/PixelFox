@@ -1,11 +1,18 @@
 package env
 
-import "github.com/joho/godotenv"
+import (
+	"github.com/joho/godotenv"
+)
 
 var Env map[string]string
 
 func GetEnv(key, def string) string {
+	// First check our loaded Env map
 	if val, ok := Env[key]; ok {
+		return val
+	}
+	// Fallback to OS environment variables (for Docker/tests)
+	if val := os.Getenv(key); val != "" {
 		return val
 	}
 	return def

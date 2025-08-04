@@ -357,7 +357,7 @@ func processImage(t *testing.T, imageModel *models.Image) error {
 		}
 
 		t.Logf("Auflistung aller Dateien im Uploads-Verzeichnis:")
-		files, _ = filepath.Glob("uploads/**/*")
+		files, _ = filepath.Glob("uploads/*")
 		for _, f := range files {
 			t.Logf(" - %s", f)
 		}
@@ -403,7 +403,7 @@ func processImage(t *testing.T, imageModel *models.Image) error {
 	}
 
 	// Verzeichnisinhalt anzeigen, um die tatsächlich erstellten Dateien zu sehen
-	files, _ := filepath.Glob(filepath.Join(imageprocessor.VariantsDir, "**/*"))
+	files, _ := filepath.Glob(filepath.Join(imageprocessor.VariantsDir, "*"))
 	t.Logf("Erstelle Dateien im Varianten-Verzeichnis: %v", files)
 
 	// Überprüfen des endgültigen Status
@@ -481,7 +481,7 @@ func verifyVariants(t *testing.T, imageModel *models.Image, fileExt string) {
 	t.Logf(" - Medium AVIF: %s", mediumThumbAVIFPath)
 
 	// Debug: Suchen und Anzeigen aller vorhandenen Dateien im Varianten-Verzeichnis
-	allFiles, _ := filepath.Glob(filepath.Join(imageprocessor.VariantsDir, "**/*.*"))
+	allFiles, _ := filepath.Glob(filepath.Join(imageprocessor.VariantsDir, "*.*"))
 	t.Logf("Alle gefundenen Dateien im Variants-Verzeichnis:")
 	for _, f := range allFiles {
 		t.Logf(" - %s", f)
