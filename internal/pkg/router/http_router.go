@@ -71,6 +71,11 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/queues", controllers.HandleAdminQueues)
 	adminGroup.Get("/queues/data", controllers.HandleAdminQueuesData)
 	adminGroup.Delete("/queues/delete/:key", controllers.HandleAdminQueueDelete)
+	// Admin Storage Management Routes
+	adminGroup.Get("/storage", controllers.HandleAdminStorageManagement)
+	adminGroup.Get("/storage/health-check/:id", controllers.HandleAdminStoragePoolHealthCheck)
+	adminGroup.Post("/storage/recalculate-usage/:id", controllers.HandleAdminRecalculateStorageUsage)
+	adminGroup.Get("/storage/delete/:id", controllers.HandleAdminDeleteStoragePool)
 	// Admin Page Management Routes (moved to CSRF protected routes below)
 
 	csrfConf := csrf.Config{
@@ -118,6 +123,11 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// Admin Settings Routes (CSRF protected)
 	group.Get("/admin/settings", RequireAdminMiddleware, controllers.HandleAdminSettings)
 	group.Post("/admin/settings", RequireAdminMiddleware, controllers.HandleAdminSettingsUpdate)
+	// Admin Storage Pool Management Routes (CSRF protected)
+	group.Get("/admin/storage/create", RequireAdminMiddleware, controllers.HandleAdminCreateStoragePool)
+	group.Post("/admin/storage/create", RequireAdminMiddleware, controllers.HandleAdminCreateStoragePoolPost)
+	group.Get("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePool)
+	group.Post("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePoolPost)
 }
 
 func NewHttpRouter() *HttpRouter {

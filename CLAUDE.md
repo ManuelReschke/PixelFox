@@ -119,6 +119,8 @@ make test-in-docker-internal
     - `mail/` - Email utilities
     - `jobqueue/` - Background job processing system
     - `s3backup/` - S3-compatible backup functionality
+    - `storage/` - Storage pool management and tiering
+    - `constants/` - Application-wide constants including routes
 - `views/` - Templ templates
   - `admin_views/` - Admin panel templates
   - `auth/` - Authentication templates
@@ -145,7 +147,7 @@ Uses Templ for type-safe HTML templating. Templates are in `.templ` files and mu
 The project uses OpenAPI 3.0 specifications for API documentation and oapi-codegen for generating type-safe Go code. API handlers and models are auto-generated from the OpenAPI spec located in `public/docs/v1/openapi.yml`.
 
 #### Database Models
-Main entities include User, Image, Album, Tag, News, Comment, and ImageBackup models with GORM relationships.
+Main entities include User, Image, Album, Tag, News, Comment, ImageBackup, and StoragePool models with GORM relationships.
 
 #### S3 Backup System
 The S3 backup system provides automatic cloud backup functionality:
@@ -179,6 +181,17 @@ The album functionality provides comprehensive photo organization capabilities:
 - **Responsive Display**: Custom CSS grid system adapts from 2 columns (mobile) to 7 columns (4K displays)
 - **Image Variants**: Utilizes optimized image formats (AVIF, WebP) with fallbacks for performance
 - **Navigation**: Accessible via "Meine Alben" in the user navigation bar
+
+#### Storage Pool Management
+The storage pool system provides flexible storage management with tiering capabilities:
+- **Hot/Cold/Warm/Archive Tiering**: Configure storage pools with performance tiers for optimal resource allocation
+- **Hot-Storage-First Upload**: Images automatically uploaded to highest priority hot storage pools
+- **Pool Management**: Admin interface for creating, editing, and managing storage pools with capacity limits
+- **Path Configuration**: Configurable storage paths for different drives and storage types
+- **Priority-Based Selection**: Automatic storage pool selection based on available space and tier priority
+- **Admin Interface**: Accessible via `/admin/storage` for storage pool management
+- **Intelligent Fallback**: Graceful degradation to other available pools when preferred pools are full
+- **Integration**: Seamless integration with existing image processing and backup systems
 
 ## Development Workflow
 
@@ -241,3 +254,12 @@ S3_ENDPOINT_URL=https://s3.us-west-001.backblazeb2.com  # For Backblaze B2
 - Backup status can be monitored in the admin queue dashboard
 - For Backblaze B2: Use AWS SDK Go v2 ≤ 1.27.2, set region to bucket region, enable path-style URLs
 - Completed backup jobs are automatically cleaned from Redis to prevent memory bloat
+
+### Storage Pool System Notes
+- Default local storage pool is created automatically on first startup
+- Hot storage pools are prioritized for new uploads to optimize performance
+- Storage pools track capacity limits and prevent overallocation
+- URL generation uses centralized constants from `internal/pkg/constants/routes.go`
+- Image variants and originals use the `/uploads/` static route for web accessibility
+- Admin interface provides real-time storage usage monitoring
+- Storage pool paths are automatically integrated with existing backup and processing systems

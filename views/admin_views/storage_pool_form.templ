@@ -1,0 +1,220 @@
+package admin_views
+
+import (
+	"fmt"
+	"strconv"
+	"github.com/ManuelReschke/PixelFox/app/models"
+)
+
+templ StoragePoolForm(pool models.StoragePool, isEdit bool) {
+	{{ 
+		// Berechne Werte vorab
+		maxSizeValue := "100"
+		if pool.MaxSize > 0 {
+			maxSizeValue = strconv.FormatInt(pool.MaxSize/(1024*1024*1024), 10)
+		}
+		
+		priorityValue := "100"
+		if pool.Priority > 0 {
+			priorityValue = strconv.Itoa(pool.Priority)
+		}
+		
+		formAction := "/admin/storage/create"
+		if isEdit {
+			formAction = fmt.Sprintf("/admin/storage/edit/%d", pool.ID)
+		}
+	}}
+	<div class="container mx-auto p-4">
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-3xl font-bold">
+				if isEdit {
+					Speicherpool bearbeiten
+				} else {
+					Speicherpool erstellen
+				}
+			</h1>
+			<a href="/admin/storage" class="btn btn-ghost">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+				</svg>
+				Zurück zur Übersicht
+			</a>
+		</div>
+		<div class="card bg-base-100 shadow-xl max-w-2xl mx-auto">
+			<div class="card-body">
+				<form method="POST" action={ templ.SafeURL(formAction) }>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<!-- Name -->
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Name *</span>
+							</label>
+							<input 
+								type="text" 
+								name="name" 
+								value={ pool.Name }
+								placeholder="z.B. SSD Storage 1" 
+								class="input input-bordered"
+								required/>
+						</div>
+						<!-- Storage Type -->
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Speichertyp</span>
+							</label>
+							<select name="storage_type" class="select select-bordered">
+								<option value="local" selected?={ pool.StorageType == "local" || pool.StorageType == "" }>Local</option>
+								<option value="nfs" selected?={ pool.StorageType == "nfs" }>NFS</option>
+								<option value="smb" selected?={ pool.StorageType == "smb" }>SMB/CIFS</option>
+								<option value="s3" selected?={ pool.StorageType == "s3" }>S3 Compatible</option>
+							</select>
+						</div>
+						<!-- Storage Tier -->
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Performance-Tier *</span>
+							</label>
+							<select name="storage_tier" class="select select-bordered">
+								<option value="hot" selected?={ pool.StorageTier == "hot" || pool.StorageTier == "" }>🔥 Hot Storage (SSD)</option>
+								<option value="warm" selected?={ pool.StorageTier == "warm" }>🌡️ Warm Storage</option>
+								<option value="cold" selected?={ pool.StorageTier == "cold" }>❄️ Cold Storage (HDD)</option>
+								<option value="archive" selected?={ pool.StorageTier == "archive" }>📦 Archive Storage</option>
+							</select>
+							<label class="label">
+								<span class="label-text-alt">Hot Storage für neue Uploads, Cold für Archive</span>
+							</label>
+						</div>
+						<!-- Base Path -->
+						<div class="form-control md:col-span-2">
+							<label class="label">
+								<span class="label-text">Basis-Pfad *</span>
+							</label>
+							<input 
+								type="text" 
+								name="base_path" 
+								value={ pool.BasePath }
+								placeholder="/mnt/storage/images" 
+								class="input input-bordered"
+								required/>
+							<label class="label">
+								<span class="label-text-alt">Absoluter Pfad zum Speicherverzeichnis</span>
+							</label>
+						</div>
+						<!-- Max Size -->
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Maximale Größe (GB) *</span>
+							</label>
+							<input 
+								type="number" 
+								name="max_size" 
+								value={ maxSizeValue }
+								min="1" 
+								placeholder="100" 
+								class="input input-bordered"
+								required/>
+						</div>
+						<!-- Priority -->
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Priorität</span>
+							</label>
+							<input 
+								type="number" 
+								name="priority" 
+								value={ priorityValue }
+								min="1" 
+								max="1000"
+								placeholder="100" 
+								class="input input-bordered"/>
+							<label class="label">
+								<span class="label-text-alt">Niedrigere Zahl = höhere Priorität</span>
+							</label>
+						</div>
+						<!-- Description -->
+						<div class="form-control md:col-span-2">
+							<label class="label">
+								<span class="label-text">Beschreibung</span>
+							</label>
+							<textarea 
+								name="description" 
+								class="textarea textarea-bordered" 
+								placeholder="Optionale Beschreibung des Speicherpools"
+								rows="3">{ pool.Description }</textarea>
+						</div>
+						<!-- Checkboxes -->
+						<div class="form-control">
+							<label class="label cursor-pointer">
+								<span class="label-text">Aktiv</span>
+								<input 
+									type="checkbox" 
+									name="is_active" 
+									class="checkbox"
+									checked?={ pool.IsActive || !isEdit }/>
+							</label>
+						</div>
+						<div class="form-control">
+							<label class="label cursor-pointer">
+								<span class="label-text">Standard-Pool</span>
+								<input 
+									type="checkbox" 
+									name="is_default" 
+									class="checkbox"
+									checked?={ pool.IsDefault }/>
+							</label>
+							<label class="label">
+								<span class="label-text-alt">Fallback wenn andere Pools voll sind</span>
+							</label>
+						</div>
+					</div>
+					<!-- Current Usage (only show when editing) -->
+					if isEdit && pool.ID > 0 {
+						<div class="divider">Aktuelle Nutzung</div>
+						<div class="grid grid-cols-2 gap-4">
+							<div class="stat bg-base-200">
+								<div class="stat-title">Verwendeter Speicher</div>
+								<div class="stat-value text-sm">{ formatBytesInForm(pool.UsedSize) }</div>
+							</div>
+							<div class="stat bg-base-200">
+								<div class="stat-title">Auslastung</div>
+								<div class="stat-value text-sm">{ fmt.Sprintf("%.1f%%", pool.GetUsagePercentage()) }</div>
+							</div>
+						</div>
+					}
+					<div class="divider"></div>
+					<!-- Actions -->
+					<div class="card-actions justify-end">
+						<a href="/admin/storage" class="btn btn-ghost">Abbrechen</a>
+						<button type="submit" class="btn btn-primary">
+							if isEdit {
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+								</svg>
+								Änderungen speichern
+							} else {
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+								</svg>
+								Speicherpool erstellen
+							}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
+// Helper function to format bytes in forms
+func formatBytesInForm(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}

@@ -52,6 +52,7 @@ func SetupDatabase() {
 				&models.News{},
 				&models.Page{},
 				&models.Setting{},
+				&models.StoragePool{},
 			)
 
 			// Load settings into memory

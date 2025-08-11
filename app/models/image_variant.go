@@ -20,20 +20,22 @@ const (
 )
 
 type ImageVariant struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
-	ImageID     uint           `gorm:"index;not null" json:"image_id"`
-	Image       Image          `gorm:"foreignKey:ImageID" json:"image,omitempty"`
-	VariantType string         `gorm:"type:varchar(50);not null" json:"variant_type"` // thumbnail_small_webp, thumbnail_medium_webp, thumbnail_small_avif, thumbnail_medium_avif, webp, avif
-	FilePath    string         `gorm:"type:varchar(255);not null" json:"file_path"`
-	FileName    string         `gorm:"type:varchar(255);not null" json:"file_name"`
-	FileType    string         `gorm:"type:varchar(50);not null" json:"file_type"`
-	FileSize    int64          `gorm:"type:bigint;not null" json:"file_size"`
-	Width       int            `gorm:"type:int" json:"width"`
-	Height      int            `gorm:"type:int" json:"height"`
-	Quality     int            `gorm:"type:int" json:"quality"` // Compression quality for formats that support it
-	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	ID            uint           `gorm:"primaryKey" json:"id"`
+	ImageID       uint           `gorm:"index;not null" json:"image_id"`
+	Image         Image          `gorm:"foreignKey:ImageID" json:"image,omitempty"`
+	VariantType   string         `gorm:"type:varchar(50);not null" json:"variant_type"` // thumbnail_small_webp, thumbnail_medium_webp, thumbnail_small_avif, thumbnail_medium_avif, webp, avif
+	FilePath      string         `gorm:"type:varchar(255);not null" json:"file_path"`
+	FileName      string         `gorm:"type:varchar(255);not null" json:"file_name"`
+	FileType      string         `gorm:"type:varchar(50);not null" json:"file_type"`
+	FileSize      int64          `gorm:"type:bigint;not null" json:"file_size"`
+	Width         int            `gorm:"type:int" json:"width"`
+	Height        int            `gorm:"type:int" json:"height"`
+	Quality       int            `gorm:"type:int" json:"quality"`                   // Compression quality for formats that support it
+	StoragePoolID uint           `gorm:"index;default:null" json:"storage_pool_id"` // Reference to storage pool
+	StoragePool   *StoragePool   `gorm:"foreignKey:StoragePoolID" json:"storage_pool,omitempty"`
+	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // TableName returns the table name for the ImageVariant model

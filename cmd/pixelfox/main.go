@@ -18,6 +18,7 @@ import (
 	"github.com/gofiber/template/html/v2"
 
 	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
@@ -108,7 +109,7 @@ func NewApplication() *fiber.App {
 	})
 
 	// static uploads
-	app.Static("/uploads", basePath+"uploads", fiber.Static{
+	app.Static(constants.UploadsRoute, basePath+"uploads", fiber.Static{
 		CacheDuration: 10 * time.Second,
 		Compress:      false,
 		MaxAge:        604800, // 7 days

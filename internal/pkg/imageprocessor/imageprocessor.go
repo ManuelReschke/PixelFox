@@ -21,6 +21,7 @@ import (
 	"github.com/kolesa-team/go-webp/webp"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"gorm.io/gorm"
 )
@@ -239,8 +240,17 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		return fmt.Errorf("invalid image data provided")
 	}
 
-	originalFilePath := filepath.Join(imageModel.FilePath, imageModel.FileName)
-	log.Debugf("[ImageProcessor] Original file path: %s", originalFilePath)
+	// Construct original file path considering storage pools
+	var originalFilePath string
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+		// Use storage pool base path
+		originalFilePath = filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath, imageModel.FileName)
+		log.Debugf("[ImageProcessor] Using storage pool original file path: %s", originalFilePath)
+	} else {
+		// Fallback to legacy path
+		originalFilePath = filepath.Join(imageModel.FilePath, imageModel.FileName)
+		log.Debugf("[ImageProcessor] Using legacy original file path: %s", originalFilePath)
+	}
 
 	if _, err := os.Stat(originalFilePath); os.IsNotExist(err) {
 		return fmt.Errorf("original file not found: %s", originalFilePath)
@@ -248,11 +258,27 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		return fmt.Errorf("error accessing original file '%s': %w", originalFilePath, err)
 	}
 
-	relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
-	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-	log.Debugf("[ImageProcessor] Relative path for variants: %s", relativePath)
+	// Determine paths for variants based on storage pool structure
+	var variantsBaseDir string
 
-	variantsBaseDir := filepath.Join(VariantsDir, relativePath)
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+		// Use storage pool base path
+		storagePoolBasePath := imageModel.StoragePool.BasePath
+
+		// Extract relative path from image FilePath (remove 'original/' prefix)
+		relativePath := strings.TrimPrefix(imageModel.FilePath, "original/")
+		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+
+		variantsBaseDir = filepath.Join(storagePoolBasePath, "variants", relativePath)
+		log.Debugf("[ImageProcessor] Using storage pool variants path: %s", variantsBaseDir)
+	} else {
+		// Fallback to legacy structure
+		relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
+		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+		variantsBaseDir = filepath.Join(VariantsDir, relativePath)
+		log.Debugf("[ImageProcessor] Using legacy variants path: %s", variantsBaseDir)
+	}
+
 	baseFileName := imageModel.UUID
 
 	if err := os.MkdirAll(variantsBaseDir, 0755); err != nil {
@@ -875,6 +901,16 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 			log.Warnf("[GetImagePath] Cannot get original path for %s: FilePath or FileName is empty", imageModel.UUID)
 			return ""
 		}
+
+		// If image has a storage pool, use the storage pool's base path
+		if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+			// Construct full path using storage pool base path
+			fullPath := filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath, imageModel.FileName)
+			log.Debugf("[GetImagePath] Using storage pool path for %s: %s", imageModel.UUID, fullPath)
+			return fullPath
+		}
+
+		// Fallback to legacy path structure
 		return filepath.Join(imageModel.FilePath, imageModel.FileName)
 	}
 
@@ -889,6 +925,92 @@ func GetImagePath(imageModel *models.Image, format string, size string) string {
 	fullPath := filepath.Join(variant.FilePath, variant.FileName)
 	log.Debugf("[GetImagePath] Found variant path for %s (Type: %s): %s", imageModel.UUID, variantType, fullPath)
 	return fullPath
+}
+
+// GetImageURL returns the web-accessible URL path for a specific image variant
+// This function strips storage pool base paths to generate proper web URLs
+func GetImageURL(imageModel *models.Image, format string, size string) string {
+	if imageModel == nil || imageModel.UUID == "" {
+		log.Warn("[GetImageURL] Called with invalid image data (nil model or empty UUID)")
+		return ""
+	}
+
+	// Get database connection
+	db := database.GetDB()
+	if db == nil {
+		log.Error("[GetImageURL] Database connection is nil")
+		return ""
+	}
+
+	// Determine variant type based on format and size
+	variantType := getVariantType(format, size)
+	if variantType == "" {
+		log.Warnf("[GetImageURL] Cannot determine variant type for format '%s' and size '%s'", format, size)
+		return ""
+	}
+
+	// Handle original separately
+	if variantType == models.VariantTypeOriginal {
+		if imageModel.FilePath == "" || imageModel.FileName == "" {
+			log.Warnf("[GetImageURL] Cannot get original URL for %s: FilePath or FileName is empty", imageModel.UUID)
+			return ""
+		}
+
+		// Always return web-accessible path with uploads prefix
+		webPath := "/" + filepath.Join(constants.UploadsPath, imageModel.FilePath, imageModel.FileName)
+		// Convert to forward slashes for web URLs
+		webPath = strings.ReplaceAll(webPath, "\\", "/")
+		log.Debugf("[GetImageURL] Original URL for %s: %s", imageModel.UUID, webPath)
+		return webPath
+	}
+
+	// Find variant in database
+	variant, err := models.FindVariantByImageIDAndType(db, imageModel.ID, variantType)
+	if err != nil {
+		log.Debugf("[GetImageURL] Variant '%s' not found for image %s: %v", variantType, imageModel.UUID, err)
+		return ""
+	}
+
+	// For variants, we need to construct the web path
+	// Variants are stored with storage pool base path, but web URLs need relative paths
+	var webPath string
+
+	log.Debugf("[GetImageURL] Processing variant FilePath: %s, StoragePoolID: %d", variant.FilePath, variant.StoragePoolID)
+
+	if variant.StoragePoolID > 0 {
+		// Extract the relative path from the variant FilePath
+		// The FilePath contains the full storage pool path, we need just the "variants/..." part
+		// Example: "/app/uploads/variants/2025/08/10" -> "variants/2025/08/10"
+
+		// Find the position of "variants" in the path
+		variantsIndex := strings.Index(variant.FilePath, "variants")
+		if variantsIndex >= 0 {
+			// Extract from "variants" onwards and prepend uploads path
+			relativePath := variant.FilePath[variantsIndex:]
+			webPath = "/" + filepath.Join(constants.UploadsPath, relativePath, variant.FileName)
+			log.Debugf("[GetImageURL] Extracted relative path: %s -> webPath: %s", relativePath, webPath)
+		} else {
+			// If no "variants" found, try to extract everything after storage pool base path
+			// Try to remove common storage pool base paths
+			cleanPath := variant.FilePath
+			if strings.HasPrefix(cleanPath, "/app/uploads/") {
+				cleanPath = strings.TrimPrefix(cleanPath, "/app/uploads/")
+			} else if strings.HasPrefix(cleanPath, "/uploads/") {
+				cleanPath = strings.TrimPrefix(cleanPath, "/uploads/")
+			}
+			webPath = "/" + filepath.Join(constants.UploadsPath, cleanPath, variant.FileName)
+			log.Debugf("[GetImageURL] No 'variants' found, using cleaned path: %s -> webPath: %s", cleanPath, webPath)
+		}
+	} else {
+		// Legacy path structure
+		webPath = filepath.Join(variant.FilePath, variant.FileName)
+		log.Debugf("[GetImageURL] Using legacy path: %s", webPath)
+	}
+
+	// Convert to forward slashes for web URLs
+	webPath = strings.ReplaceAll(webPath, "\\", "/")
+	log.Debugf("[GetImageURL] Variant URL for %s (Type: %s): %s", imageModel.UUID, variantType, webPath)
+	return webPath
 }
 
 // getVariantType determines the variant type based on format and size
@@ -944,9 +1066,27 @@ func getVariantType(format, size string) string {
 
 // createImageVariants creates variant records in the database
 func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif, hasThumbSmall, hasThumbMedium bool) error {
-	relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
-	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-	variantsBaseDir := filepath.Join(VariantsDir, relativePath)
+	// Determine variants base directory based on storage pool structure
+	var variantsBaseDir string
+
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+		// Use storage pool base path
+		storagePoolBasePath := imageModel.StoragePool.BasePath
+
+		// Extract relative path from image FilePath (remove 'original/' prefix)
+		relativePath := strings.TrimPrefix(imageModel.FilePath, "original/")
+		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+
+		variantsBaseDir = filepath.Join(storagePoolBasePath, "variants", relativePath)
+		log.Debugf("[ImageProcessor] Using storage pool variants base dir: %s", variantsBaseDir)
+	} else {
+		// Fallback to legacy structure
+		relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
+		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+		variantsBaseDir = filepath.Join(VariantsDir, relativePath)
+		log.Debugf("[ImageProcessor] Using legacy variants base dir: %s", variantsBaseDir)
+	}
+
 	baseFileName := imageModel.UUID
 
 	// Original variant is NO LONGER created here - original data is stored in the images table
@@ -956,15 +1096,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		webpPath := filepath.Join(variantsBaseDir, baseFileName+".webp")
 		if fileInfo, err := os.Stat(webpPath); err == nil {
 			webpVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeWebP,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + ".webp",
-				FileType:    ".webp",
-				FileSize:    fileInfo.Size(),
-				Width:       imageModel.Width,
-				Height:      imageModel.Height,
-				Quality:     85,
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeWebP,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + ".webp",
+				FileType:      ".webp",
+				FileSize:      fileInfo.Size(),
+				Width:         imageModel.Width,
+				Height:        imageModel.Height,
+				Quality:       85,
 			}
 			if err := db.Create(&webpVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create webp variant for %s: %v", imageModel.UUID, err)
@@ -977,15 +1118,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		avifPath := filepath.Join(variantsBaseDir, baseFileName+".avif")
 		if fileInfo, err := os.Stat(avifPath); err == nil {
 			avifVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeAVIF,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + ".avif",
-				FileType:    ".avif",
-				FileSize:    fileInfo.Size(),
-				Width:       imageModel.Width,
-				Height:      imageModel.Height,
-				Quality:     35,
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeAVIF,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + ".avif",
+				FileType:      ".avif",
+				FileSize:      fileInfo.Size(),
+				Width:         imageModel.Width,
+				Height:        imageModel.Height,
+				Quality:       35,
 			}
 			if err := db.Create(&avifVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create avif variant for %s: %v", imageModel.UUID, err)
@@ -999,15 +1141,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		smallWebpPath := filepath.Join(variantsBaseDir, baseFileName+"_small.webp")
 		if fileInfo, err := os.Stat(smallWebpPath); err == nil {
 			smallVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeThumbnailSmallWebP,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + "_small.webp",
-				FileType:    ".webp",
-				FileSize:    fileInfo.Size(),
-				Width:       SmallThumbnailSize,
-				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
-				Quality:     85,
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeThumbnailSmallWebP,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + "_small.webp",
+				FileType:      ".webp",
+				FileSize:      fileInfo.Size(),
+				Width:         SmallThumbnailSize,
+				Height:        calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
+				Quality:       85,
 			}
 			if err := db.Create(&smallVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create small WebP thumbnail variant for %s: %v", imageModel.UUID, err)
@@ -1018,15 +1161,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		smallOriginalPath := filepath.Join(variantsBaseDir, baseFileName+"_small"+imageModel.FileType)
 		if fileInfo, err := os.Stat(smallOriginalPath); err == nil {
 			smallOriginalVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeThumbnailSmallOrig,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + "_small" + imageModel.FileType,
-				FileType:    imageModel.FileType,
-				FileSize:    fileInfo.Size(),
-				Width:       SmallThumbnailSize,
-				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
-				Quality:     90, // Higher quality for original format
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeThumbnailSmallOrig,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + "_small" + imageModel.FileType,
+				FileType:      imageModel.FileType,
+				FileSize:      fileInfo.Size(),
+				Width:         SmallThumbnailSize,
+				Height:        calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
+				Quality:       90, // Higher quality for original format
 			}
 			if err := db.Create(&smallOriginalVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create small original format thumbnail variant for %s: %v", imageModel.UUID, err)
@@ -1037,15 +1181,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		smallAvifPath := filepath.Join(variantsBaseDir, baseFileName+"_small.avif")
 		if fileInfo, err := os.Stat(smallAvifPath); err == nil {
 			smallAvifVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeThumbnailSmallAVIF,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + "_small.avif",
-				FileType:    ".avif",
-				FileSize:    fileInfo.Size(),
-				Width:       SmallThumbnailSize,
-				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
-				Quality:     35,
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeThumbnailSmallAVIF,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + "_small.avif",
+				FileType:      ".avif",
+				FileSize:      fileInfo.Size(),
+				Width:         SmallThumbnailSize,
+				Height:        calculateProportionalHeight(imageModel.Width, imageModel.Height, SmallThumbnailSize),
+				Quality:       35,
 			}
 			if err := db.Create(&smallAvifVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create small AVIF thumbnail variant for %s: %v", imageModel.UUID, err)
@@ -1059,15 +1204,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		mediumWebpPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.webp")
 		if fileInfo, err := os.Stat(mediumWebpPath); err == nil {
 			mediumVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeThumbnailMediumWebP,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + "_medium.webp",
-				FileType:    ".webp",
-				FileSize:    fileInfo.Size(),
-				Width:       MediumThumbnailSize,
-				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
-				Quality:     85,
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeThumbnailMediumWebP,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + "_medium.webp",
+				FileType:      ".webp",
+				FileSize:      fileInfo.Size(),
+				Width:         MediumThumbnailSize,
+				Height:        calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
+				Quality:       85,
 			}
 			if err := db.Create(&mediumVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create medium WebP thumbnail variant for %s: %v", imageModel.UUID, err)
@@ -1078,15 +1224,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		mediumOriginalPath := filepath.Join(variantsBaseDir, baseFileName+"_medium"+imageModel.FileType)
 		if fileInfo, err := os.Stat(mediumOriginalPath); err == nil {
 			mediumOriginalVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeThumbnailMediumOrig,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + "_medium" + imageModel.FileType,
-				FileType:    imageModel.FileType,
-				FileSize:    fileInfo.Size(),
-				Width:       MediumThumbnailSize,
-				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
-				Quality:     90, // Higher quality for original format
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeThumbnailMediumOrig,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + "_medium" + imageModel.FileType,
+				FileType:      imageModel.FileType,
+				FileSize:      fileInfo.Size(),
+				Width:         MediumThumbnailSize,
+				Height:        calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
+				Quality:       90, // Higher quality for original format
 			}
 			if err := db.Create(&mediumOriginalVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create medium original format thumbnail variant for %s: %v", imageModel.UUID, err)
@@ -1097,15 +1244,16 @@ func createImageVariants(db *gorm.DB, imageModel *models.Image, hasWebp, hasAvif
 		mediumAvifPath := filepath.Join(variantsBaseDir, baseFileName+"_medium.avif")
 		if fileInfo, err := os.Stat(mediumAvifPath); err == nil {
 			mediumAvifVariant := models.ImageVariant{
-				ImageID:     imageModel.ID,
-				VariantType: models.VariantTypeThumbnailMediumAVIF,
-				FilePath:    variantsBaseDir,
-				FileName:    baseFileName + "_medium.avif",
-				FileType:    ".avif",
-				FileSize:    fileInfo.Size(),
-				Width:       MediumThumbnailSize,
-				Height:      calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
-				Quality:     35,
+				ImageID:       imageModel.ID,
+				StoragePoolID: imageModel.StoragePoolID,
+				VariantType:   models.VariantTypeThumbnailMediumAVIF,
+				FilePath:      variantsBaseDir,
+				FileName:      baseFileName + "_medium.avif",
+				FileType:      ".avif",
+				FileSize:      fileInfo.Size(),
+				Width:         MediumThumbnailSize,
+				Height:        calculateProportionalHeight(imageModel.Width, imageModel.Height, MediumThumbnailSize),
+				Quality:       35,
 			}
 			if err := db.Create(&mediumAvifVariant).Error; err != nil {
 				log.Errorf("[ImageProcessor] Failed to create medium AVIF thumbnail variant for %s: %v", imageModel.UUID, err)

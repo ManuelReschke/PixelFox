@@ -23,7 +23,7 @@ templ imageEditContent(image models.Image) {
 			<h2 class="text-lg font-semibold mb-4 text-base-content">Bildvorschau</h2>
 			<div class="flex justify-center">
 				<img class="max-w-full h-auto rounded-lg" 
-					src={ "/" + imageprocessor.GetImagePath(&image, "webp", "medium") } 
+					src={ "/" + imageprocessor.GetImageURL(&image, "webp", "medium") } 
 					alt={ image.Title }/>
 			</div>
 			

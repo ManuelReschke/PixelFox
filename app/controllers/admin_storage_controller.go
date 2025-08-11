@@ -1,0 +1,549 @@
+package controllers
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/a-h/templ"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/sujit-baniya/flash"
+	"gorm.io/gorm"
+
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
+	"github.com/ManuelReschke/PixelFox/views"
+	"github.com/ManuelReschke/PixelFox/views/admin_views"
+)
+
+// HandleAdminStorageManagement renders the storage management dashboard
+func HandleAdminStorageManagement(c *fiber.Ctx) error {
+	db := database.GetDB()
+	storageManager := storage.NewStorageManager()
+
+	// Get all storage pool statistics
+	poolStats, err := storageManager.GetAllPoolStats()
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Laden der Speicher-Statistiken: " + err.Error(),
+		}
+		flash.WithError(c, fm)
+		poolStats = []models.StoragePoolStats{}
+	}
+
+	// Perform health checks
+	healthStatus, err := storageManager.HealthCheck()
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Gesundheitscheck: " + err.Error(),
+		}
+		flash.WithError(c, fm)
+		healthStatus = make(map[uint]bool)
+	}
+
+	// Get all storage pools for management
+	pools, err := models.FindAllStoragePools(db)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Laden der Speicherpools: " + err.Error(),
+		}
+		flash.WithError(c, fm)
+		pools = []models.StoragePool{}
+	}
+
+	// Calculate total statistics
+	totalUsedSize := int64(0)
+	totalMaxSize := int64(0)
+	totalImageCount := int64(0)
+	totalVariantCount := int64(0)
+	healthyPoolsCount := 0
+
+	for _, stats := range poolStats {
+		totalUsedSize += stats.UsedSize
+		totalMaxSize += stats.MaxSize
+		totalImageCount += stats.ImageCount
+		totalVariantCount += stats.VariantCount
+
+		if healthy, exists := healthStatus[stats.ID]; exists && healthy {
+			healthyPoolsCount++
+		}
+	}
+
+	totalUsagePercentage := float64(0)
+	if totalMaxSize > 0 {
+		totalUsagePercentage = (float64(totalUsedSize) / float64(totalMaxSize)) * 100
+	}
+
+	// Prepare view data
+	viewData := struct {
+		PoolStats            []models.StoragePoolStats
+		HealthStatus         map[uint]bool
+		Pools                []models.StoragePool
+		TotalUsedSize        int64
+		TotalMaxSize         int64
+		TotalUsagePercentage float64
+		TotalImageCount      int64
+		TotalVariantCount    int64
+		TotalPoolsCount      int
+		HealthyPoolsCount    int
+	}{
+		PoolStats:            poolStats,
+		HealthStatus:         healthStatus,
+		Pools:                pools,
+		TotalUsedSize:        totalUsedSize,
+		TotalMaxSize:         totalMaxSize,
+		TotalUsagePercentage: totalUsagePercentage,
+		TotalImageCount:      totalImageCount,
+		TotalVariantCount:    totalVariantCount,
+		TotalPoolsCount:      len(pools),
+		HealthyPoolsCount:    healthyPoolsCount,
+	}
+
+	// Render storage management using the standard layout
+	storageManagement := admin_views.StorageManagement(viewData)
+	home := views.Home(" | Speicherverwaltung", isLoggedIn(c), false, flash.Get(c), storageManagement, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminCreateStoragePool shows the create storage pool form
+func HandleAdminCreateStoragePool(c *fiber.Ctx) error {
+	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false)
+	home := views.Home(" | Speicherpool erstellen", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminCreateStoragePoolPost processes the create storage pool form
+func HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
+	db := database.GetDB()
+
+	// Parse form data
+	pool := models.StoragePool{
+		Name:        strings.TrimSpace(c.FormValue("name")),
+		BasePath:    strings.TrimSpace(c.FormValue("base_path")),
+		StorageType: strings.TrimSpace(c.FormValue("storage_type")),
+		StorageTier: strings.TrimSpace(c.FormValue("storage_tier")),
+		Description: strings.TrimSpace(c.FormValue("description")),
+		IsActive:    c.FormValue("is_active") == "on",
+		IsDefault:   c.FormValue("is_default") == "on",
+	}
+
+	// Parse numeric values
+	maxSizeStr := strings.TrimSpace(c.FormValue("max_size"))
+	if maxSizeStr != "" {
+		maxSizeGB, err := strconv.ParseInt(maxSizeStr, 10, 64)
+		if err != nil {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ungültige maximale Größe",
+			}
+			flash.WithError(c, fm)
+			return c.Redirect("/admin/storage/create")
+		}
+		pool.MaxSize = maxSizeGB * 1024 * 1024 * 1024 // Convert GB to bytes
+	}
+
+	priorityStr := strings.TrimSpace(c.FormValue("priority"))
+	if priorityStr != "" {
+		priority, err := strconv.Atoi(priorityStr)
+		if err != nil {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ungültige Priorität",
+			}
+			flash.WithError(c, fm)
+			return c.Redirect("/admin/storage/create")
+		}
+		pool.Priority = priority
+	} else {
+		pool.Priority = 100
+	}
+
+	// Validate required fields
+	if pool.Name == "" {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Name ist erforderlich",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/create")
+	}
+
+	if pool.BasePath == "" {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Basis-Pfad ist erforderlich",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/create")
+	}
+
+	if pool.MaxSize <= 0 {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Maximale Größe muss größer als 0 sein",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/create")
+	}
+
+	// Create storage pool
+	if err := db.Create(&pool).Error; err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ein Speicherpool mit diesem Namen existiert bereits",
+			}
+			flash.WithError(c, fm)
+		} else {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Fehler beim Erstellen des Speicherpools: " + err.Error(),
+			}
+			flash.WithError(c, fm)
+		}
+		return c.Redirect("/admin/storage/create")
+	}
+
+	fm := fiber.Map{
+		"type":    "success",
+		"message": fmt.Sprintf("Speicherpool '%s' wurde erfolgreich erstellt", pool.Name),
+	}
+	flash.WithSuccess(c, fm)
+	return c.Redirect("/admin/storage")
+}
+
+// HandleAdminEditStoragePool shows the edit storage pool form
+func HandleAdminEditStoragePool(c *fiber.Ctx) error {
+	db := database.GetDB()
+
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Ungültige Pool-ID",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+
+	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Speicherpool nicht gefunden",
+			}
+			flash.WithError(c, fm)
+		} else {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Fehler beim Laden des Speicherpools: " + err.Error(),
+			}
+			flash.WithError(c, fm)
+		}
+		return c.Redirect("/admin/storage")
+	}
+
+	poolForm := admin_views.StoragePoolForm(*pool, true)
+	home := views.Home(" | Speicherpool bearbeiten", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminEditStoragePoolPost processes the edit storage pool form
+func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
+	db := database.GetDB()
+
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Ungültige Pool-ID",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+
+	// Find existing pool
+	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Speicherpool nicht gefunden",
+			}
+			flash.WithError(c, fm)
+		} else {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Fehler beim Laden des Speicherpools: " + err.Error(),
+			}
+			flash.WithError(c, fm)
+		}
+		return c.Redirect("/admin/storage")
+	}
+
+	// Update pool data
+	pool.Name = strings.TrimSpace(c.FormValue("name"))
+	pool.BasePath = strings.TrimSpace(c.FormValue("base_path"))
+	pool.StorageType = strings.TrimSpace(c.FormValue("storage_type"))
+	pool.StorageTier = strings.TrimSpace(c.FormValue("storage_tier"))
+	pool.Description = strings.TrimSpace(c.FormValue("description"))
+	pool.IsActive = c.FormValue("is_active") == "on"
+	pool.IsDefault = c.FormValue("is_default") == "on"
+
+	// Parse numeric values
+	maxSizeStr := strings.TrimSpace(c.FormValue("max_size"))
+	if maxSizeStr != "" {
+		maxSizeGB, err := strconv.ParseInt(maxSizeStr, 10, 64)
+		if err != nil {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ungültige maximale Größe",
+			}
+			flash.WithError(c, fm)
+			return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+		}
+		pool.MaxSize = maxSizeGB * 1024 * 1024 * 1024 // Convert GB to bytes
+	}
+
+	priorityStr := strings.TrimSpace(c.FormValue("priority"))
+	if priorityStr != "" {
+		priority, err := strconv.Atoi(priorityStr)
+		if err != nil {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ungültige Priorität",
+			}
+			flash.WithError(c, fm)
+			return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+		}
+		pool.Priority = priority
+	}
+
+	// Validate required fields
+	if pool.Name == "" {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Name ist erforderlich",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+	}
+
+	if pool.BasePath == "" {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Basis-Pfad ist erforderlich",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+	}
+
+	if pool.MaxSize <= 0 {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Maximale Größe muss größer als 0 sein",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+	}
+
+	// Save changes
+	if err := db.Save(pool).Error; err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ein Speicherpool mit diesem Namen existiert bereits",
+			}
+			flash.WithError(c, fm)
+		} else {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Fehler beim Aktualisieren des Speicherpools: " + err.Error(),
+			}
+			flash.WithError(c, fm)
+		}
+		return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+	}
+
+	fm := fiber.Map{
+		"type":    "success",
+		"message": fmt.Sprintf("Speicherpool '%s' wurde erfolgreich aktualisiert", pool.Name),
+	}
+	flash.WithSuccess(c, fm)
+	return c.Redirect("/admin/storage")
+}
+
+// HandleAdminDeleteStoragePool deletes a storage pool
+func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
+	db := database.GetDB()
+
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Ungültige Pool-ID",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+
+	// Find existing pool
+	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Speicherpool nicht gefunden",
+			}
+			flash.WithError(c, fm)
+		} else {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Fehler beim Laden des Speicherpools: " + err.Error(),
+			}
+			flash.WithError(c, fm)
+		}
+		return c.Redirect("/admin/storage")
+	}
+
+	// Check if pool is default
+	if pool.IsDefault {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Der Standard-Speicherpool kann nicht gelöscht werden",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+
+	// Check if pool has files
+	var imageCount int64
+	db.Model(&models.Image{}).Where("storage_pool_id = ?", poolID).Count(&imageCount)
+
+	var variantCount int64
+	db.Model(&models.ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&variantCount)
+
+	if imageCount > 0 || variantCount > 0 {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": fmt.Sprintf("Speicherpool kann nicht gelöscht werden: %d Bilder und %d Varianten sind noch vorhanden", imageCount, variantCount),
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+
+	// Delete the pool
+	if err := db.Delete(pool).Error; err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Löschen des Speicherpools: " + err.Error(),
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+
+	fm := fiber.Map{
+		"type":    "success",
+		"message": fmt.Sprintf("Speicherpool '%s' wurde erfolgreich gelöscht", pool.Name),
+	}
+	flash.WithSuccess(c, fm)
+	return c.Redirect("/admin/storage")
+}
+
+// HandleAdminStoragePoolHealthCheck performs health check on a specific pool
+func HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"success": false,
+			"error":   "Ungültige Pool-ID",
+		})
+	}
+
+	db := database.GetDB()
+	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"success": false,
+			"error":   "Speicherpool nicht gefunden",
+		})
+	}
+
+	isHealthy := pool.IsHealthy()
+
+	return c.JSON(fiber.Map{
+		"success":   true,
+		"pool_id":   pool.ID,
+		"pool_name": pool.Name,
+		"healthy":   isHealthy,
+	})
+}
+
+// HandleAdminRecalculateStorageUsage recalculates storage usage for a pool
+func HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"success": false,
+			"error":   "Ungültige Pool-ID",
+		})
+	}
+
+	db := database.GetDB()
+	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"success": false,
+			"error":   "Speicherpool nicht gefunden",
+		})
+	}
+
+	// Calculate actual usage from database
+	var totalSize int64
+
+	// Sum image file sizes
+	var imageSize int64
+	db.Model(&models.Image{}).
+		Where("storage_pool_id = ?", poolID).
+		Select("COALESCE(SUM(file_size), 0)").
+		Scan(&imageSize)
+
+	// Sum variant file sizes
+	var variantSize int64
+	db.Model(&models.ImageVariant{}).
+		Where("storage_pool_id = ?", poolID).
+		Select("COALESCE(SUM(file_size), 0)").
+		Scan(&variantSize)
+
+	totalSize = imageSize + variantSize
+
+	// Update pool usage
+	if err := db.Model(pool).Update("used_size", totalSize).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"error":   "Fehler beim Aktualisieren der Speichernutzung: " + err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success":       true,
+		"pool_id":       pool.ID,
+		"pool_name":     pool.Name,
+		"old_used_size": pool.UsedSize,
+		"new_used_size": totalSize,
+		"image_size":    imageSize,
+		"variant_size":  variantSize,
+	})
+}

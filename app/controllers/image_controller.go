@@ -23,6 +23,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 )
@@ -146,13 +147,38 @@ func HandleUpload(c *fiber.Ctx) error {
 	// Generate UUID for the image
 	imageUUID := uuid.New().String()
 
+	// Select optimal storage pool for upload (hot-storage-first)
+	db := database.GetDB()
+	storageManager := storage.NewStorageManager()
+	selectedPool, err := storageManager.SelectPoolForUpload(file.Size)
+	if err != nil {
+		fiberlog.Error(fmt.Sprintf("Error selecting storage pool: %v", err))
+
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler bei der Speicherplatz-Auswahl",
+		}
+		flash.WithError(c, fm)
+
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString("Fehler bei der Speicherplatz-Auswahl")
+		}
+		return c.Redirect("/")
+	}
+
+	fiberlog.Info(fmt.Sprintf("[Upload] Selected %s storage pool '%s' for upload", selectedPool.StorageTier, selectedPool.Name))
+
 	// Create the directory path according to the scheme /Year/Month/Day/UUID.fileextension
 	now := time.Now()
 	relativePath := fmt.Sprintf("%d/%02d/%02d", now.Year(), now.Month(), now.Day())
 	fileName := fmt.Sprintf("%s%s", imageUUID, fileExt)
 
-	// Create the full path for the original image in the new structure
-	originalDirPath := filepath.Join("./"+imageprocessor.OriginalDir, relativePath)
+	// Use the selected storage pool's base path
+	poolBasePath := selectedPool.BasePath
+	if !strings.HasSuffix(poolBasePath, "/") {
+		poolBasePath += "/"
+	}
+	originalDirPath := filepath.Join(poolBasePath, "original", relativePath)
 	originalSavePath := filepath.Join(originalDirPath, fileName)
 
 	// Make sure the directory exists
@@ -212,18 +238,17 @@ func HandleUpload(c *fiber.Ctx) error {
 	ipv4, ipv6 := GetClientIP(c)
 
 	image := models.Image{
-		UUID:     imageUUID,
-		UserID:   c.Locals(USER_ID).(uint),
-		FileName: fileName,
-		FilePath: originalDirPath, // Save the new path in the database
-		FileSize: file.Size,
-		FileType: fileExt,
-		Title:    file.Filename,
-		IPv4:     ipv4,
-		IPv6:     ipv6,
+		UUID:          imageUUID,
+		UserID:        c.Locals(USER_ID).(uint),
+		StoragePoolID: selectedPool.ID,
+		FileName:      fileName,
+		FilePath:      filepath.Join("original", relativePath), // Store relative path within the pool
+		FileSize:      file.Size,
+		FileType:      fileExt,
+		Title:         file.Filename,
+		IPv4:          ipv4,
+		IPv6:          ipv6,
 	}
-
-	db := database.GetDB()
 	if err := db.Create(&image).Error; err != nil {
 		fiberlog.Error(fmt.Sprintf("Error saving image to database: %v", err))
 
@@ -241,6 +266,12 @@ func HandleUpload(c *fiber.Ctx) error {
 		}
 
 		return c.Redirect("/")
+	}
+
+	// Update storage pool usage
+	if err := storageManager.UpdatePoolUsage(selectedPool.ID, file.Size); err != nil {
+		fiberlog.Error(fmt.Sprintf("Error updating storage pool usage: %v", err))
+		// Don't fail the upload for this, just log it
 	}
 
 	// Enqueue image processing in the unified queue (includes S3 backup if enabled)
@@ -314,8 +345,8 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	// Increase the view counter
 	image.IncrementViewCount(db)
 
-	// Korrekte Pfadkonstruktion für das Original-Bild mit GetImagePath
-	filePathComplete := "/" + imageprocessor.GetImagePath(image, "original", "")
+	// Korrekte URL-Konstruktion für das Original-Bild mit GetImageURL
+	filePathComplete := imageprocessor.GetImageURL(image, "original", "")
 	fiberlog.Debugf("[ImageController] Original-Pfad: %s", filePathComplete)
 	filePathWithDomain := filepath.Join(domain, filePathComplete)
 
@@ -342,32 +373,32 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	mediumThumbOriginalPath := ""
 
 	if path, exists := imagePaths["webp_full"]; exists {
-		webpPath = "/" + path
+		webpPath = path
 	}
 	if path, exists := imagePaths["avif_full"]; exists {
-		avifPath = "/" + path
+		avifPath = path
 	}
 
 	// Set all available thumbnail paths regardless of admin settings
 	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
-		smallThumbWebpPath = "/" + path
+		smallThumbWebpPath = path
 	}
 	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
-		mediumThumbWebpPath = "/" + path
+		mediumThumbWebpPath = path
 	}
 
 	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
-		smallThumbAvifPath = "/" + path
+		smallThumbAvifPath = path
 	}
 	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
-		mediumThumbAvifPath = "/" + path
+		mediumThumbAvifPath = path
 	}
 
 	if path, exists := imagePaths["thumbnail_small_original"]; exists {
-		smallThumbOriginalPath = "/" + path
+		smallThumbOriginalPath = path
 	}
 	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
-		mediumThumbOriginalPath = "/" + path
+		mediumThumbOriginalPath = path
 	}
 
 	// Use the medium thumbnail for the preview
@@ -646,36 +677,36 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	mediumThumbOriginalPath := ""
 
 	if path, exists := imagePaths["webp_full"]; exists {
-		webpPath = "/" + path
+		webpPath = path
 	}
 	if path, exists := imagePaths["avif_full"]; exists {
-		avifPath = "/" + path
+		avifPath = path
 	}
 
 	// Set all available thumbnail paths regardless of admin settings
 	if path, exists := imagePaths["thumbnail_small_webp"]; exists {
-		smallThumbWebpPath = "/" + path
+		smallThumbWebpPath = path
 	}
 	if path, exists := imagePaths["thumbnail_medium_webp"]; exists {
-		mediumThumbWebpPath = "/" + path
+		mediumThumbWebpPath = path
 	}
 
 	if path, exists := imagePaths["thumbnail_small_avif"]; exists {
-		smallThumbAvifPath = "/" + path
+		smallThumbAvifPath = path
 	}
 	if path, exists := imagePaths["thumbnail_medium_avif"]; exists {
-		mediumThumbAvifPath = "/" + path
+		mediumThumbAvifPath = path
 	}
 
 	if path, exists := imagePaths["thumbnail_small_original"]; exists {
-		smallThumbOriginalPath = "/" + path
+		smallThumbOriginalPath = path
 	}
 	if path, exists := imagePaths["thumbnail_medium_original"]; exists {
-		mediumThumbOriginalPath = "/" + path
+		mediumThumbOriginalPath = path
 	}
 
 	// Original path for download
-	originalPath := "/" + imageprocessor.GetImagePath(image, "original", "")
+	originalPath := imageprocessor.GetImageURL(image, "original", "")
 
 	// Use the medium thumbnail for the preview
 	previewPath := originalPath

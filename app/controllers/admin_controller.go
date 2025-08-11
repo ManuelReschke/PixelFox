@@ -322,8 +322,8 @@ func HandleAdminImages(c *fiber.Ctx) error {
 	// Count total images for pagination
 	db.Model(&models.Image{}).Count(&totalImages)
 
-	// Get images with user information
-	db.Preload("User").Order("created_at DESC").Offset(offset).Limit(perPage).Find(&images)
+	// Get images with user information and storage pool
+	db.Preload("User").Preload("StoragePool").Order("created_at DESC").Offset(offset).Limit(perPage).Find(&images)
 
 	// Calculate pagination info
 	totalPages := int(totalImages) / perPage
@@ -552,12 +552,7 @@ func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 func handleImageSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
 	// Search for images by title, description or UUID
 	var images []models.Image
-	db.Where("title LIKE ? OR description LIKE ? OR uuid LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").Find(&images)
-
-	// Preload user information for each image
-	for i := range images {
-		db.Model(&images[i]).Association("User").Find(&images[i].User)
-	}
+	db.Preload("User").Preload("StoragePool").Where("title LIKE ? OR description LIKE ? OR uuid LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").Find(&images)
 
 	// Set flash message with search info
 	fm := fiber.Map{

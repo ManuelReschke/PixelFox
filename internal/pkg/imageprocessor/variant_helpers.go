@@ -3,8 +3,10 @@ package imageprocessor
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -117,27 +119,68 @@ func BuildImagePaths(imageModel *models.Image) map[string]string {
 		paths["original"] = filepath.Join(imageModel.FilePath, imageModel.FileName)
 	}
 
-	// Build paths for each available variant (excluding original)
+	// Build web-accessible paths for each available variant (excluding original)
 	for _, variant := range variantInfo.AvailableVariants {
+		// Convert storage pool path to web path
+		webPath := convertStoragePoolPathToWebPath(variant.FilePath, variant.FileName)
+
 		switch variant.VariantType {
 		case "webp":
-			paths["webp_full"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["webp_full"] = webPath
 		case "avif":
-			paths["avif_full"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["avif_full"] = webPath
 		case "thumbnail_small_webp":
-			paths["thumbnail_small_webp"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["thumbnail_small_webp"] = webPath
 		case "thumbnail_small_avif":
-			paths["thumbnail_small_avif"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["thumbnail_small_avif"] = webPath
 		case "thumbnail_small_original":
-			paths["thumbnail_small_original"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["thumbnail_small_original"] = webPath
 		case "thumbnail_medium_webp":
-			paths["thumbnail_medium_webp"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["thumbnail_medium_webp"] = webPath
 		case "thumbnail_medium_avif":
-			paths["thumbnail_medium_avif"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["thumbnail_medium_avif"] = webPath
 		case "thumbnail_medium_original":
-			paths["thumbnail_medium_original"] = filepath.Join(variant.FilePath, variant.FileName)
+			paths["thumbnail_medium_original"] = webPath
 		}
 	}
 
 	return paths
+}
+
+// convertStoragePoolPathToWebPath converts a storage pool file path to a web-accessible path
+func convertStoragePoolPathToWebPath(filePath, fileName string) string {
+	// Construct full path first
+	fullPath := filepath.Join(filePath, fileName)
+
+	// Extract the relative path from the full path
+	// Remove common storage pool base paths to get web-accessible paths
+	webPath := fullPath
+
+	// Find the position of "variants" or "original" in the path
+	variantsIndex := strings.Index(webPath, "variants")
+	originalIndex := strings.Index(webPath, "original")
+
+	if variantsIndex >= 0 {
+		// Extract from "variants" onwards and prepend uploads path
+		relativePath := webPath[variantsIndex:]
+		webPath = "/" + filepath.Join(constants.UploadsPath, relativePath)
+	} else if originalIndex >= 0 {
+		// Extract from "original" onwards and prepend uploads path
+		relativePath := webPath[originalIndex:]
+		webPath = "/" + filepath.Join(constants.UploadsPath, relativePath)
+	} else {
+		// If neither "variants" nor "original" found, try to remove common base paths
+		cleanPath := webPath
+		if strings.HasPrefix(cleanPath, "/app/uploads/") {
+			cleanPath = strings.TrimPrefix(cleanPath, "/app/uploads/")
+		} else if strings.HasPrefix(cleanPath, "/uploads/") {
+			cleanPath = strings.TrimPrefix(cleanPath, "/uploads/")
+		}
+		webPath = "/" + filepath.Join(constants.UploadsPath, cleanPath)
+	}
+
+	// Convert to forward slashes for web URLs
+	webPath = strings.ReplaceAll(webPath, "\\", "/")
+
+	return webPath
 }

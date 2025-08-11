@@ -1,0 +1,256 @@
+package admin_views
+
+import (
+	"fmt"
+	"strconv"
+	"github.com/ManuelReschke/PixelFox/app/models"
+)
+
+templ StorageManagement(data struct {
+	PoolStats             []models.StoragePoolStats
+	HealthStatus          map[uint]bool
+	Pools                 []models.StoragePool
+	TotalUsedSize         int64
+	TotalMaxSize          int64
+	TotalUsagePercentage  float64
+	TotalImageCount       int64
+	TotalVariantCount     int64
+	TotalPoolsCount       int
+	HealthyPoolsCount     int
+}) {
+	<div class="container mx-auto">
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-3xl font-bold">Speicherverwaltung</h1>
+			<a href="/admin/storage/create" class="btn btn-primary">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+				</svg>
+				Neuer Speicherpool
+			</a>
+		</div>
+		<!-- Overview Statistics -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+			<div class="stat bg-base-100 shadow rounded-lg">
+				<div class="stat-figure text-primary">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4V7c0-2.21-1.79-4-4-4H8c-2.21 0-4 1.79-4 4z"></path>
+					</svg>
+				</div>
+				<div class="stat-title">Speicherpools</div>
+				<div class="stat-value text-primary">{ strconv.Itoa(data.TotalPoolsCount) }</div>
+				<div class="stat-desc">{ strconv.Itoa(data.HealthyPoolsCount) } gesund</div>
+			</div>
+			<div class="stat bg-base-100 shadow rounded-lg">
+				<div class="stat-figure text-secondary">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+					</svg>
+				</div>
+				<div class="stat-title">Speichernutzung</div>
+				<div class="stat-value text-secondary">{ fmt.Sprintf("%.1f%%", data.TotalUsagePercentage) }</div>
+				<div class="stat-desc">{ formatBytes(data.TotalUsedSize) } / { formatBytes(data.TotalMaxSize) }</div>
+			</div>
+			<div class="stat bg-base-100 shadow rounded-lg">
+				<div class="stat-figure text-accent">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+					</svg>
+				</div>
+				<div class="stat-title">Bilder</div>
+				<div class="stat-value text-accent">{ strconv.FormatInt(data.TotalImageCount, 10) }</div>
+				<div class="stat-desc">Original-Dateien</div>
+			</div>
+			<div class="stat bg-base-100 shadow rounded-lg">
+				<div class="stat-figure text-info">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+					</svg>
+				</div>
+				<div class="stat-title">Varianten</div>
+				<div class="stat-value text-info">{ strconv.FormatInt(data.TotalVariantCount, 10) }</div>
+				<div class="stat-desc">WebP, AVIF, Thumbnails</div>
+			</div>
+		</div>
+		<!-- Storage Pools Table -->
+		<div class="card bg-base-100 shadow-xl">
+			<div class="card-header px-6 py-4 border-b">
+				<h2 class="text-xl font-semibold">Speicherpools</h2>
+			</div>
+			<div class="card-body p-0">
+				<div class="overflow-x-auto">
+					<table class="table table-zebra w-full">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Status</th>
+								<th>Typ</th>
+								<th>Speichernutzung</th>
+								<th>Dateien</th>
+								<th>Priorität</th>
+								<th>Aktionen</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, stats := range data.PoolStats {
+								<tr>
+									<td>
+										<div class="flex items-center space-x-3">
+											<div>
+												<div class="font-bold">{ stats.Name }</div>
+												if pool := findPoolByID(data.Pools, stats.ID); pool != nil && pool.Description != "" {
+													<div class="text-sm text-gray-500">{ pool.Description }</div>
+												}
+											</div>
+										</div>
+									</td>
+									<td>
+										<div class="flex items-center space-x-2">
+											if healthy, exists := data.HealthStatus[stats.ID]; exists && healthy {
+												<div class="badge badge-success">Gesund</div>
+											} else {
+												<div class="badge badge-error">Fehler</div>
+											}
+											if pool := findPoolByID(data.Pools, stats.ID); pool != nil {
+												if pool.IsDefault {
+													<div class="badge badge-primary">Standard</div>
+												}
+												if !pool.IsActive {
+													<div class="badge badge-warning">Inaktiv</div>
+												}
+											}
+										</div>
+									</td>
+									<td>
+										if pool := findPoolByID(data.Pools, stats.ID); pool != nil {
+											<div class="flex flex-col space-y-1">
+												<span class="badge badge-outline">{ pool.StorageType }</span>
+												<span class={ getTierBadgeClass(pool.StorageTier) }>{ getTierDisplayName(pool.StorageTier) }</span>
+											</div>
+										}
+									</td>
+									<td>
+										<div>
+											<div class="text-sm">{ fmt.Sprintf("%.1f%%", stats.UsagePercentage) }</div>
+											<div class="w-full bg-gray-200 rounded-full h-2">
+												<div 
+													class="h-2 rounded-full" 
+													style={ fmt.Sprintf("width: %.1f%%; background-color: %s", 
+														stats.UsagePercentage,
+														getUsageColor(stats.UsagePercentage)) }>
+												</div>
+											</div>
+											<div class="text-xs text-gray-500 mt-1">
+												{ formatBytes(stats.UsedSize) } / { formatBytes(stats.MaxSize) }
+											</div>
+										</div>
+									</td>
+									<td>
+										<div class="text-sm">
+											<div>{ strconv.FormatInt(stats.ImageCount, 10) } Bilder</div>
+											<div class="text-gray-500">{ strconv.FormatInt(stats.VariantCount, 10) } Varianten</div>
+										</div>
+									</td>
+									<td>
+										if pool := findPoolByID(data.Pools, stats.ID); pool != nil {
+											<span class="badge badge-neutral">{ strconv.Itoa(pool.Priority) }</span>
+										}
+									</td>
+									<td>
+										<div class="flex space-x-2">
+											<button 
+												class="btn btn-xs btn-info"
+												hx-get={ fmt.Sprintf("/admin/storage/health-check/%d", stats.ID) }
+												hx-swap="none">
+												<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+												</svg>
+											</button>
+											<button 
+												class="btn btn-xs btn-warning"
+												hx-post={ fmt.Sprintf("/admin/storage/recalculate-usage/%d", stats.ID) }
+												hx-swap="none">
+												<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+												</svg>
+											</button>
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/storage/edit/%d", stats.ID)) } class="btn btn-xs btn-primary">
+												<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+												</svg>
+											</a>
+											if pool := findPoolByID(data.Pools, stats.ID); pool != nil && !pool.IsDefault {
+												<button 
+													class="btn btn-xs btn-error"
+													data-pool-id={ strconv.Itoa(int(stats.ID)) }
+													data-pool-name={ stats.Name }
+													onclick="confirmDelete(this.dataset.poolId, this.dataset.poolName)">
+													<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+													</svg>
+												</button>
+											}
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+// Helper function to find a pool by ID
+func findPoolByID(pools []models.StoragePool, id uint) *models.StoragePool {
+	for i, pool := range pools {
+		if pool.ID == id {
+			return &pools[i]
+		}
+	}
+	return nil
+}
+
+// Helper function to get usage color based on percentage
+func getUsageColor(percentage float64) string {
+	if percentage < 50 {
+		return "#10b981" // green
+	} else if percentage < 80 {
+		return "#f59e0b" // yellow
+	}
+	return "#ef4444" // red
+}
+
+// Helper function to get tier display name with emoji
+func getTierDisplayName(tier string) string {
+	switch tier {
+	case "hot":
+		return "🔥 Hot"
+	case "warm":
+		return "🌡️ Warm"
+	case "cold":
+		return "❄️ Cold"
+	case "archive":
+		return "📦 Archive"
+	default:
+		return "🔥 Hot"
+	}
+}
+
+// Helper function to get CSS class for tier badge
+func getTierBadgeClass(tier string) string {
+	switch tier {
+	case "hot":
+		return "badge badge-error badge-sm" // Red for hot/fast
+	case "warm":
+		return "badge badge-warning badge-sm" // Yellow for warm
+	case "cold":
+		return "badge badge-info badge-sm" // Blue for cold
+	case "archive":
+		return "badge badge-neutral badge-sm" // Gray for archive
+	default:
+		return "badge badge-error badge-sm"
+	}
+}
+
+// Note: formatBytes function is defined in queue_dashboard_templ.go

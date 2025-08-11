@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 
 	"github.com/a-h/templ"
@@ -81,7 +80,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
 
 	var images []models.Image
-	result := database.DB.Where("user_id = ?", userID).Order("created_at DESC").Find(&images)
+	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Find(&images)
 	if result.Error != nil {
 		// Fehler beim Laden der Bilder
 		flash.WithError(c, fiber.Map{"message": "Fehler beim Laden der Bilder: " + result.Error.Error()})
@@ -101,30 +100,30 @@ func HandleUserImages(c *fiber.Ctx) error {
 		// Try medium thumbnails first
 		if variantInfo.HasThumbnailMedium {
 			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImagePath(&img, "avif", "medium"); avifPath != "" {
-				previewPath = "/" + avifPath
-			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "medium"); webpPath != "" {
-				previewPath = "/" + webpPath
-			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "medium"); originalPath != "" {
-				previewPath = "/" + originalPath
+			if avifPath := imageprocessor.GetImageURL(&img, "avif", "medium"); avifPath != "" {
+				previewPath = avifPath
+			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "medium"); webpPath != "" {
+				previewPath = webpPath
+			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "medium"); originalPath != "" {
+				previewPath = originalPath
 			}
 		}
 
 		// Fallback to small thumbnails if medium not available
 		if previewPath == "" && variantInfo.HasThumbnailSmall {
 			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImagePath(&img, "avif", "small"); avifPath != "" {
-				previewPath = "/" + avifPath
-			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "small"); webpPath != "" {
-				previewPath = "/" + webpPath
-			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "small"); originalPath != "" {
-				previewPath = "/" + originalPath
+			if avifPath := imageprocessor.GetImageURL(&img, "avif", "small"); avifPath != "" {
+				previewPath = avifPath
+			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "small"); webpPath != "" {
+				previewPath = webpPath
+			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "small"); originalPath != "" {
+				previewPath = originalPath
 			}
 		}
 
 		// Final fallback to original image
 		if previewPath == "" {
-			previewPath = filepath.Join("/", img.FilePath, img.FileName)
+			previewPath = imageprocessor.GetImageURL(&img, "original", "")
 		}
 
 		title := img.FileName
@@ -132,7 +131,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 			title = img.Title
 		}
 
-		originalPath := filepath.Join("/", img.FilePath, img.FileName)
+		originalPath := imageprocessor.GetImageURL(&img, "original", "")
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,
@@ -167,7 +166,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	offset := (page - 1) * imagesPerPage
 
 	var images []models.Image
-	result := database.DB.Where("user_id = ?", userID).Order("created_at DESC").Offset(offset).Limit(imagesPerPage).Find(&images)
+	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Offset(offset).Limit(imagesPerPage).Find(&images)
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Laden der Bilder")
 	}
@@ -184,30 +183,30 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 		// Try medium thumbnails first
 		if variantInfo.HasThumbnailMedium {
 			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImagePath(&img, "avif", "medium"); avifPath != "" {
-				previewPath = "/" + avifPath
-			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "medium"); webpPath != "" {
-				previewPath = "/" + webpPath
-			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "medium"); originalPath != "" {
-				previewPath = "/" + originalPath
+			if avifPath := imageprocessor.GetImageURL(&img, "avif", "medium"); avifPath != "" {
+				previewPath = avifPath
+			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "medium"); webpPath != "" {
+				previewPath = webpPath
+			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "medium"); originalPath != "" {
+				previewPath = originalPath
 			}
 		}
 
 		// Fallback to small thumbnails if medium not available
 		if previewPath == "" && variantInfo.HasThumbnailSmall {
 			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImagePath(&img, "avif", "small"); avifPath != "" {
-				previewPath = "/" + avifPath
-			} else if webpPath := imageprocessor.GetImagePath(&img, "webp", "small"); webpPath != "" {
-				previewPath = "/" + webpPath
-			} else if originalPath := imageprocessor.GetImagePath(&img, "original", "small"); originalPath != "" {
-				previewPath = "/" + originalPath
+			if avifPath := imageprocessor.GetImageURL(&img, "avif", "small"); avifPath != "" {
+				previewPath = avifPath
+			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "small"); webpPath != "" {
+				previewPath = webpPath
+			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "small"); originalPath != "" {
+				previewPath = originalPath
 			}
 		}
 
 		// Final fallback to original image
 		if previewPath == "" {
-			previewPath = filepath.Join("/", img.FilePath, img.FileName)
+			previewPath = imageprocessor.GetImageURL(&img, "original", "")
 		}
 
 		title := img.FileName
@@ -215,7 +214,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			title = img.Title
 		}
 
-		originalPath := filepath.Join("/", img.FilePath, img.FileName)
+		originalPath := imageprocessor.GetImageURL(&img, "original", "")
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,

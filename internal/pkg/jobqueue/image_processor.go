@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2/log"
 
@@ -28,14 +29,22 @@ func (q *Queue) processImageProcessingJob(ctx context.Context, job *Job) error {
 		return fmt.Errorf("database connection is nil")
 	}
 
-	// Find the image in database
+	// Find the image in database with storage pool preloaded
 	var image models.Image
-	if err := db.Where("uuid = ?", payload.ImageUUID).First(&image).Error; err != nil {
+	if err := db.Preload("StoragePool").Where("uuid = ?", payload.ImageUUID).First(&image).Error; err != nil {
 		return fmt.Errorf("failed to find image %s: %w", payload.ImageUUID, err)
 	}
 
-	// Verify the original file exists
-	originalFilePath := fmt.Sprintf("%s/%s", payload.FilePath, payload.FileName)
+	// Verify the original file exists using storage pool-aware path construction
+	var originalFilePath string
+	if image.StoragePoolID > 0 && image.StoragePool != nil {
+		// Use storage pool base path
+		originalFilePath = filepath.Join(image.StoragePool.BasePath, image.FilePath, image.FileName)
+	} else {
+		// Fallback to legacy path
+		originalFilePath = fmt.Sprintf("%s/%s", payload.FilePath, payload.FileName)
+	}
+
 	if _, err := os.Stat(originalFilePath); os.IsNotExist(err) {
 		return fmt.Errorf("original file not found: %s", originalFilePath)
 	}

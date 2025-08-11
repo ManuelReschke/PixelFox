@@ -29,14 +29,14 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 	// Medium preview path for gallery view
 	if variantInfo.HasThumbnailMedium {
 		if variantInfo.HasAVIF {
-			previewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "medium")
+			previewPath = imageprocessor.GetImageURL(&img, "avif", "medium")
 		} else if variantInfo.HasWebP {
-			previewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "medium")
+			previewPath = imageprocessor.GetImageURL(&img, "webp", "medium")
 		} else {
 			// Fallback to original format thumbnail
-			originalThumbnailPath := imageprocessor.GetImagePath(&img, "original", "medium")
+			originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "medium")
 			if originalThumbnailPath != "" {
-				previewPath = "/" + originalThumbnailPath
+				previewPath = originalThumbnailPath
 			} else {
 				previewPath = filepath.Join("/", img.FilePath, img.FileName)
 			}
@@ -48,14 +48,14 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 	// Small preview path for album covers
 	if variantInfo.HasThumbnailSmall {
 		if variantInfo.HasAVIF {
-			smallPreviewPath = "/" + imageprocessor.GetImagePath(&img, "avif", "small")
+			smallPreviewPath = imageprocessor.GetImageURL(&img, "avif", "small")
 		} else if variantInfo.HasWebP {
-			smallPreviewPath = "/" + imageprocessor.GetImagePath(&img, "webp", "small")
+			smallPreviewPath = imageprocessor.GetImageURL(&img, "webp", "small")
 		} else {
 			// Fallback to original format thumbnail
-			originalThumbnailPath := imageprocessor.GetImagePath(&img, "original", "small")
+			originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "small")
 			if originalThumbnailPath != "" {
-				smallPreviewPath = "/" + originalThumbnailPath
+				smallPreviewPath = originalThumbnailPath
 			} else {
 				smallPreviewPath = filepath.Join("/", img.FilePath, img.FileName)
 			}
@@ -89,7 +89,7 @@ func HandleUserAlbums(c *fiber.Ctx) error {
 	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
 
 	var albums []models.Album
-	if err := database.DB.Where("user_id = ?", userID).Preload("Images").Find(&albums).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userID).Preload("Images.StoragePool").Find(&albums).Error; err != nil {
 		flash.WithError(c, fiber.Map{"message": "Fehler beim Laden der Alben"})
 		return c.Redirect("/")
 	}
@@ -172,7 +172,7 @@ func HandleUserAlbumEdit(c *fiber.Ctx) error {
 	}
 
 	var album models.Album
-	if err := database.DB.Where("id = ? AND user_id = ?", albumID, userID).Preload("Images").First(&album).Error; err != nil {
+	if err := database.DB.Where("id = ? AND user_id = ?", albumID, userID).Preload("Images.StoragePool").First(&album).Error; err != nil {
 		flash.WithError(c, fiber.Map{"message": "Album nicht gefunden"})
 		return c.Redirect("/user/albums")
 	}
@@ -262,13 +262,13 @@ func HandleUserAlbumView(c *fiber.Ctx) error {
 	}
 
 	var album models.Album
-	if err := database.DB.Where("id = ? AND user_id = ?", albumID, userID).Preload("Images").First(&album).Error; err != nil {
+	if err := database.DB.Where("id = ? AND user_id = ?", albumID, userID).Preload("Images.StoragePool").First(&album).Error; err != nil {
 		flash.WithError(c, fiber.Map{"message": "Album nicht gefunden"})
 		return c.Redirect("/user/albums")
 	}
 
 	var userImages []models.Image
-	database.DB.Where("user_id = ?", userID).Find(&userImages)
+	database.DB.Preload("StoragePool").Where("user_id = ?", userID).Find(&userImages)
 
 	// Convert user images to GalleryImage format
 	var galleryUserImages []user_views.GalleryImage

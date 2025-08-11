@@ -17,3 +17,8 @@ VALUES ('thumbnail_original_enabled', 'true', 'boolean', NOW(), NOW()),
 UPDATE
     `value` =
 VALUES (`value`), `updated_at` = NOW();
+
+-- Insert default storage pool if none exists
+INSERT INTO `storage_pools` (`name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `priority`, `storage_type`, `storage_tier`, `description`, `created_at`, `updated_at`)
+SELECT 'Default Local Storage', '/app/uploads', 107374182400, 0, 1, 1, 1, 'local', 'hot', 'Default hot storage pool for images and variants', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM `storage_pools` WHERE `is_default` = 1);
