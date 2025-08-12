@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/views/partials"
 )
 
 templ StorageManagement(data struct {
@@ -18,8 +19,12 @@ templ StorageManagement(data struct {
 	TotalPoolsCount       int
 	HealthyPoolsCount     int
 }) {
-	<div class="container mx-auto">
-		<div class="flex justify-between items-center mb-6">
+	<div class="container mx-auto px-4 py-4">
+		<!-- Admin Navigation -->
+		@partials.AdminNavbar()
+		
+		<div class="p-4">
+			<div class="flex justify-between items-center mb-6">
 			<h1 class="text-3xl font-bold">Speicherverwaltung</h1>
 			<a href="/admin/storage/create" class="btn btn-primary">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -199,6 +204,7 @@ templ StorageManagement(data struct {
 			</div>
 		</div>
 	</div>
+		</div>
 }
 
 // Helper function to find a pool by ID

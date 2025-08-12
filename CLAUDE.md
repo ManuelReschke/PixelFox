@@ -18,6 +18,10 @@ PixelFox is an image sharing platform built with Go, using GoFiber as the web fr
 - **Migrations**: golang-migrate/migrate
 - **Backup**: S3-compatible storage (Backblaze B2) with automatic background jobs
 
+## Database Changes
+
+Important! If you want to make changes to the database, modify the model, check whether it is included in Automigrate in SetupDatabase(), and then perform a db reset. After that, the database will be available with all changes.
+
 ## Development Commands
 
 ### Docker Environment
@@ -187,7 +191,8 @@ The storage pool system provides flexible storage management with tiering capabi
 - **Hot/Cold/Warm/Archive Tiering**: Configure storage pools with performance tiers for optimal resource allocation
 - **Hot-Storage-First Upload**: Images automatically uploaded to highest priority hot storage pools
 - **Pool Management**: Admin interface for creating, editing, and managing storage pools with capacity limits
-- **Path Configuration**: Configurable storage paths for different drives and storage types
+- **Multi-Type Support**: Local filesystem, NFS, SMB/CIFS, and S3-compatible storage pools
+- **S3 Integration**: Full support for S3-compatible services (AWS S3, Backblaze B2, MinIO, etc.)
 - **Priority-Based Selection**: Automatic storage pool selection based on available space and tier priority
 - **Admin Interface**: Accessible via `/admin/storage` for storage pool management
 - **Intelligent Fallback**: Graceful degradation to other available pools when preferred pools are full
@@ -259,7 +264,12 @@ S3_ENDPOINT_URL=https://s3.us-west-001.backblazeb2.com  # For Backblaze B2
 - Default local storage pool is created automatically on first startup
 - Hot storage pools are prioritized for new uploads to optimize performance
 - Storage pools track capacity limits and prevent overallocation
+- **S3 Storage Pools**: Full support for S3-compatible storage as primary storage (not just backup)
+- **S3 Configuration**: Access Key ID, Secret Key, Region, Bucket Name, Endpoint URL, and Path Prefix
+- **S3 Providers**: Supports AWS S3, Backblaze B2, MinIO, and other S3-compatible services
 - URL generation uses centralized constants from `internal/pkg/constants/routes.go`
 - Image variants and originals use the `/uploads/` static route for web accessibility
-- Admin interface provides real-time storage usage monitoring
+- Admin interface provides real-time storage usage monitoring with S3 pool creation
 - Storage pool paths are automatically integrated with existing backup and processing systems
+- **HTMX Compatibility**: Storage pool forms work seamlessly with HTMX navigation
+- **CSRF Protection**: All storage pool operations are protected with CSRF tokens

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strconv"
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/views/partials"
 )
 
-templ StoragePoolForm(pool models.StoragePool, isEdit bool) {
+templ StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) {
 	{{ 
 		// Berechne Werte vorab
 		maxSizeValue := "100"
@@ -24,8 +25,12 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool) {
 			formAction = fmt.Sprintf("/admin/storage/edit/%d", pool.ID)
 		}
 	}}
-	<div class="container mx-auto p-4">
-		<div class="flex justify-between items-center mb-6">
+	<div class="container mx-auto px-4 py-4">
+		<!-- Admin Navigation -->
+		@partials.AdminNavbar()
+		
+		<div class="p-4">
+			<div class="flex justify-between items-center mb-6">
 			<h1 class="text-3xl font-bold">
 				if isEdit {
 					Speicherpool bearbeiten
@@ -43,6 +48,8 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool) {
 		<div class="card bg-base-100 shadow-xl max-w-2xl mx-auto">
 			<div class="card-body">
 				<form method="POST" action={ templ.SafeURL(formAction) }>
+					<!-- CSRF Token -->
+					<input type="hidden" name="_csrf" value={ csrfToken }>
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<!-- Name -->
 						<div class="form-control">
@@ -100,6 +107,101 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool) {
 								<span class="label-text-alt">Absoluter Pfad zum Speicherverzeichnis</span>
 							</label>
 						</div>
+						
+						<!-- S3-specific Configuration (only shown when storage_type is 's3') -->
+						<div id="s3-config" class="md:col-span-2 border-2 border-dashed border-base-300 rounded-lg p-4 space-y-4" style="display: none;">
+							<h3 class="font-semibold text-lg mb-3">📦 S3-Konfiguration</h3>
+							
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<!-- S3 Access Key ID -->
+								<div class="form-control">
+									<label class="label">
+										<span class="label-text">Access Key ID *</span>
+									</label>
+									<input 
+										type="text" 
+										name="s3_access_key_id" 
+										value={ func() string { if pool.S3AccessKeyID != nil { return *pool.S3AccessKeyID } else { return "" } }() }
+										placeholder="AKIA..." 
+										class="input input-bordered"/>
+								</div>
+								
+								<!-- S3 Secret Access Key -->
+								<div class="form-control">
+									<label class="label">
+										<span class="label-text">Secret Access Key *</span>
+									</label>
+									<input 
+										type="password" 
+										name="s3_secret_access_key" 
+										value={ func() string { if pool.S3SecretAccessKey != nil { return *pool.S3SecretAccessKey } else { return "" } }() }
+										placeholder="Secret Key" 
+										class="input input-bordered"/>
+								</div>
+								
+								<!-- S3 Region -->
+								<div class="form-control">
+									<label class="label">
+										<span class="label-text">Region *</span>
+									</label>
+									<input 
+										type="text" 
+										name="s3_region" 
+										value={ func() string { if pool.S3Region != nil { return *pool.S3Region } else { return "" } }() }
+										placeholder="us-west-2" 
+										class="input input-bordered"/>
+									<label class="label">
+										<span class="label-text-alt">Z.B. us-west-001 für Backblaze B2</span>
+									</label>
+								</div>
+								
+								<!-- S3 Bucket Name -->
+								<div class="form-control">
+									<label class="label">
+										<span class="label-text">Bucket Name *</span>
+									</label>
+									<input 
+										type="text" 
+										name="s3_bucket_name" 
+										value={ func() string { if pool.S3BucketName != nil { return *pool.S3BucketName } else { return "" } }() }
+										placeholder="my-bucket" 
+										class="input input-bordered"/>
+								</div>
+								
+								<!-- S3 Endpoint URL -->
+								<div class="form-control">
+									<label class="label">
+										<span class="label-text">Endpoint URL</span>
+									</label>
+									<input 
+										type="url" 
+										name="s3_endpoint_url" 
+										value={ func() string { if pool.S3EndpointURL != nil { return *pool.S3EndpointURL } else { return "" } }() }
+										placeholder="https://s3.amazonaws.com" 
+										class="input input-bordered"/>
+									<label class="label">
+										<span class="label-text-alt">Für S3-kompatible Services (optional)</span>
+									</label>
+								</div>
+								
+								<!-- S3 Path Prefix -->
+								<div class="form-control">
+									<label class="label">
+										<span class="label-text">Pfad-Präfix</span>
+									</label>
+									<input 
+										type="text" 
+										name="s3_path_prefix" 
+										value={ func() string { if pool.S3PathPrefix != nil { return *pool.S3PathPrefix } else { return "" } }() }
+										placeholder="images/pixelfox" 
+										class="input input-bordered"/>
+									<label class="label">
+										<span class="label-text-alt">Verzeichnis-Präfix im Bucket (optional)</span>
+									</label>
+								</div>
+							</div>
+						</div>
+						
 						<!-- Max Size -->
 						<div class="form-control">
 							<label class="label">
@@ -202,6 +304,57 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool) {
 				</form>
 			</div>
 		</div>
+		
+		</div>
+		
+		@templ.Raw(`<script>
+			// Storage Pool Form JavaScript - HTMX Compatible
+			function initStoragePoolForm() {
+				const storageTypeSelect = document.querySelector('select[name="storage_type"]');
+				const s3Config = document.getElementById('s3-config');
+				const basePathInput = document.querySelector('input[name="base_path"]');
+				
+				if (!storageTypeSelect || !s3Config || !basePathInput) {
+					return;
+				}
+				
+				function toggleS3Config() {
+					const isS3 = storageTypeSelect.value === 's3';
+					s3Config.style.display = isS3 ? 'block' : 'none';
+					
+					// Update base path placeholder for S3
+					if (isS3) {
+						basePathInput.placeholder = 'S3 Bucket Name (wird automatisch gesetzt)';
+						basePathInput.readOnly = true;
+						basePathInput.value = 's3://bucket-name';
+					} else {
+						basePathInput.placeholder = '/mnt/storage/images';
+						basePathInput.readOnly = false;
+						if (basePathInput.value.startsWith('s3://')) {
+							basePathInput.value = '';
+						}
+					}
+					
+					// Set required attributes for S3 fields
+					const s3RequiredFields = ['s3_access_key_id', 's3_secret_access_key', 's3_region', 's3_bucket_name'];
+					s3RequiredFields.forEach(fieldName => {
+						const field = document.querySelector('input[name="${fieldName}"]');
+						if (field) {
+							field.required = isS3;
+						}
+					});
+				}
+				
+				// Initialize on page load
+				toggleS3Config();
+				
+				// Listen for changes
+				storageTypeSelect.addEventListener('change', toggleS3Config);
+			}
+			
+			// Initialize immediately when this script runs
+			initStoragePoolForm();
+		</script>`)
 	</div>
 }
 

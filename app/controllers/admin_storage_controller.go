@@ -114,7 +114,9 @@ func HandleAdminStorageManagement(c *fiber.Ctx) error {
 
 // HandleAdminCreateStoragePool shows the create storage pool form
 func HandleAdminCreateStoragePool(c *fiber.Ctx) error {
-	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false)
+	csrfToken := c.Locals("csrf").(string)
+
+	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false, csrfToken)
 	home := views.Home(" | Speicherpool erstellen", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -165,6 +167,44 @@ func HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
 		pool.Priority = priority
 	} else {
 		pool.Priority = 100
+	}
+
+	// Parse S3-specific fields if storage type is S3
+	if pool.StorageType == models.StorageTypeS3 {
+		s3AccessKeyID := strings.TrimSpace(c.FormValue("s3_access_key_id"))
+		if s3AccessKeyID != "" {
+			pool.S3AccessKeyID = &s3AccessKeyID
+		}
+
+		s3SecretAccessKey := strings.TrimSpace(c.FormValue("s3_secret_access_key"))
+		if s3SecretAccessKey != "" {
+			pool.S3SecretAccessKey = &s3SecretAccessKey
+		}
+
+		s3Region := strings.TrimSpace(c.FormValue("s3_region"))
+		if s3Region != "" {
+			pool.S3Region = &s3Region
+		}
+
+		s3BucketName := strings.TrimSpace(c.FormValue("s3_bucket_name"))
+		if s3BucketName != "" {
+			pool.S3BucketName = &s3BucketName
+		}
+
+		s3EndpointURL := strings.TrimSpace(c.FormValue("s3_endpoint_url"))
+		if s3EndpointURL != "" {
+			pool.S3EndpointURL = &s3EndpointURL
+		}
+
+		s3PathPrefix := strings.TrimSpace(c.FormValue("s3_path_prefix"))
+		if s3PathPrefix != "" {
+			pool.S3PathPrefix = &s3PathPrefix
+		}
+
+		// Set base path for S3 pools
+		if pool.S3BucketName != nil {
+			pool.BasePath = fmt.Sprintf("s3://%s", *pool.S3BucketName)
+		}
 	}
 
 	// Validate required fields
@@ -253,7 +293,9 @@ func HandleAdminEditStoragePool(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage")
 	}
 
-	poolForm := admin_views.StoragePoolForm(*pool, true)
+	csrfToken := c.Locals("csrf").(string)
+
+	poolForm := admin_views.StoragePoolForm(*pool, true, csrfToken)
 	home := views.Home(" | Speicherpool bearbeiten", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -329,6 +371,44 @@ func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
 			return c.Redirect("/admin/storage/edit/" + c.Params("id"))
 		}
 		pool.Priority = priority
+	}
+
+	// Parse S3-specific fields if storage type is S3
+	if pool.StorageType == models.StorageTypeS3 {
+		s3AccessKeyID := strings.TrimSpace(c.FormValue("s3_access_key_id"))
+		if s3AccessKeyID != "" {
+			pool.S3AccessKeyID = &s3AccessKeyID
+		}
+
+		s3SecretAccessKey := strings.TrimSpace(c.FormValue("s3_secret_access_key"))
+		if s3SecretAccessKey != "" {
+			pool.S3SecretAccessKey = &s3SecretAccessKey
+		}
+
+		s3Region := strings.TrimSpace(c.FormValue("s3_region"))
+		if s3Region != "" {
+			pool.S3Region = &s3Region
+		}
+
+		s3BucketName := strings.TrimSpace(c.FormValue("s3_bucket_name"))
+		if s3BucketName != "" {
+			pool.S3BucketName = &s3BucketName
+		}
+
+		s3EndpointURL := strings.TrimSpace(c.FormValue("s3_endpoint_url"))
+		if s3EndpointURL != "" {
+			pool.S3EndpointURL = &s3EndpointURL
+		}
+
+		s3PathPrefix := strings.TrimSpace(c.FormValue("s3_path_prefix"))
+		if s3PathPrefix != "" {
+			pool.S3PathPrefix = &s3PathPrefix
+		}
+
+		// Update base path for S3 pools
+		if pool.S3BucketName != nil {
+			pool.BasePath = fmt.Sprintf("s3://%s", *pool.S3BucketName)
+		}
 	}
 
 	// Validate required fields

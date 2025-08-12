@@ -107,6 +107,22 @@ func main() {
 			log.Printf("Aktuelle Migrationsversion: %d%s", version, dirtyStatus)
 		}
 
+	case "force":
+		if len(os.Args) < 3 {
+			log.Fatalf("Bitte geben Sie eine Versionsnummer an")
+		}
+		version, err := strconv.ParseUint(os.Args[2], 10, 64)
+		if err != nil {
+			log.Fatalf("Ungültige Versionsnummer: %v", err)
+		}
+
+		// Force eine bestimmte Version (bereinigt dirty state)
+		if err := m.Force(int(version)); err != nil {
+			log.Fatalf("Fehler beim Forcen zur Version %d: %v", version, err)
+		} else {
+			log.Printf("Version %d erfolgreich forciert", version)
+		}
+
 	default:
 		printUsage()
 		os.Exit(1)
@@ -120,4 +136,5 @@ func printUsage() {
 	fmt.Println("  down   - Rolle die letzte Migration zurück")
 	fmt.Println("  goto N - Migriere zur Version N")
 	fmt.Println("  status - Zeige aktuelle Migrationsversion an")
+	fmt.Println("  force N- Force Version N (bereinigt dirty state)")
 }
