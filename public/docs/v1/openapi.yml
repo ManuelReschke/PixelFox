@@ -2,7 +2,7 @@ openapi: "3.0.0"
 info:
   version: 1.0.0
   title: PixelFox.cc API v1
-  description: Official API for PixelFox image sharing platform
+  description: WORK IN PROGRESS - Official API for PixelFox image sharing platform
   contact:
     name: PixelFox API Support
     url: https://pixelfox.cc

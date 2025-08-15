@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
+	fiberlog "github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -53,6 +54,12 @@ func main() {
 
 func NewApplication() *fiber.App {
 	env.SetupEnvFile()
+
+	// Set log level based on environment
+	if !env.IsDev() {
+		fiberlog.SetLevel(fiberlog.LevelError)
+	}
+
 	database.SetupDatabase()
 	cache.SetupCache()
 

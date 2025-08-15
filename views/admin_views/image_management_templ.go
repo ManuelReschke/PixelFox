@@ -41,13 +41,13 @@ func getThumbnailPath(image models.Image) string {
 	// Try small thumbnails with priority: AVIF -> WebP -> Original format
 	if variantInfo.HasThumbnailSmall {
 		if avifPath := imageprocessor.GetImageURL(&image, "avif", "small"); avifPath != "" {
-			return "/" + avifPath
+			return avifPath
 		}
 		if webpPath := imageprocessor.GetImageURL(&image, "webp", "small"); webpPath != "" {
-			return "/" + webpPath
+			return webpPath
 		}
 		if originalPath := imageprocessor.GetImageURL(&image, "original", "small"); originalPath != "" {
-			return "/" + originalPath
+			return originalPath
 		}
 	}
 
