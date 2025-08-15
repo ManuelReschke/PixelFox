@@ -23,14 +23,27 @@ func (q *Queue) processS3BackupJob(ctx context.Context, job *Job) error {
 
 	log.Infof("[S3Backup] Processing backup job for image %s (ID: %d)", payload.ImageUUID, payload.ImageID)
 
-	// Load S3 configuration
-	config, err := s3backup.LoadConfig()
+	// Get database connection first
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	// Load S3 configuration from storage pools
+	config, err := s3backup.LoadConfigFromStoragePool(db)
 	if err != nil {
-		return fmt.Errorf("failed to load S3 config: %w", err)
+		return fmt.Errorf("failed to load S3 config from storage pools: %w", err)
 	}
 
 	if !config.IsEnabled() {
-		return fmt.Errorf("S3 backup is disabled")
+		log.Infof("[S3Backup] No active S3 storage pools configured for backup, skipping backup for image %s", payload.ImageUUID)
+
+		// Get backup record to mark as failed
+		var backup models.ImageBackup
+		if err := db.First(&backup, payload.BackupID).Error; err == nil {
+			backup.MarkAsFailed(db, "No active S3 storage pools configured")
+		}
+		return nil // Don't return error, just skip backup
 	}
 
 	// Create S3 client
@@ -40,7 +53,7 @@ func (q *Queue) processS3BackupJob(ctx context.Context, job *Job) error {
 	}
 
 	// Get database connection
-	db := database.GetDB()
+	db = database.GetDB()
 	if db == nil {
 		return fmt.Errorf("database connection is nil")
 	}
@@ -56,13 +69,26 @@ func (q *Queue) processS3BackupJob(ctx context.Context, job *Job) error {
 		return fmt.Errorf("failed to mark backup as uploading: %w", err)
 	}
 
-	// Construct the full file path
-	fullPath := filepath.Join(payload.FilePath, payload.FileName)
+	// Get the image record to check storage pool configuration
+	var image models.Image
+	if err := db.Preload("StoragePool").Where("id = ?", payload.ImageID).First(&image).Error; err != nil {
+		return fmt.Errorf("failed to find image %d: %w", payload.ImageID, err)
+	}
 
-	// Generate S3 object key
+	// Construct the full file path using storage pool-aware path construction
+	var fullPath string
+	if image.StoragePoolID > 0 && image.StoragePool != nil {
+		// Use storage pool base path
+		fullPath = filepath.Join(image.StoragePool.BasePath, image.FilePath, image.FileName)
+	} else {
+		// Fallback to legacy path construction
+		fullPath = filepath.Join(payload.FilePath, payload.FileName)
+	}
+
+	// Generate S3 object key with day folder
 	fileExt := filepath.Ext(payload.FileName)
 	now := time.Now()
-	objectKey := config.GetObjectKey(payload.ImageUUID, fileExt, now.Year(), int(now.Month()))
+	objectKey := config.GetObjectKey(payload.ImageUUID, fileExt, now.Year(), int(now.Month()), now.Day())
 
 	// Upload to S3
 	log.Infof("[S3Backup] Uploading %s to S3 as %s", fullPath, objectKey)
@@ -144,26 +170,27 @@ func (q *Queue) processS3DeleteJob(ctx context.Context, job *Job) error {
 
 	log.Infof("[S3Delete] Processing delete job for image %s (ID: %d)", payload.ImageUUID, payload.ImageID)
 
-	// Load S3 configuration
-	config, err := s3backup.LoadConfig()
+	// Get database connection
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	// Load S3 configuration from storage pools
+	config, err := s3backup.LoadConfigFromStoragePool(db)
 	if err != nil {
-		return fmt.Errorf("failed to load S3 config: %w", err)
+		return fmt.Errorf("failed to load S3 config from storage pools: %w", err)
 	}
 
 	if !config.IsEnabled() {
-		return fmt.Errorf("S3 backup is disabled")
+		log.Infof("[S3Delete] No active S3 storage pools configured for delete, skipping delete for image %s", payload.ImageUUID)
+		return nil // Don't return error, just skip delete
 	}
 
 	// Create S3 client
 	s3Client, err := s3backup.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("failed to create S3 client: %w", err)
-	}
-
-	// Get database connection
-	db := database.GetDB()
-	if db == nil {
-		return fmt.Errorf("database connection is nil")
 	}
 
 	// Get the backup record
@@ -206,4 +233,68 @@ func (q *Queue) EnqueueS3DeleteJob(imageID uint, imageUUID, objectKey, bucketNam
 	}
 
 	return q.EnqueueJob(JobTypeS3Delete, payload.ToMap())
+}
+
+// ProcessDelayedS3Backups finds images older than the configured delay and enqueues backup jobs
+func (q *Queue) ProcessDelayedS3Backups() error {
+	// Get current app settings to check backup delay
+	settings := models.GetAppSettings()
+	delayMinutes := settings.GetS3BackupDelayMinutes()
+
+	// If delay is 0 or negative, no delayed processing needed
+	if delayMinutes <= 0 {
+		return nil
+	}
+
+	// Get database connection
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	// Calculate cutoff time (current time minus delay)
+	cutoffTime := time.Now().Add(-time.Duration(delayMinutes) * time.Minute)
+
+	// Find pending backups for images older than the delay time
+	var pendingBackups []models.ImageBackup
+	err := db.Preload("Image").
+		Joins("JOIN images ON image_backups.image_id = images.id").
+		Where("image_backups.status = ? AND images.created_at <= ?", models.BackupStatusPending, cutoffTime).
+		Find(&pendingBackups).Error
+
+	if err != nil {
+		return fmt.Errorf("failed to find pending delayed backups: %w", err)
+	}
+
+	if len(pendingBackups) == 0 {
+		log.Info("[DelayedS3Backup] No delayed backups ready for processing")
+		return nil
+	}
+
+	log.Infof("[DelayedS3Backup] Found %d delayed backups ready for processing", len(pendingBackups))
+
+	// Process each pending backup
+	for _, backup := range pendingBackups {
+		image := backup.Image
+
+		log.Infof("[DelayedS3Backup] Enqueueing delayed backup for image %s (ID: %d)", image.UUID, image.ID)
+
+		// Create S3 backup job
+		job, err := q.EnqueueS3BackupJob(
+			image.ID,
+			image.UUID,
+			image.FilePath,
+			image.FileName,
+			image.FileSize,
+			backup.ID,
+		)
+		if err != nil {
+			log.Errorf("[DelayedS3Backup] Failed to enqueue delayed backup job for image %s: %v", image.UUID, err)
+			continue
+		}
+
+		log.Infof("[DelayedS3Backup] Enqueued delayed backup job %s for image %s", job.ID, image.UUID)
+	}
+
+	return nil
 }

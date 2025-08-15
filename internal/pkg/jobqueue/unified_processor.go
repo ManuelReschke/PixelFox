@@ -2,11 +2,11 @@ package jobqueue
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
 
@@ -56,7 +56,21 @@ func EnqueueImageProcessing(image *models.Image, enableBackup bool) error {
 // ProcessImageUnified is the new unified function that replaces imageprocessor.ProcessImage
 // This function should be used instead of the old imageprocessor.ProcessImage
 func ProcessImageUnified(image *models.Image) error {
-	// Check if S3 backup is enabled via environment variable
-	enableBackup := os.Getenv("S3_BACKUP_ENABLED") == "true"
+	// Check if S3 backup is enabled via storage pools
+	db := database.GetDB()
+	if db == nil {
+		log.Errorf("[UnifiedQueue] Database connection is nil, disabling backup for image %s", image.UUID)
+		return EnqueueImageProcessing(image, false)
+	}
+
+	// Check if there are any active S3 storage pools
+	s3Pool, err := models.FindHighestPriorityS3Pool(db)
+	if err != nil {
+		log.Errorf("[UnifiedQueue] Failed to check S3 storage pools for image %s: %v", image.UUID, err)
+		return EnqueueImageProcessing(image, false)
+	}
+
+	enableBackup := s3Pool != nil
+	log.Infof("[UnifiedQueue] Processing image %s with S3 backup enabled: %t", image.UUID, enableBackup)
 	return EnqueueImageProcessing(image, enableBackup)
 }

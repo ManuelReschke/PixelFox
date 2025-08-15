@@ -155,27 +155,34 @@ Main entities include User, Image, Album, Tag, News, Comment, ImageBackup, and S
 
 #### S3 Backup System
 The S3 backup system provides automatic cloud backup functionality:
-- **Automatic Backups**: Every uploaded image is automatically backed up to S3-compatible storage
-- **Background Processing**: Uses a Redis-based job queue system with worker pools
-- **Retry Mechanism**: Failed backups are automatically retried every 2 minutes
-- **Provider Support**: Currently supports Backblaze B2 (S3-compatible API)
-- **Status Tracking**: All backup operations are tracked in the `image_backups` table
-- **Configuration**: Controlled via environment variables (S3_BACKUP_ENABLED, S3_ACCESS_KEY_ID, etc.)
+- **Configurable Backups**: Backup delay configurable from immediate to 30 days via admin settings
+- **Storage Pool Integration**: Uses configured S3 storage pools instead of environment variables
+- **Background Processing**: Uses Redis-based job queue system with configurable worker pools
+- **Configurable Retry**: Retry intervals configurable via admin settings (1-60 minutes)
+- **Day Folder Structure**: S3 object keys include day folders (YYYY/MM/DD) for organization
+- **Provider Support**: Supports all S3-compatible services (AWS S3, Backblaze B2, MinIO, etc.)
+- **Status Tracking**: All backup operations tracked in `image_backups` table with bucket_name
+- **Admin Configuration**: Fully configurable via `/admin/settings` interface
 
 #### Unified Job Queue System
 Centralized Redis-based background job processing system:
-- **Unified Architecture**: Replaced dual queue system (ImageProcessor + JobQueue) with single Redis-based solution
-- **Worker Pool**: 5 configurable worker processes handling all job types
+- **Unified Architecture**: Single Redis-based solution handling all background job types
+- **Configurable Workers**: Worker count configurable via admin settings (1-20 workers)
 - **Job Types**: 
   - `image_processing`: Image optimization, thumbnail generation, and variant creation
-  - `s3_backup`: Automatic cloud backup of processed images  
+  - `s3_backup`: Configurable delayed cloud backup of processed images  
   - `s3_delete`: Cloud backup cleanup jobs
-- **Sequential Pipeline**: Image processing automatically triggers S3 backup when enabled
-- **Retry Logic**: Configurable retry attempts with exponential backoff for all job types
+- **Parallel Processing**: Multiple workers process jobs simultaneously, not sequentially
+- **Configurable Intervals**: All background task intervals configurable via admin settings
+- **Real-time Processing**: Immediate job processing without artificial delays
+- **Admin Controls**: 
+  - S3 Backup Delay: 0-43200 minutes (immediate to 30 days)
+  - S3 Check Interval: 1-60 minutes (how often to check for pending backups)
+  - S3 Retry Interval: 1-60 minutes (retry wait time for failed backups)
+  - Job Queue Workers: 1-20 parallel workers
 - **Status Tracking**: Real-time processing status cached in Redis with TTL
 - **Graceful Shutdown**: Properly shuts down with the application to prevent job loss
 - **Job Cleanup**: Completed jobs are automatically removed from Redis to save memory
-- **Migration**: Use `jobqueue.ProcessImageUnified()` instead of deprecated `imageprocessor.ProcessImage()`
 
 #### Album System
 The album functionality provides comprehensive photo organization capabilities:
@@ -222,8 +229,15 @@ The development environment uses Air for hot reloading and automatic template co
 - Docker services include app, database, cache, PHPMyAdmin, and MailHog
 
 ### S3 Backup Configuration
+**Modern Configuration (Recommended):**
+- Configure S3 storage pools via `/admin/storage` interface
+- Set backup delays and intervals via `/admin/settings` interface
+- All S3 credentials stored securely in database
+- Support for multiple S3 providers per storage pool
+
+**Legacy Environment Variables (Deprecated):**
 ```bash
-# S3/Backblaze B2 backup settings
+# Legacy S3/Backblaze B2 backup settings (use Storage Pools instead)
 S3_BACKUP_ENABLED=true
 S3_ACCESS_KEY_ID=your_access_key
 S3_SECRET_ACCESS_KEY=your_secret_key
@@ -253,12 +267,17 @@ S3_ENDPOINT_URL=https://s3.us-west-001.backblazeb2.com  # For Backblaze B2
 - API documentation is available at `/api/v1/docs` when running
 
 ### Backup System Notes
-- S3 backups are triggered automatically on every image upload
-- Failed backups are retried every 2 minutes automatically
+- S3 backups can be immediate or delayed based on admin settings (0-43200 minutes)
+- Failed backups are retried at configurable intervals (admin configurable: 1-60 minutes)
+- Backup checks run at configurable intervals (admin configurable: 1-60 minutes)
+- Job queue worker count is admin configurable (1-20 parallel workers)
+- All S3 settings managed via Storage Pools in admin interface, not environment variables
+- S3 object keys include day folders (YYYY/MM/DD) for better organization
 - Job queue starts automatically with the application and handles graceful shutdown
 - Backup status can be monitored in the admin queue dashboard
 - For Backblaze B2: Use AWS SDK Go v2 ≤ 1.27.2, set region to bucket region, enable path-style URLs
 - Completed backup jobs are automatically cleaned from Redis to prevent memory bloat
+- **Admin Settings**: Configure all S3 system parameters via `/admin/settings` interface
 
 ### Storage Pool System Notes
 - Default local storage pool is created automatically on first startup
@@ -273,3 +292,14 @@ S3_ENDPOINT_URL=https://s3.us-west-001.backblazeb2.com  # For Backblaze B2
 - Storage pool paths are automatically integrated with existing backup and processing systems
 - **HTMX Compatibility**: Storage pool forms work seamlessly with HTMX navigation
 - **CSRF Protection**: All storage pool operations are protected with CSRF tokens
+
+### Admin Settings Interface
+The `/admin/settings` interface provides comprehensive system configuration:
+- **Site Settings**: Title, description, upload enablement
+- **Image Processing**: Worker count (1-20), thumbnail format options
+- **S3 Backup System**: 
+  - Backup delay: 0-43200 minutes (immediate to 30 days)
+  - Check interval: 1-60 minutes (how often to scan for pending backups)
+  - Retry interval: 1-60 minutes (wait time between retry attempts)
+- **All settings**: Stored in database with validation and real-time application
+- **Performance Tuning**: Adjust worker counts and intervals based on system resources

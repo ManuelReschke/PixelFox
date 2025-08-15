@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -29,7 +30,12 @@ type AppSettings struct {
 	ThumbnailOriginalEnabled bool `json:"thumbnail_original_enabled"`
 	ThumbnailWebPEnabled     bool `json:"thumbnail_webp_enabled"`
 	ThumbnailAVIFEnabled     bool `json:"thumbnail_avif_enabled"`
-	mu                       sync.RWMutex
+	// S3 Backup settings
+	S3BackupDelayMinutes  int `json:"s3_backup_delay_minutes" validate:"min=0,max=43200"` // Max 30 days (43200 minutes)
+	S3BackupCheckInterval int `json:"s3_backup_check_interval" validate:"min=1,max=60"`   // How often to check for delayed backups (1-60 minutes)
+	S3RetryInterval       int `json:"s3_retry_interval" validate:"min=1,max=60"`          // How often to retry failed backups (1-60 minutes)
+	JobQueueWorkerCount   int `json:"job_queue_worker_count" validate:"min=1,max=20"`     // Number of job queue workers (1-20)
+	mu                    sync.RWMutex
 }
 
 // Global settings instance
@@ -58,6 +64,10 @@ func LoadSettings(db *gorm.DB) error {
 		ThumbnailOriginalEnabled: true,
 		ThumbnailWebPEnabled:     true,
 		ThumbnailAVIFEnabled:     true,
+		S3BackupDelayMinutes:     5, // Default: immediate backup (0 minutes delay)
+		S3BackupCheckInterval:    5, // Default: check every 5 minutes
+		S3RetryInterval:          2, // Default: retry every 2 minutes
+		JobQueueWorkerCount:      5, // Default: 5 workers
 	}
 
 	// Load settings from database
@@ -81,6 +91,22 @@ func LoadSettings(db *gorm.DB) error {
 			appSettings.ThumbnailWebPEnabled = setting.Value == "true"
 		case "thumbnail_avif_enabled":
 			appSettings.ThumbnailAVIFEnabled = setting.Value == "true"
+		case "s3_backup_delay_minutes":
+			if minutes, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.S3BackupDelayMinutes = minutes
+			}
+		case "s3_backup_check_interval":
+			if interval, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.S3BackupCheckInterval = interval
+			}
+		case "s3_retry_interval":
+			if interval, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.S3RetryInterval = interval
+			}
+		case "job_queue_worker_count":
+			if count, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.JobQueueWorkerCount = count
+			}
 		}
 	}
 
@@ -105,6 +131,10 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 		"thumbnail_original_enabled": fmt.Sprintf("%t", settings.ThumbnailOriginalEnabled),
 		"thumbnail_webp_enabled":     fmt.Sprintf("%t", settings.ThumbnailWebPEnabled),
 		"thumbnail_avif_enabled":     fmt.Sprintf("%t", settings.ThumbnailAVIFEnabled),
+		"s3_backup_delay_minutes":    fmt.Sprintf("%d", settings.S3BackupDelayMinutes),
+		"s3_backup_check_interval":   fmt.Sprintf("%d", settings.S3BackupCheckInterval),
+		"s3_retry_interval":          fmt.Sprintf("%d", settings.S3RetryInterval),
+		"job_queue_worker_count":     fmt.Sprintf("%d", settings.JobQueueWorkerCount),
 	}
 
 	// Save each setting
@@ -147,6 +177,8 @@ func getSettingType(key string) string {
 		return "string"
 	case "image_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled":
 		return "boolean"
+	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count":
+		return "integer"
 	default:
 		return "string"
 	}
@@ -212,4 +244,32 @@ func (s *AppSettings) IsThumbnailAVIFEnabled() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.ThumbnailAVIFEnabled
+}
+
+// GetS3BackupDelayMinutes returns the S3 backup delay in minutes
+func (s *AppSettings) GetS3BackupDelayMinutes() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.S3BackupDelayMinutes
+}
+
+// GetS3BackupCheckInterval returns the S3 backup check interval in minutes
+func (s *AppSettings) GetS3BackupCheckInterval() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.S3BackupCheckInterval
+}
+
+// GetS3RetryInterval returns the S3 retry interval in minutes
+func (s *AppSettings) GetS3RetryInterval() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.S3RetryInterval
+}
+
+// GetJobQueueWorkerCount returns the job queue worker count
+func (s *AppSettings) GetJobQueueWorkerCount() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.JobQueueWorkerCount
 }

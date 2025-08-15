@@ -21,7 +21,7 @@ build-no-cache:
 .PHONY: generate-template
 generate-template:
 	@echo "🔧 Generiere Templates..."
-	cd $(PROJECT_ROOT) && docker exec -it pxlfox-app templ generate ./..
+	cd $(PROJECT_ROOT) && docker exec pxlfox-app templ generate ./..
 	@echo "🎨 Aktualisiere CSS..."
 	$(MAKE) build-css
 

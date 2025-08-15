@@ -1,6 +1,7 @@
 package admin_views
 
 import (
+	"fmt"
 	"github.com/ManuelReschke/PixelFox/app/models"
 )
 
@@ -71,6 +72,85 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 					</label>
 					<label class="label">
 						<span class="label-text-alt">Wenn deaktiviert, können Benutzer keine neuen Bilder hochladen.</span>
+					</label>
+				</div>
+
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">Job Queue Worker Anzahl</span>
+					</label>
+					<input 
+						type="number" 
+						name="job_queue_worker_count" 
+						value={ fmt.Sprintf("%d", settings.JobQueueWorkerCount) }
+						class="input input-bordered w-full" 
+						placeholder="5"
+						min="1"
+						max="20"
+						required
+					/>
+					<label class="label">
+						<span class="label-text-alt">Anzahl der gleichzeitigen Background-Prozesse (1-20). Bei 5 Workern werden 5 Jobs parallel abgearbeitet - nicht nacheinander</span>
+					</label>
+				</div>
+
+				<!-- S3 Backup Settings -->
+				<div class="divider">S3 Backup Einstellungen</div>
+				
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">S3 Backup Verzögerung (Minuten)</span>
+					</label>
+					<input 
+						type="number" 
+						name="s3_backup_delay_minutes" 
+						value={ fmt.Sprintf("%d", settings.S3BackupDelayMinutes) }
+						class="input input-bordered w-full" 
+						placeholder="0"
+						min="0"
+						max="43200"
+						required
+					/>
+					<label class="label">
+						<span class="label-text-alt">Nach wie vielen Minuten nach dem Upload soll das S3 Backup erfolgen? 0 = sofort, 1440 = nach 24 Stunden</span>
+					</label>
+				</div>
+
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">S3 Backup Check Intervall (Minuten)</span>
+					</label>
+					<input 
+						type="number" 
+						name="s3_backup_check_interval" 
+						value={ fmt.Sprintf("%d", settings.S3BackupCheckInterval) }
+						class="input input-bordered w-full" 
+						placeholder="5"
+						min="1"
+						max="60"
+						required
+					/>
+					<label class="label">
+						<span class="label-text-alt">Wie oft soll nach ausstehenden S3 Backups gesucht werden? (1-60 Minuten)</span>
+					</label>
+				</div>
+
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">S3 Retry Intervall (Minuten)</span>
+					</label>
+					<input 
+						type="number" 
+						name="s3_retry_interval" 
+						value={ fmt.Sprintf("%d", settings.S3RetryInterval) }
+						class="input input-bordered w-full" 
+						placeholder="2"
+						min="1"
+						max="60"
+						required
+					/>
+					<label class="label">
+						<span class="label-text-alt">Wartezeit zwischen Wiederholungsversuchen für fehlgeschlagene S3 Backups (1-60 Minuten)</span>
 					</label>
 				</div>
 

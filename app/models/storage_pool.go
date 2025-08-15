@@ -512,6 +512,24 @@ func FindS3StoragePools(db *gorm.DB) ([]StoragePool, error) {
 	return FindActiveStoragePoolsByType(db, StorageTypeS3)
 }
 
+// FindHighestPriorityS3Pool returns the S3 storage pool with the highest priority (lowest number)
+// Returns nil if no active S3 storage pools are found
+func FindHighestPriorityS3Pool(db *gorm.DB) (*StoragePool, error) {
+	var pool StoragePool
+	err := db.Where("storage_type = ? AND is_active = ?", StorageTypeS3, true).
+		Order("priority ASC"). // Lower number = higher priority
+		First(&pool).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // No S3 pools found, but not an error
+		}
+		return nil, fmt.Errorf("failed to find S3 storage pool: %w", err)
+	}
+
+	return &pool, nil
+}
+
 // FindLocalStoragePools returns all active local storage pools
 func FindLocalStoragePools(db *gorm.DB) ([]StoragePool, error) {
 	return FindActiveStoragePoolsByType(db, StorageTypeLocal)
@@ -539,18 +557,63 @@ func GetStoragePoolStats(db *gorm.DB, poolID uint) (*StoragePoolStats, error) {
 		return nil, err
 	}
 
-	// Count images in this pool
 	var imageCount int64
-	db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Count(&imageCount)
-
-	// Count variants in this pool
 	var variantCount int64
-	db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&variantCount)
+	var usedSize int64
+
+	if pool.StorageType == StorageTypeS3 {
+		// For S3 pools: count backups that were made TO this specific S3 bucket
+		// This shows what's actually stored in this S3 pool
+		if pool.S3BucketName != nil && *pool.S3BucketName != "" {
+			db.Model(&ImageBackup{}).
+				Where("status = ? AND provider = ? AND bucket_name = ?",
+					BackupStatusCompleted, BackupProviderS3, *pool.S3BucketName).
+				Count(&imageCount)
+
+			db.Model(&ImageBackup{}).
+				Where("status = ? AND provider = ? AND bucket_name = ?",
+					BackupStatusCompleted, BackupProviderS3, *pool.S3BucketName).
+				Select("COALESCE(SUM(backup_size), 0)").Scan(&usedSize)
+		}
+
+		// Also count images stored directly in this S3 pool (if used as primary storage)
+		var directImageCount int64
+		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Count(&directImageCount)
+		imageCount += directImageCount
+
+		var directVariantCount int64
+		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&directVariantCount)
+		variantCount = directVariantCount
+
+		// Add direct storage size
+		var directUsedSize int64
+		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Select("COALESCE(SUM(file_size), 0)").Scan(&directUsedSize)
+		usedSize += directUsedSize
+
+		var variantUsedSize int64
+		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Select("COALESCE(SUM(file_size), 0)").Scan(&variantUsedSize)
+		usedSize += variantUsedSize
+
+	} else {
+		// For local/NFS storage pools, count images and variants normally
+		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Count(&imageCount)
+		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&variantCount)
+
+		// Calculate used size from actual files
+		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Select("SUM(file_size)").Scan(&usedSize)
+		var variantUsedSize int64
+		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Select("SUM(file_size)").Scan(&variantUsedSize)
+		usedSize += variantUsedSize
+	}
+
+	// Update the pool's used size in database
+	pool.UsedSize = usedSize
+	db.Save(pool)
 
 	stats := &StoragePoolStats{
 		ID:              pool.ID,
 		Name:            pool.Name,
-		UsedSize:        pool.UsedSize,
+		UsedSize:        usedSize,
 		MaxSize:         pool.MaxSize,
 		AvailableSize:   pool.GetAvailableSize(),
 		UsagePercentage: pool.GetUsagePercentage(),

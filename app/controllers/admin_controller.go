@@ -809,6 +809,58 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 	thumbnailAVIFEnabledStr := c.FormValue("thumbnail_avif_enabled")
 	thumbnailAVIFEnabled := thumbnailAVIFEnabledStr == "on"
 
+	// Get S3 backup delay setting
+	s3BackupDelayMinutesStr := c.FormValue("s3_backup_delay_minutes")
+	s3BackupDelayMinutes, err := strconv.Atoi(s3BackupDelayMinutesStr)
+	if err != nil {
+		s3BackupDelayMinutes = 0 // Default to 0 minutes if invalid
+	}
+	// Validate range (0 to 43200 minutes = 30 days)
+	if s3BackupDelayMinutes < 0 {
+		s3BackupDelayMinutes = 0
+	} else if s3BackupDelayMinutes > 43200 {
+		s3BackupDelayMinutes = 43200
+	}
+
+	// Get S3 backup check interval setting
+	s3BackupCheckIntervalStr := c.FormValue("s3_backup_check_interval")
+	s3BackupCheckInterval, err := strconv.Atoi(s3BackupCheckIntervalStr)
+	if err != nil {
+		s3BackupCheckInterval = 5 // Default to 5 minutes if invalid
+	}
+	// Validate range (1 to 60 minutes)
+	if s3BackupCheckInterval < 1 {
+		s3BackupCheckInterval = 1
+	} else if s3BackupCheckInterval > 60 {
+		s3BackupCheckInterval = 60
+	}
+
+	// Get S3 retry interval setting
+	s3RetryIntervalStr := c.FormValue("s3_retry_interval")
+	s3RetryInterval, err := strconv.Atoi(s3RetryIntervalStr)
+	if err != nil {
+		s3RetryInterval = 2 // Default to 2 minutes if invalid
+	}
+	// Validate range (1 to 60 minutes)
+	if s3RetryInterval < 1 {
+		s3RetryInterval = 1
+	} else if s3RetryInterval > 60 {
+		s3RetryInterval = 60
+	}
+
+	// Get job queue worker count setting
+	jobQueueWorkerCountStr := c.FormValue("job_queue_worker_count")
+	jobQueueWorkerCount, err := strconv.Atoi(jobQueueWorkerCountStr)
+	if err != nil {
+		jobQueueWorkerCount = 5 // Default to 5 workers if invalid
+	}
+	// Validate range (1 to 20 workers)
+	if jobQueueWorkerCount < 1 {
+		jobQueueWorkerCount = 1
+	} else if jobQueueWorkerCount > 20 {
+		jobQueueWorkerCount = 20
+	}
+
 	// Create new settings
 	newSettings := &models.AppSettings{
 		SiteTitle:                siteTitle,
@@ -817,15 +869,19 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 		ThumbnailOriginalEnabled: thumbnailOriginalEnabled,
 		ThumbnailWebPEnabled:     thumbnailWebPEnabled,
 		ThumbnailAVIFEnabled:     thumbnailAVIFEnabled,
+		S3BackupDelayMinutes:     s3BackupDelayMinutes,
+		S3BackupCheckInterval:    s3BackupCheckInterval,
+		S3RetryInterval:          s3RetryInterval,
+		JobQueueWorkerCount:      jobQueueWorkerCount,
 	}
 
 	// Save settings
 	db := database.GetDB()
-	err := models.SaveSettings(db, newSettings)
-	if err != nil {
+	saveErr := models.SaveSettings(db, newSettings)
+	if saveErr != nil {
 		fm := fiber.Map{
 			"type":    "error",
-			"message": "Fehler beim Speichern der Einstellungen: " + err.Error(),
+			"message": "Fehler beim Speichern der Einstellungen: " + saveErr.Error(),
 		}
 		return flash.WithError(c, fm).Redirect("/admin/settings")
 	}

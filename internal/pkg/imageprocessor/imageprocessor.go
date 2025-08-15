@@ -24,6 +24,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Thumbnail sizes
@@ -643,7 +644,7 @@ func updateImageRecord(imageModel *models.Image, width, height int, hasWebp, has
 
 	// Get or create metadata record
 	var metadata models.ImageMetadata
-	result := db.Where("image_id = ?", imageModel.ID).First(&metadata)
+	result := db.Session(&gorm.Session{Logger: logger.Default.LogMode(logger.Silent)}).Where("image_id = ?", imageModel.ID).First(&metadata)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// Create new metadata record if not found
