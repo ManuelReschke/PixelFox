@@ -13,10 +13,6 @@ import (
 	"github.com/sujit-baniya/flash"
 )
 
-const (
-	FROM_PROTECTED string = "from_protected"
-)
-
 func HandleStart(c *fiber.Ctx) error {
 	fromProtected := isLoggedIn(c)
 	csrfToken := c.Locals("csrf").(string)

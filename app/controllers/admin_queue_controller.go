@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -13,18 +12,42 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/sujit-baniya/flash"
 
-	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
+	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
 
-// HandleAdminQueues displays the admin queue monitor page
-func HandleAdminQueues(c *fiber.Ctx) error {
-	// Set admin-specific data and view model here
-	// We will fetch the queue items initially so the page isn't empty
-	queueItems, err := getQueueItems()
+// ============================================================================
+// ADMIN QUEUE CONTROLLER - Repository Pattern
+// ============================================================================
+
+// AdminQueueController handles admin queue-related HTTP requests using repository pattern
+type AdminQueueController struct {
+	queueRepo repository.QueueRepository
+}
+
+// NewAdminQueueController creates a new admin queue controller with repository
+func NewAdminQueueController(queueRepo repository.QueueRepository) *AdminQueueController {
+	return &AdminQueueController{
+		queueRepo: queueRepo,
+	}
+}
+
+// handleError is a helper method for consistent error handling
+func (aqc *AdminQueueController) handleError(c *fiber.Ctx, message string, err error) error {
+	fm := fiber.Map{
+		"type":    "error",
+		"message": message + ": " + err.Error(),
+	}
+	return flash.WithError(c, fm).Redirect("/admin/queues")
+}
+
+// HandleAdminQueues displays the admin queue monitor page using repository pattern
+func (aqc *AdminQueueController) HandleAdminQueues(c *fiber.Ctx) error {
+	// Get queue items using repository
+	queueItems, err := aqc.getQueueItems()
 	if err != nil {
 		queueItems = []admin_views.QueueItem{} // Empty slice if error
 	}
@@ -40,10 +63,10 @@ func HandleAdminQueues(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// HandleAdminQueuesData returns only the data portion for HTMX updates
-func HandleAdminQueuesData(c *fiber.Ctx) error {
-	// Get all queue items
-	queueItems, err := getQueueItems()
+// HandleAdminQueuesData returns only the data portion for HTMX updates using repository pattern
+func (aqc *AdminQueueController) HandleAdminQueuesData(c *fiber.Ctx) error {
+	// Get all queue items using repository
+	queueItems, err := aqc.getQueueItems()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": fmt.Sprintf("Fehler beim Abrufen der Queue-Daten: %v", err),
@@ -55,18 +78,15 @@ func HandleAdminQueuesData(c *fiber.Ctx) error {
 	return component.Render(c.Context(), c.Response().BodyWriter())
 }
 
-// HandleAdminQueueDelete deletes a specific cache entry
-func HandleAdminQueueDelete(c *fiber.Ctx) error {
+// HandleAdminQueueDelete deletes a specific cache entry using repository pattern
+func (aqc *AdminQueueController) HandleAdminQueueDelete(c *fiber.Ctx) error {
 	key := c.Params("key")
 	if key == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Schlüssel ist erforderlich")
 	}
 
-	redisClient := cache.GetClient()
-	ctx := context.Background()
-
-	// Delete the key from Redis
-	result, err := redisClient.Del(ctx, key).Result()
+	// Delete the key using repository
+	result, err := aqc.queueRepo.DeleteKey(key)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Fehler beim Löschen: %v", err))
 	}
@@ -79,13 +99,10 @@ func HandleAdminQueueDelete(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
-// getQueueItems retrieves all items from the cache with their metadata
-func getQueueItems() ([]admin_views.QueueItem, error) {
-	redisClient := cache.GetClient()
-	ctx := context.Background()
-
-	// Get all keys (use SCAN for production environments with large key sets)
-	keys, err := redisClient.Keys(ctx, "*").Result()
+// getQueueItems retrieves all items from the cache with their metadata using repository pattern
+func (aqc *AdminQueueController) getQueueItems() ([]admin_views.QueueItem, error) {
+	// Get all keys using repository
+	keys, err := aqc.queueRepo.GetAllKeys()
 	if err != nil {
 		return nil, fmt.Errorf("Fehler beim Abrufen der Cache-Schlüssel: %v", err)
 	}
@@ -93,15 +110,15 @@ func getQueueItems() ([]admin_views.QueueItem, error) {
 	queueItems := make([]admin_views.QueueItem, 0, len(keys))
 
 	for _, key := range keys {
-		// Get value
-		value, err := redisClient.Get(ctx, key).Result()
+		// Get value using repository
+		value, err := aqc.queueRepo.GetValue(key)
 		if err != nil && err != redis.Nil {
 			// Skip this key if there's an error other than key not found
 			continue
 		}
 
-		// Get TTL
-		ttl, err := redisClient.TTL(ctx, key).Result()
+		// Get TTL using repository
+		ttl, err := aqc.queueRepo.GetTTL(key)
 		if err != nil {
 			// If we can't get TTL, use a default
 			ttl = -1
@@ -131,14 +148,14 @@ func getQueueItems() ([]admin_views.QueueItem, error) {
 			itemType = "s3_backup_job"
 			// Extract job ID and try to get status from job data
 			jobID := strings.TrimPrefix(key, jobqueue.JobKeyPrefix)
-			displayValue = fmt.Sprintf("Job %s: %s", jobID, getJobStatusFromValue(value))
+			displayValue = fmt.Sprintf("Job %s: %s", jobID, aqc.getJobStatusFromValue(value))
 		} else if key == jobqueue.JobQueueKey {
 			itemType = "job_queue"
-			queueSize, _ := redisClient.LLen(ctx, key).Result()
+			queueSize, _ := aqc.queueRepo.GetListLength(key)
 			displayValue = fmt.Sprintf("Warteschlange (%d Jobs)", queueSize)
 		} else if key == jobqueue.JobProcessingKey {
 			itemType = "job_processing"
-			processingSize, _ := redisClient.LLen(ctx, key).Result()
+			processingSize, _ := aqc.queueRepo.GetListLength(key)
 			displayValue = fmt.Sprintf("In Bearbeitung (%d Jobs)", processingSize)
 		} else if key == jobqueue.JobStatsKey {
 			itemType = "job_stats"
@@ -188,7 +205,7 @@ func getQueueItems() ([]admin_views.QueueItem, error) {
 }
 
 // getJobStatusFromValue extracts job status from JSON job data
-func getJobStatusFromValue(jsonValue string) string {
+func (aqc *AdminQueueController) getJobStatusFromValue(jsonValue string) string {
 	// Simple extraction without full JSON parsing for performance
 	if strings.Contains(jsonValue, `"status":"pending"`) {
 		return "Wartend"
@@ -202,4 +219,24 @@ func getJobStatusFromValue(jsonValue string) string {
 		return "Wird wiederholt"
 	}
 	return "Unbekannt"
+}
+
+// ============================================================================
+// GLOBAL ADMIN QUEUE CONTROLLER INSTANCE - Singleton Pattern
+// ============================================================================
+
+var adminQueueController *AdminQueueController
+
+// InitializeAdminQueueController initializes the global admin queue controller
+func InitializeAdminQueueController() {
+	queueRepo := repository.GetGlobalFactory().GetQueueRepository()
+	adminQueueController = NewAdminQueueController(queueRepo)
+}
+
+// GetAdminQueueController returns the global admin queue controller instance
+func GetAdminQueueController() *AdminQueueController {
+	if adminQueueController == nil {
+		InitializeAdminQueueController()
+	}
+	return adminQueueController
 }

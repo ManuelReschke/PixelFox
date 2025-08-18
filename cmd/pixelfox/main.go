@@ -18,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 
+	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
@@ -62,6 +63,9 @@ func NewApplication() *fiber.App {
 
 	database.SetupDatabase()
 	cache.SetupCache()
+
+	// Initialize repository factory
+	repository.InitializeFactory(database.GetDB())
 
 	// Define possible base paths
 	basePaths := []string{

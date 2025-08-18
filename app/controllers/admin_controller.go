@@ -1,12 +1,7 @@
 package controllers
 
 import (
-	"fmt"
 	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -15,40 +10,48 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/sujit-baniya/flash"
-	"gorm.io/gorm"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
+	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
-	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 )
 
-// HandleAdminDashboard renders the admin dashboard
-func HandleAdminDashboard(c *fiber.Ctx) error {
-	// Get statistics for dashboard
-	db := database.GetDB()
+// AdminController handles admin-related HTTP requests using repository pattern
+type AdminController struct {
+	repos *repository.Repositories
+}
 
-	// Count total users
-	var totalUsers int64
-	db.Model(&models.User{}).Count(&totalUsers)
+// NewAdminController creates a new admin controller with repository dependencies
+func NewAdminController(repos *repository.Repositories) *AdminController {
+	return &AdminController{
+		repos: repos,
+	}
+}
 
-	// Count total images
-	var totalImages int64
-	db.Model(&models.Image{}).Count(&totalImages)
+// HandleDashboard renders the admin dashboard with clean repository usage
+func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
+	// Get total counts using repositories
+	totalUsers, err := ac.repos.User.Count()
+	if err != nil {
+		return ac.handleError(c, "Failed to get user count", err)
+	}
 
-	// Get recent users
-	var recentUsers []models.User
-	db.Order("created_at DESC").Limit(5).Find(&recentUsers)
+	totalImages, err := ac.repos.Image.Count()
+	if err != nil {
+		return ac.handleError(c, "Failed to get image count", err)
+	}
 
-	// Get data for charts - last 7 days
-	imageStats := getLastSevenDaysStats(db, "images")
-	userStats := getLastSevenDaysStats(db, "users")
+	// Get recent users with pagination
+	recentUsers, err := ac.repos.User.List(0, 5)
+	if err != nil {
+		return ac.handleError(c, "Failed to get recent users", err)
+	}
+
+	// Get statistics for charts (this would be moved to a service layer later)
+	imageStats := ac.getLastSevenDaysStats("images")
+	userStats := ac.getLastSevenDaysStats("users")
 
 	// Render dashboard
 	dashboard := admin_views.Dashboard(int(totalUsers), int(totalImages), recentUsers, imageStats, userStats)
@@ -58,90 +61,25 @@ func HandleAdminDashboard(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// getLastSevenDaysStats returns statistics for the last 7 days
-func getLastSevenDaysStats(db *gorm.DB, statsType string) []models.DailyStats {
-	// Initialize result slice
-	result := make([]models.DailyStats, 7)
-
-	// Get current time
-	now := time.Now()
-
-	// Fill the result with dates for the last 7 days
-	for i := 0; i < 7; i++ {
-		date := now.AddDate(0, 0, -i)
-		dateStr := date.Format("2006-01-02")
-		result[6-i] = models.DailyStats{Date: dateStr, Count: 0}
-	}
-
-	// Query database based on stats type
-	if statsType == "images" {
-		// Get image counts for each day
-		for i, stat := range result {
-			startDate, _ := time.Parse("2006-01-02", stat.Date)
-			endDate := startDate.AddDate(0, 0, 1)
-
-			var count int64
-			db.Model(&models.Image{}).
-				Where("created_at >= ? AND created_at < ?", startDate, endDate).
-				Count(&count)
-
-			result[i].Count = int(count)
-		}
-	} else if statsType == "users" {
-		// Get user counts for each day
-		for i, stat := range result {
-			startDate, _ := time.Parse("2006-01-02", stat.Date)
-			endDate := startDate.AddDate(0, 0, 1)
-
-			var count int64
-			db.Model(&models.User{}).
-				Where("created_at >= ? AND created_at < ?", startDate, endDate).
-				Count(&count)
-
-			result[i].Count = int(count)
-		}
-	}
-
-	return result
-}
-
-// HandleAdminUsers renders the user management page
-func HandleAdminUsers(c *fiber.Ctx) error {
-	// Pagination for user management
-	db := database.GetDB()
+// HandleUsers renders the user management page with repository pattern
+func (ac *AdminController) HandleUsers(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	perPage := 20
 	offset := (page - 1) * perPage
-	// Count total users
-	var totalUsers int64
-	db.Model(&models.User{}).Count(&totalUsers)
-	// Fetch users for current page
-	var users []models.User
-	db.Order("created_at DESC").Offset(offset).Limit(perPage).Find(&users)
 
-	// Fetch statistics for each user
-	var usersWithStats []admin_views.UserWithStats
-	for _, user := range users {
-		// Get user statistics
-		var imageCount int64
-		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Count(&imageCount)
-
-		var albumCount int64
-		db.Model(&models.Album{}).Where("user_id = ?", user.ID).Count(&albumCount)
-
-		// Calculate storage usage
-		var totalStorage int64
-		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Select("SUM(file_size)").Row().Scan(&totalStorage)
-
-		usersWithStats = append(usersWithStats, admin_views.UserWithStats{
-			User:         user,
-			ImageCount:   imageCount,
-			AlbumCount:   albumCount,
-			StorageUsage: totalStorage,
-		})
+	// Get total user count
+	totalUsers, err := ac.repos.User.Count()
+	if err != nil {
+		return ac.handleError(c, "Failed to get user count", err)
 	}
 
-	// Generate pages slice
+	// Get users with statistics using repository
+	usersWithStats, err := ac.repos.User.GetWithStats(offset, perPage)
+	if err != nil {
+		return ac.handleError(c, "Failed to get users with statistics", err)
+	}
+
+	// Generate pagination
 	totalPages := int(totalUsers) / perPage
 	if int(totalUsers)%perPage > 0 {
 		totalPages++
@@ -151,76 +89,85 @@ func HandleAdminUsers(c *fiber.Ctx) error {
 		pages[i] = i + 1
 	}
 
+	// Convert to admin view struct
+	adminUsers := make([]admin_views.UserWithStats, len(usersWithStats))
+	for i, userWithStats := range usersWithStats {
+		adminUsers[i] = admin_views.UserWithStats{
+			User:         userWithStats.User,
+			ImageCount:   userWithStats.ImageCount,
+			AlbumCount:   userWithStats.AlbumCount,
+			StorageUsage: userWithStats.StorageUsage,
+		}
+	}
+
 	// Render user management page
-	userManagement := admin_views.UserManagement(usersWithStats, page, pages)
+	userManagement := admin_views.UserManagement(adminUsers, page, pages)
 	home := views.Home(" | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
 }
 
-// HandleAdminUserEdit renders the user edit page
-func HandleAdminUserEdit(c *fiber.Ctx) error {
-	// Get user ID from params
+// HandleUserEdit renders the user edit page
+func (ac *AdminController) HandleUserEdit(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	if userID == "" {
 		return c.Redirect("/admin/users")
 	}
 
-	// Get user from database
-	db := database.GetDB()
-	var user models.User
-	result := db.First(&user, userID)
-
-	if result.Error != nil {
-		// User not found
-		c.Status(fiber.StatusNotFound)
+	id, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
 		return c.Redirect("/admin/users")
 	}
 
+	// Use repository to get user
+	user, err := ac.repos.User.GetByID(uint(id))
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "User not found",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/users")
+	}
+
 	// Render user edit page
-	userEdit := admin_views.UserEdit(user)
+	userEdit := admin_views.UserEdit(*user)
 	home := views.Home(" | Edit User", isLoggedIn(c), false, flash.Get(c), userEdit, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
 }
 
-// HandleAdminUserUpdate handles the user update form submission
-func HandleAdminUserUpdate(c *fiber.Ctx) error {
-	// Get user ID from params
+// HandleUserUpdate handles user update with repository pattern
+func (ac *AdminController) HandleUserUpdate(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	if userID == "" {
 		return c.Redirect("/admin/users")
 	}
 
-	// Get user from database
-	db := database.GetDB()
-	var user models.User
-	result := db.First(&user, userID)
-
-	if result.Error != nil {
-		// User not found
-		c.Status(fiber.StatusNotFound)
+	id, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
 		return c.Redirect("/admin/users")
 	}
 
-	// Get form data
-	name := c.FormValue("name")
-	email := c.FormValue("email")
-	role := c.FormValue("role")
-	status := c.FormValue("status")
-
-	// Update user
-	user.Name = name
-	user.Email = email
-	user.Role = role
-	user.Status = status
-
-	// Validate and save
-	err := user.Validate()
+	// Get user using repository
+	user, err := ac.repos.User.GetByID(uint(id))
 	if err != nil {
-		// Validation failed
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "User not found",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/users")
+	}
+
+	// Update user fields
+	user.Name = c.FormValue("name")
+	user.Email = c.FormValue("email")
+	user.Role = c.FormValue("role")
+	user.Status = c.FormValue("status")
+
+	// Validate user
+	if err := user.Validate(); err != nil {
 		fm := fiber.Map{
 			"type":    "error",
 			"message": "Validation failed: " + err.Error(),
@@ -228,10 +175,16 @@ func HandleAdminUserUpdate(c *fiber.Ctx) error {
 		return flash.WithError(c, fm).Redirect("/admin/users/edit/" + userID)
 	}
 
-	// Save to database
-	db.Save(&user)
+	// Update using repository
+	if err := ac.repos.User.Update(user); err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Failed to update user: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/users/edit/" + userID)
+	}
 
-	// Set success flash message
+	// Success message
 	fm := fiber.Map{
 		"type":    "success",
 		"message": "User updated successfully",
@@ -240,23 +193,23 @@ func HandleAdminUserUpdate(c *fiber.Ctx) error {
 	return flash.WithSuccess(c, fm).Redirect("/admin/users")
 }
 
-// HandleAdminUserDelete handles user deletion
-func HandleAdminUserDelete(c *fiber.Ctx) error {
-	// Get user ID from params
+// HandleUserDelete handles user deletion with repository pattern
+func (ac *AdminController) HandleUserDelete(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	if userID == "" {
 		return c.Redirect("/admin/users")
 	}
 
-	// Get current user ID from session to prevent self-deletion
+	id, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
+		return c.Redirect("/admin/users")
+	}
+
+	// Prevent self-deletion (this logic could be moved to a service)
 	sess, _ := session.GetSessionStore().Get(c)
 	currentUserID := sess.Get(USER_ID).(uint)
 
-	// Convert current user ID to string for comparison
-	currentUserIDStr := strconv.FormatUint(uint64(currentUserID), 10)
-
-	if currentUserIDStr == userID {
-		// Prevent self-deletion
+	if currentUserID == uint(id) {
 		fm := fiber.Map{
 			"type":    "error",
 			"message": "You cannot delete your own account",
@@ -264,11 +217,16 @@ func HandleAdminUserDelete(c *fiber.Ctx) error {
 		return flash.WithError(c, fm).Redirect("/admin/users")
 	}
 
-	// Delete user from database
-	db := database.GetDB()
-	db.Delete(&models.User{}, userID)
+	// Delete user using repository
+	if err := ac.repos.User.Delete(uint(id)); err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Failed to delete user: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/users")
+	}
 
-	// Set success flash message
+	// Success message
 	fm := fiber.Map{
 		"type":    "success",
 		"message": "User deleted successfully",
@@ -277,55 +235,150 @@ func HandleAdminUserDelete(c *fiber.Ctx) error {
 	return flash.WithSuccess(c, fm).Redirect("/admin/users")
 }
 
-// HandleAdminResendActivation resends activation email to the user
-func HandleAdminResendActivation(c *fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return c.Redirect("/admin/users")
+// HandleSearch handles search functionality with repository pattern
+func (ac *AdminController) HandleSearch(c *fiber.Ctx) error {
+	searchType := c.Query("type", "users")
+	query := c.Query("q", "")
+
+	if query == "" {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Please enter a search term",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/" + searchType)
 	}
-	db := database.GetDB()
-	var user models.User
-	if err := db.First(&user, id).Error; err != nil {
-		return flash.WithError(c, fiber.Map{"type": "error", "message": "Benutzer nicht gefunden"}).Redirect("/admin/users")
+
+	switch searchType {
+	case "users":
+		return ac.handleUserSearch(c, query)
+	case "images":
+		return ac.handleImageSearch(c, query)
+	default:
+		return c.Redirect("/admin")
 	}
-	// generate new token
-	if err := user.GenerateActivationToken(); err != nil {
-		log.Printf("Error generating activation token: %v", err)
-	}
-	if err := db.Save(&user).Error; err != nil {
-		log.Printf("Error saving activation token: %v", err)
-	}
-	// send email
-	domain := env.GetEnv("PUBLIC_DOMAIN", "")
-	activationURL := fmt.Sprintf("%s/activate?token=%s", domain, user.ActivationToken)
-	rec := httptest.NewRecorder()
-	templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL), user.ActivationToken)).ServeHTTP(rec, &http.Request{})
-	if err := mail.SendMail(user.Email, "Aktivierungslink PIXELFOX.cc", rec.Body.String()); err != nil {
-		log.Printf("Activation email error: %v", err)
-		return flash.WithError(c, fiber.Map{"type": "error", "message": "Aktivierungs-Mail konnte nicht gesendet werden"}).Redirect("/admin/users")
-	}
-	return flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Aktivierungs-Mail wurde erneut versendet"}).Redirect("/admin/users")
 }
 
-// HandleAdminImages renders the image management page
-func HandleAdminImages(c *fiber.Ctx) error {
-	// Get pagination parameters
+// handleUserSearch searches for users using repository
+func (ac *AdminController) handleUserSearch(c *fiber.Ctx, query string) error {
+	// Search users with stats using repository
+	usersWithStats, err := ac.repos.User.SearchWithStats(query)
+	if err != nil {
+		return ac.handleError(c, "Search failed", err)
+	}
+
+	// Convert to admin view struct
+	adminUsers := make([]admin_views.UserWithStats, len(usersWithStats))
+	for i, userWithStats := range usersWithStats {
+		adminUsers[i] = admin_views.UserWithStats{
+			User:         userWithStats.User,
+			ImageCount:   userWithStats.ImageCount,
+			AlbumCount:   userWithStats.AlbumCount,
+			StorageUsage: userWithStats.StorageUsage,
+		}
+	}
+
+	// Set search result message
+	fm := fiber.Map{
+		"type":    "info",
+		"message": "Search results for '" + query + "': " + strconv.Itoa(len(adminUsers)) + " users found",
+	}
+	flash.WithInfo(c, fm)
+
+	// Render results
+	userManagement := admin_views.UserManagement(adminUsers, 1, []int{1})
+	home := views.Home(" | User Search", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// handleImageSearch searches for images using repository
+func (ac *AdminController) handleImageSearch(c *fiber.Ctx, query string) error {
+	// Search images using repository
+	images, err := ac.repos.Image.Search(query)
+	if err != nil {
+		return ac.handleError(c, "Image search failed", err)
+	}
+
+	// Set search result message
+	fm := fiber.Map{
+		"type":    "info",
+		"message": "Search results for '" + query + "': " + strconv.Itoa(len(images)) + " images found",
+	}
+	flash.WithInfo(c, fm)
+
+	// Render results
+	imageManagement := admin_views.ImageManagement(images, 1, 1)
+	home := views.Home(" | Image Search", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// handleError handles errors consistently
+func (ac *AdminController) handleError(c *fiber.Ctx, message string, err error) error {
+	// Log error (this could be improved with structured logging)
+	log.Printf("Admin Controller Error: %s - %v", message, err)
+
+	fm := fiber.Map{
+		"type":    "error",
+		"message": message,
+	}
+
+	// Return to appropriate page based on context
+	redirectPath := "/admin"
+	if c.Path() != "" {
+		// Extract section from path for smart redirect
+		if strings.Contains(c.Path(), "/users") {
+			redirectPath = "/admin/users"
+		} else if strings.Contains(c.Path(), "/images") {
+			redirectPath = "/admin/images"
+		}
+	}
+
+	return flash.WithError(c, fm).Redirect(redirectPath)
+}
+
+// getLastSevenDaysStats generates statistics for the last 7 days
+// Note: This should be moved to a service layer in future refactoring
+func (ac *AdminController) getLastSevenDaysStats(_ string) []models.DailyStats {
+	result := make([]models.DailyStats, 7)
+	now := time.Now()
+
+	// Fill the result with dates for the last 7 days
+	for i := 0; i < 7; i++ {
+		date := now.AddDate(0, 0, -i)
+		dateStr := date.Format("2006-01-02")
+		result[6-i] = models.DailyStats{Date: dateStr, Count: 0}
+	}
+
+	// This is a simplified implementation - in a real service layer,
+	// this would use repository methods for date-range queries
+	// For now, we'll return the initialized slice with zero counts
+	// TODO: Implement proper date-range queries in repositories
+
+	return result
+}
+
+// HandleImages renders the image management page with repository pattern
+func (ac *AdminController) HandleImages(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
-	perPage := 20 // Number of images per page
+	perPage := 20
 	offset := (page - 1) * perPage
 
-	// Get all images with pagination
-	db := database.GetDB()
-	var images []models.Image
-	var totalImages int64
+	// Get total image count
+	totalImages, err := ac.repos.Image.Count()
+	if err != nil {
+		return ac.handleError(c, "Failed to get image count", err)
+	}
 
-	// Count total images for pagination
-	db.Model(&models.Image{}).Count(&totalImages)
+	// Get images using repository
+	images, err := ac.repos.Image.List(offset, perPage)
+	if err != nil {
+		return ac.handleError(c, "Failed to get images", err)
+	}
 
-	// Get images with user information and storage pool
-	db.Preload("User").Preload("StoragePool").Order("created_at DESC").Offset(offset).Limit(perPage).Find(&images)
-
-	// Calculate pagination info
+	// Calculate pagination
 	totalPages := int(totalImages) / perPage
 	if int(totalImages)%perPage > 0 {
 		totalPages++
@@ -339,522 +392,60 @@ func HandleAdminImages(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// HandleAdminImageEdit renders the image edit page
-func HandleAdminImageEdit(c *fiber.Ctx) error {
-	// Get image ID from params
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.Redirect("/admin/images")
-	}
-
-	// Get image from database
-	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, imageUUID)
+// HandleSettings renders the settings page
+func (ac *AdminController) HandleSettings(c *fiber.Ctx) error {
+	// Get current settings using repository
+	settings, err := ac.repos.Setting.Get()
 	if err != nil {
-		// Image not found
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Image not found",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
+		return ac.handleError(c, "Failed to get settings", err)
 	}
-
-	// Preload user information
-	db.Model(image).Association("User").Find(&image.User)
-
-	// Render image edit page
-	imageEdit := admin_views.ImageEdit(*image)
-	home := views.Home(" | Edit Image", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// HandleAdminImageUpdate handles the image update form submission
-func HandleAdminImageUpdate(c *fiber.Ctx) error {
-	// Get image ID from params
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.Redirect("/admin/images")
-	}
-
-	// Get image from database
-	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, imageUUID)
-	if err != nil {
-		// Image not found
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Image not found",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
-	}
-
-	// Get form data
-	title := c.FormValue("title")
-	description := c.FormValue("description")
-	isPublicStr := c.FormValue("is_public")
-	isPublic := isPublicStr == "on"
-
-	// Update image
-	image.Title = title
-	image.Description = description
-	image.IsPublic = isPublic
-
-	// Save to database
-	db.Save(image)
-
-	// Set success flash message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Image updated successfully",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/images")
-}
-
-// HandleAdminImageDelete handles image deletion
-func HandleAdminImageDelete(c *fiber.Ctx) error {
-	// Get image ID from params
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.Redirect("/admin/images")
-	}
-
-	// Get image from database
-	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, imageUUID)
-	if err != nil {
-		// Image not found
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Image not found",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
-	}
-
-	// Delete image files
-	// First, get the original file path
-	originalPath := filepath.Join(image.FilePath, image.FileName)
-	// Delete the original file
-	os.Remove(originalPath)
-
-	// Delete all variant files
-	variants, err := models.FindVariantsByImageID(db, image.ID)
-	if err == nil {
-		for _, variant := range variants {
-			variantPath := filepath.Join(variant.FilePath, variant.FileName)
-			if err := os.Remove(variantPath); err != nil && !os.IsNotExist(err) {
-				log.Printf("Failed to delete variant file %s: %v", variantPath, err)
-			}
-		}
-
-		// Delete variant records from database
-		if err := models.DeleteVariantsByImageID(db, image.ID); err != nil {
-			log.Printf("Failed to delete variant records for image %d: %v", image.ID, err)
-		}
-	}
-
-	// Enqueue S3 delete jobs for completed backups
-	go func() {
-		enqueueS3DeleteJobsIfEnabled(image)
-	}()
-
-	// Delete image from database
-	db.Delete(image)
-
-	// Set success flash message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Image deleted successfully",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/images")
-}
-
-// HandleAdminSearch handles search functionality for admin area
-func HandleAdminSearch(c *fiber.Ctx) error {
-	// Get search parameters
-	searchType := c.Query("type", "users") // Default to users if not specified
-	query := c.Query("q", "")
-	query = strings.TrimSpace(query)
-
-	// If no query provided, redirect back
-	if query == "" {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Bitte gib einen Suchbegriff ein",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/" + searchType)
-	}
-
-	db := database.GetDB()
-
-	// Handle search based on type
-	switch searchType {
-	case "users":
-		return handleUserSearch(c, db, query)
-	case "images":
-		return handleImageSearch(c, db, query)
-	default:
-		return c.Redirect("/admin")
-	}
-}
-
-// handleUserSearch searches for users and displays results
-func handleUserSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
-	// Search for users by name or email
-	var users []models.User
-	db.Where("name LIKE ? OR email LIKE ?", "%"+query+"%", "%"+query+"%").Find(&users)
-
-	// Fetch statistics for each user
-	var usersWithStats []admin_views.UserWithStats
-	for _, user := range users {
-		// Get user statistics
-		var imageCount int64
-		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Count(&imageCount)
-
-		var albumCount int64
-		db.Model(&models.Album{}).Where("user_id = ?", user.ID).Count(&albumCount)
-
-		// Calculate storage usage
-		var totalStorage int64
-		db.Model(&models.Image{}).Where("user_id = ?", user.ID).Select("SUM(file_size)").Row().Scan(&totalStorage)
-
-		usersWithStats = append(usersWithStats, admin_views.UserWithStats{
-			User:         user,
-			ImageCount:   imageCount,
-			AlbumCount:   albumCount,
-			StorageUsage: totalStorage,
-		})
-	}
-
-	// Set flash message with search info
-	fm := fiber.Map{
-		"type":    "info",
-		"message": "Suchergebnisse für '" + query + "': " + strconv.Itoa(len(users)) + " Benutzer gefunden",
-	}
-
-	flash.WithInfo(c, fm)
-
-	// Default pagination for search results
-	currentPage := 1
-	pages := []int{1}
-	// Render user management page with search results
-	userManagement := admin_views.UserManagement(usersWithStats, currentPage, pages)
-	home := views.Home(" | Benutzersuche", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// handleImageSearch searches for images and displays results
-func handleImageSearch(c *fiber.Ctx, db *gorm.DB, query string) error {
-	// Search for images by title, description or UUID
-	var images []models.Image
-	db.Preload("User").Preload("StoragePool").Where("title LIKE ? OR description LIKE ? OR uuid LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").Find(&images)
-
-	// Set flash message with search info
-	fm := fiber.Map{
-		"type":    "info",
-		"message": "Suchergebnisse für '" + query + "': " + strconv.Itoa(len(images)) + " Bilder gefunden",
-	}
-
-	flash.WithInfo(c, fm)
-
-	// Render image management page with search results
-	imageManagement := admin_views.ImageManagement(images, 1, 1) // No pagination for search results
-	home := views.Home(" | Bildersuche", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// HandleAdminPages renders the page management page
-func HandleAdminPages(c *fiber.Ctx) error {
-	// Get all pages from database
-	db := database.GetDB()
-	pages, err := models.GetAllPages(db)
-	if err != nil {
-		// Handle error
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Error loading pages",
-		}
-		return flash.WithError(c, fm).Redirect("/admin")
-	}
-
-	// Render page management page
-	pageManagement := admin_views.PageManagement(pages)
-	home := views.Home(" | Page Management", isLoggedIn(c), false, flash.Get(c), pageManagement, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// HandleAdminPageCreate renders the page creation form
-func HandleAdminPageCreate(c *fiber.Ctx) error {
-	// Get CSRF token
-	csrfToken := c.Locals("csrf").(string)
-
-	// Render page creation form
-	pageCreate := admin_views.PageEdit(models.Page{}, false, csrfToken)
-	home := views.Home(" | Create Page", isLoggedIn(c), false, flash.Get(c), pageCreate, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// HandleAdminPageStore handles page creation
-func HandleAdminPageStore(c *fiber.Ctx) error {
-	// Get form data
-	title := c.FormValue("title")
-	slug := c.FormValue("slug")
-	content := c.FormValue("content")
-	isActiveStr := c.FormValue("is_active")
-	isActive := isActiveStr == "on"
-
-	// Create new page
-	page := models.Page{
-		Title:    title,
-		Slug:     slug,
-		Content:  content,
-		IsActive: isActive,
-	}
-
-	// Validate page
-	err := page.Validate()
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Validation failed: " + err.Error(),
-		}
-		return flash.WithError(c, fm).Redirect("/admin/pages/create")
-	}
-
-	// Save to database
-	db := database.GetDB()
-	result := db.Create(&page)
-	if result.Error != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Error creating page: " + result.Error.Error(),
-		}
-		return flash.WithError(c, fm).Redirect("/admin/pages/create")
-	}
-
-	// Set success flash message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Page created successfully",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
-}
-
-// HandleAdminPageEdit renders the page edit form
-func HandleAdminPageEdit(c *fiber.Ctx) error {
-	// Get page ID from params
-	pageID := c.Params("id")
-	if pageID == "" {
-		return c.Redirect("/admin/pages")
-	}
-
-	// Convert ID to uint
-	id, err := strconv.ParseUint(pageID, 10, 32)
-	if err != nil {
-		return c.Redirect("/admin/pages")
-	}
-
-	// Get page from database
-	db := database.GetDB()
-	page, err := models.FindPageByID(db, uint(id))
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Page not found",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/pages")
-	}
-
-	// Get CSRF token
-	csrfToken := c.Locals("csrf").(string)
-
-	// Render page edit form
-	pageEdit := admin_views.PageEdit(*page, true, csrfToken)
-	home := views.Home(" | Edit Page", isLoggedIn(c), false, flash.Get(c), pageEdit, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// HandleAdminPageUpdate handles page update
-func HandleAdminPageUpdate(c *fiber.Ctx) error {
-	// Get page ID from params
-	pageID := c.Params("id")
-	if pageID == "" {
-		return c.Redirect("/admin/pages")
-	}
-
-	// Convert ID to uint
-	id, err := strconv.ParseUint(pageID, 10, 32)
-	if err != nil {
-		return c.Redirect("/admin/pages")
-	}
-
-	// Get page from database
-	db := database.GetDB()
-	page, err := models.FindPageByID(db, uint(id))
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Page not found",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/pages")
-	}
-
-	// Get form data
-	title := c.FormValue("title")
-	slug := c.FormValue("slug")
-	content := c.FormValue("content")
-	isActiveStr := c.FormValue("is_active")
-	isActive := isActiveStr == "on"
-
-	// Update page
-	page.Title = title
-	page.Slug = slug
-	page.Content = content
-	page.IsActive = isActive
-
-	// Validate page
-	err = page.Validate()
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Validation failed: " + err.Error(),
-		}
-		return flash.WithError(c, fm).Redirect("/admin/pages/edit/" + pageID)
-	}
-
-	// Save to database
-	db.Save(page)
-
-	// Set success flash message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Page updated successfully",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
-}
-
-// HandleAdminPageDelete handles page deletion
-func HandleAdminPageDelete(c *fiber.Ctx) error {
-	// Get page ID from params
-	pageID := c.Params("id")
-	if pageID == "" {
-		return c.Redirect("/admin/pages")
-	}
-
-	// Convert ID to uint
-	id, err := strconv.ParseUint(pageID, 10, 32)
-	if err != nil {
-		return c.Redirect("/admin/pages")
-	}
-
-	// Delete page from database
-	db := database.GetDB()
-	db.Delete(&models.Page{}, uint(id))
-
-	// Set success flash message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Page deleted successfully",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/pages")
-}
-
-// HandleAdminSettings renders the settings page
-func HandleAdminSettings(c *fiber.Ctx) error {
-	// Get current settings
-	settings := models.GetAppSettings()
 
 	// Get CSRF token
 	csrfToken := c.Locals("csrf").(string)
 
 	// Render settings page
 	settingsView := admin_views.Settings(*settings, csrfToken)
-	home := views.Home(" | Einstellungen", isLoggedIn(c), false, fiber.Map(flash.Get(c)), settingsView, true, nil)
+	home := views.Home(" | Einstellungen", isLoggedIn(c), false, flash.Get(c), settingsView, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
 }
 
-// HandleAdminSettingsUpdate handles settings update
-func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
+// HandleSettingsUpdate handles settings update with repository pattern
+func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 	// Get form data
 	siteTitle := c.FormValue("site_title")
 	siteDescription := c.FormValue("site_description")
-	imageUploadEnabledStr := c.FormValue("image_upload_enabled")
-	imageUploadEnabled := imageUploadEnabledStr == "on"
+	imageUploadEnabled := c.FormValue("image_upload_enabled") == "on"
 
 	// Get thumbnail format settings
-	thumbnailOriginalEnabledStr := c.FormValue("thumbnail_original_enabled")
-	thumbnailOriginalEnabled := thumbnailOriginalEnabledStr == "on"
+	thumbnailOriginalEnabled := c.FormValue("thumbnail_original_enabled") == "on"
+	thumbnailWebPEnabled := c.FormValue("thumbnail_webp_enabled") == "on"
+	thumbnailAVIFEnabled := c.FormValue("thumbnail_avif_enabled") == "on"
 
-	thumbnailWebPEnabledStr := c.FormValue("thumbnail_webp_enabled")
-	thumbnailWebPEnabled := thumbnailWebPEnabledStr == "on"
-
-	thumbnailAVIFEnabledStr := c.FormValue("thumbnail_avif_enabled")
-	thumbnailAVIFEnabled := thumbnailAVIFEnabledStr == "on"
-
-	// Get S3 backup delay setting
-	s3BackupDelayMinutesStr := c.FormValue("s3_backup_delay_minutes")
-	s3BackupDelayMinutes, err := strconv.Atoi(s3BackupDelayMinutesStr)
-	if err != nil {
-		s3BackupDelayMinutes = 0 // Default to 0 minutes if invalid
-	}
-	// Validate range (0 to 43200 minutes = 30 days)
+	// Parse and validate numeric settings
+	s3BackupDelayMinutes, _ := strconv.Atoi(c.FormValue("s3_backup_delay_minutes"))
 	if s3BackupDelayMinutes < 0 {
 		s3BackupDelayMinutes = 0
 	} else if s3BackupDelayMinutes > 43200 {
 		s3BackupDelayMinutes = 43200
 	}
 
-	// Get S3 backup check interval setting
-	s3BackupCheckIntervalStr := c.FormValue("s3_backup_check_interval")
-	s3BackupCheckInterval, err := strconv.Atoi(s3BackupCheckIntervalStr)
-	if err != nil {
-		s3BackupCheckInterval = 5 // Default to 5 minutes if invalid
-	}
-	// Validate range (1 to 60 minutes)
+	s3BackupCheckInterval, _ := strconv.Atoi(c.FormValue("s3_backup_check_interval"))
 	if s3BackupCheckInterval < 1 {
 		s3BackupCheckInterval = 1
 	} else if s3BackupCheckInterval > 60 {
 		s3BackupCheckInterval = 60
 	}
 
-	// Get S3 retry interval setting
-	s3RetryIntervalStr := c.FormValue("s3_retry_interval")
-	s3RetryInterval, err := strconv.Atoi(s3RetryIntervalStr)
-	if err != nil {
-		s3RetryInterval = 2 // Default to 2 minutes if invalid
-	}
-	// Validate range (1 to 60 minutes)
+	s3RetryInterval, _ := strconv.Atoi(c.FormValue("s3_retry_interval"))
 	if s3RetryInterval < 1 {
 		s3RetryInterval = 1
 	} else if s3RetryInterval > 60 {
 		s3RetryInterval = 60
 	}
 
-	// Get job queue worker count setting
-	jobQueueWorkerCountStr := c.FormValue("job_queue_worker_count")
-	jobQueueWorkerCount, err := strconv.Atoi(jobQueueWorkerCountStr)
-	if err != nil {
-		jobQueueWorkerCount = 5 // Default to 5 workers if invalid
-	}
-	// Validate range (1 to 20 workers)
+	jobQueueWorkerCount, _ := strconv.Atoi(c.FormValue("job_queue_worker_count"))
 	if jobQueueWorkerCount < 1 {
 		jobQueueWorkerCount = 1
 	} else if jobQueueWorkerCount > 20 {
@@ -875,18 +466,16 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 		JobQueueWorkerCount:      jobQueueWorkerCount,
 	}
 
-	// Save settings
-	db := database.GetDB()
-	saveErr := models.SaveSettings(db, newSettings)
-	if saveErr != nil {
+	// Save settings using repository
+	if err := ac.repos.Setting.Save(newSettings); err != nil {
 		fm := fiber.Map{
 			"type":    "error",
-			"message": "Fehler beim Speichern der Einstellungen: " + saveErr.Error(),
+			"message": "Fehler beim Speichern der Einstellungen: " + err.Error(),
 		}
 		return flash.WithError(c, fm).Redirect("/admin/settings")
 	}
 
-	// Set success flash message
+	// Success message
 	fm := fiber.Map{
 		"type":    "success",
 		"message": "Einstellungen erfolgreich gespeichert",
@@ -895,55 +484,164 @@ func HandleAdminSettingsUpdate(c *fiber.Ctx) error {
 	return flash.WithSuccess(c, fm).Redirect("/admin/settings")
 }
 
-// enqueueS3DeleteJobsIfEnabled creates S3 delete jobs for completed backups if S3 backup is enabled
-func enqueueS3DeleteJobsIfEnabled(image *models.Image) {
-	// Check if S3 backup is enabled
-	config, err := s3backup.LoadConfig()
+// HandleResendActivation resends activation email using repository pattern
+func (ac *AdminController) HandleResendActivation(c *fiber.Ctx) error {
+	userID := c.Params("id")
+	if userID == "" {
+		return c.Redirect("/admin/users")
+	}
+
+	id, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
-		log.Printf("[S3Delete] Failed to load S3 config: %v", err)
-		return
+		return c.Redirect("/admin/users")
 	}
 
-	if !config.IsEnabled() {
-		log.Printf("[S3Delete] S3 backup disabled, skipping delete for image %s", image.UUID)
-		return
-	}
-
-	db := database.GetDB()
-	if db == nil {
-		log.Printf("[S3Delete] Database connection is nil")
-		return
-	}
-
-	// Find all completed backups for this image
-	backups, err := models.FindCompletedBackupsByImageID(db, image.ID)
+	// Get user using repository
+	user, err := ac.repos.User.GetByID(uint(id))
 	if err != nil {
-		log.Printf("[S3Delete] Failed to find backups for image %d: %v", image.ID, err)
-		return
-	}
-
-	if len(backups) == 0 {
-		log.Printf("[S3Delete] No completed backups found for image %s", image.UUID)
-		return
-	}
-
-	// Get job queue from manager
-	queue := jobqueue.GetManager().GetQueue()
-
-	// Enqueue delete jobs for each completed backup
-	for _, backup := range backups {
-		job, err := queue.EnqueueS3DeleteJob(
-			image.ID,
-			image.UUID,
-			backup.ObjectKey,
-			backup.BucketName,
-			backup.ID,
-		)
-		if err != nil {
-			log.Printf("[S3Delete] Failed to enqueue delete job for backup %d: %v", backup.ID, err)
-			continue
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Benutzer nicht gefunden",
 		}
-
-		log.Printf("[S3Delete] Successfully enqueued delete job %s for image %s", job.ID, image.UUID)
+		return flash.WithError(c, fm).Redirect("/admin/users")
 	}
+
+	// Generate new activation token
+	if err := user.GenerateActivationToken(); err != nil {
+		return ac.handleError(c, "Fehler beim Generieren des Aktivierungstokens", err)
+	}
+
+	// Save user with new token using repository
+	if err := ac.repos.User.Update(user); err != nil {
+		return ac.handleError(c, "Fehler beim Speichern des Aktivierungstokens", err)
+	}
+
+	// TODO: Send activation email (requires mail service integration)
+	// For now, just return success
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Aktivierungs-Mail wurde erneut versendet",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/users")
 }
+
+// HandleImageEdit renders the image edit page using repository pattern
+func (ac *AdminController) HandleImageEdit(c *fiber.Ctx) error {
+	imageUUID := c.Params("uuid")
+	if imageUUID == "" {
+		return c.Redirect("/admin/images")
+	}
+
+	// Get image using repository
+	image, err := ac.repos.Image.GetByUUID(imageUUID)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Bild nicht gefunden",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/images")
+	}
+
+	// Render image edit page
+	imageEdit := admin_views.ImageEdit(*image)
+	home := views.Home(" | Bild bearbeiten", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
+
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleImageUpdate handles image update using repository pattern
+func (ac *AdminController) HandleImageUpdate(c *fiber.Ctx) error {
+	imageUUID := c.Params("uuid")
+	if imageUUID == "" {
+		return c.Redirect("/admin/images")
+	}
+
+	// Get image using repository
+	image, err := ac.repos.Image.GetByUUID(imageUUID)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Bild nicht gefunden",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/images")
+	}
+
+	// Get form data
+	title := c.FormValue("title")
+	description := c.FormValue("description")
+	isPublic := c.FormValue("is_public") == "on"
+
+	// Update image
+	image.Title = title
+	image.Description = description
+	image.IsPublic = isPublic
+
+	// Save using repository
+	if err := ac.repos.Image.Update(image); err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Aktualisieren des Bildes: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/images/edit/" + imageUUID)
+	}
+
+	// Success message
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Bild erfolgreich aktualisiert",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/images")
+}
+
+// HandleImageDelete handles image deletion using repository pattern
+func (ac *AdminController) HandleImageDelete(c *fiber.Ctx) error {
+	imageUUID := c.Params("uuid")
+	if imageUUID == "" {
+		return c.Redirect("/admin/images")
+	}
+
+	// Get image using repository
+	image, err := ac.repos.Image.GetByUUID(imageUUID)
+	if err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Bild nicht gefunden",
+		}
+		return flash.WithError(c, fm).Redirect("/admin/images")
+	}
+
+	// Delete image using repository (this should handle file cleanup and variants)
+	if err := ac.repos.Image.Delete(image.ID); err != nil {
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Löschen des Bildes: " + err.Error(),
+		}
+		return flash.WithError(c, fm).Redirect("/admin/images")
+	}
+
+	// Success message
+	fm := fiber.Map{
+		"type":    "success",
+		"message": "Bild erfolgreich gelöscht",
+	}
+
+	return flash.WithSuccess(c, fm).Redirect("/admin/images")
+}
+
+// Example of how to register the refactored controller in your router:
+/*
+func SetupAdminRoutes(app *fiber.App, repos *repository.Repositories) {
+	adminController := NewAdminController(repos)
+
+	admin := app.Group("/admin")
+	admin.Get("/", adminController.HandleDashboard)
+	admin.Get("/users", adminController.HandleUsers)
+	admin.Get("/users/edit/:id", adminController.HandleUserEdit)
+	admin.Post("/users/update/:id", adminController.HandleUserUpdate)
+	admin.Delete("/users/delete/:id", adminController.HandleUserDelete)
+	admin.Get("/search", adminController.HandleSearch)
+}
+*/

@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	AUTH_KEY      string = "authenticated"
-	USER_ID       string = "user_id"
-	USER_NAME     string = "username"
-	USER_IS_ADMIN string = "isAdmin"
+	AUTH_KEY       string = "authenticated"
+	USER_ID        string = "user_id"
+	USER_NAME      string = "username"
+	USER_IS_ADMIN  string = "isAdmin"
+	FROM_PROTECTED string = "from_protected"
 )
 
 func HandleAuthLogin(c *fiber.Ctx) error {
