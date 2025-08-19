@@ -24,7 +24,7 @@ Important! If you want to make changes to the database, modify the model, check 
 
 ## Development Commands
 
-If you want to check if your changes are working just connect to app container and look into the logs. Auto build is not enabled by default.
+If you want to check if your changes are working just connect to app container and look into the logs. Auto build is enabled by default with air.
 
 ### Docker Environment
 ```bash

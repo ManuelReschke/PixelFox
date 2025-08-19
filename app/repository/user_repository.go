@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"gorm.io/gorm"
@@ -167,4 +168,36 @@ func (r *userRepository) getUserStats(userID uint) (*userStats, error) {
 	}
 
 	return &stats, nil
+}
+
+// GetDailyStats returns daily user registration statistics for a date range
+func (r *userRepository) GetDailyStats(startDate, endDate time.Time) ([]models.DailyStats, error) {
+	var results []struct {
+		Date  string `json:"date"`
+		Count int64  `json:"count"`
+	}
+
+	// Query to get daily user registration counts
+	// Use DATE_FORMAT for MySQL compatibility and proper date formatting
+	err := r.db.Model(&models.User{}).
+		Select("DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count").
+		Where("created_at BETWEEN ? AND ?", startDate, endDate).
+		Group("DATE_FORMAT(created_at, '%Y-%m-%d')").
+		Order("date").
+		Find(&results).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get daily user stats: %w", err)
+	}
+
+	// Convert to DailyStats slice
+	dailyStats := make([]models.DailyStats, len(results))
+	for i, result := range results {
+		dailyStats[i] = models.DailyStats{
+			Date:  result.Date,
+			Count: int(result.Count),
+		}
+	}
+
+	return dailyStats, nil
 }

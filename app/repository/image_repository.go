@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"gorm.io/gorm"
@@ -154,4 +156,36 @@ func (r *imageRepository) GetVariants(imageID uint) ([]models.ImageVariant, erro
 // DeleteVariants deletes all variants for a specific image
 func (r *imageRepository) DeleteVariants(imageID uint) error {
 	return r.db.Where("image_id = ?", imageID).Delete(&models.ImageVariant{}).Error
+}
+
+// GetDailyStats returns daily image upload statistics for a date range
+func (r *imageRepository) GetDailyStats(startDate, endDate time.Time) ([]models.DailyStats, error) {
+	var results []struct {
+		Date  string `json:"date"`
+		Count int64  `json:"count"`
+	}
+
+	// Query to get daily image upload counts
+	// Use DATE_FORMAT for MySQL compatibility and proper date formatting
+	err := r.db.Model(&models.Image{}).
+		Select("DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count").
+		Where("created_at BETWEEN ? AND ?", startDate, endDate).
+		Group("DATE_FORMAT(created_at, '%Y-%m-%d')").
+		Order("date").
+		Find(&results).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get daily image stats: %w", err)
+	}
+
+	// Convert to DailyStats slice
+	dailyStats := make([]models.DailyStats, len(results))
+	for i, result := range results {
+		dailyStats[i] = models.DailyStats{
+			Date:  result.Date,
+			Count: int(result.Count),
+		}
+	}
+
+	return dailyStats, nil
 }

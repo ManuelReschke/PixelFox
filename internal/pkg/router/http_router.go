@@ -4,10 +4,11 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/controllers"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
-	"time"
 )
 
 type HttpRouter struct {
@@ -31,6 +32,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// Initialize admin storage controller with repository
 	controllers.InitializeAdminStorageController()
+
+	// Initialize admin images controller with repository
+	controllers.InitializeAdminImagesController()
 
 	// API
 	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)

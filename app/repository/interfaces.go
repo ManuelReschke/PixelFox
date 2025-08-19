@@ -20,6 +20,7 @@ type UserRepository interface {
 	Search(query string) ([]models.User, error)
 	GetWithStats(offset, limit int) ([]UserWithStats, error)
 	SearchWithStats(query string) ([]UserWithStats, error)
+	GetDailyStats(startDate, endDate time.Time) ([]models.DailyStats, error)
 }
 
 // ImageRepository defines the interface for image-related database operations
@@ -42,6 +43,7 @@ type ImageRepository interface {
 	UpdateDownloadCount(id uint) error
 	GetVariants(imageID uint) ([]models.ImageVariant, error)
 	DeleteVariants(imageID uint) error
+	GetDailyStats(startDate, endDate time.Time) ([]models.DailyStats, error)
 }
 
 // AlbumRepository defines the interface for album-related database operations

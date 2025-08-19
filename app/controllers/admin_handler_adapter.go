@@ -49,9 +49,9 @@ func HandleAdminUserDelete(c *fiber.Ctx) error {
 	return GetAdminController().HandleUserDelete(c)
 }
 
-// HandleAdminImages - Adapter for image management
+// HandleAdminImages - Adapter for image management using dedicated AdminImagesController
 func HandleAdminImages(c *fiber.Ctx) error {
-	return GetAdminController().HandleImages(c)
+	return GetAdminImagesController().HandleAdminImages(c)
 }
 
 // HandleAdminSearch - Adapter for search functionality
@@ -76,19 +76,19 @@ func HandleAdminResendActivation(c *fiber.Ctx) error {
 	return GetAdminController().HandleResendActivation(c)
 }
 
-// HandleAdminImageEdit - Adapter for image edit
+// HandleAdminImageEdit - Adapter for image edit using dedicated AdminImagesController
 func HandleAdminImageEdit(c *fiber.Ctx) error {
-	return GetAdminController().HandleImageEdit(c)
+	return GetAdminImagesController().HandleAdminImageEdit(c)
 }
 
-// HandleAdminImageUpdate - Adapter for image update
+// HandleAdminImageUpdate - Adapter for image update using dedicated AdminImagesController
 func HandleAdminImageUpdate(c *fiber.Ctx) error {
-	return GetAdminController().HandleImageUpdate(c)
+	return GetAdminImagesController().HandleAdminImageUpdate(c)
 }
 
-// HandleAdminImageDelete - Adapter for image delete
+// HandleAdminImageDelete - Adapter for image delete using dedicated AdminImagesController
 func HandleAdminImageDelete(c *fiber.Ctx) error {
-	return GetAdminController().HandleImageDelete(c)
+	return GetAdminImagesController().HandleAdminImageDelete(c)
 }
 
 // News Management - Repository Pattern Functions using dedicated AdminNewsController

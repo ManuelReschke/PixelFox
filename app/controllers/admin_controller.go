@@ -292,27 +292,9 @@ func (ac *AdminController) handleUserSearch(c *fiber.Ctx, query string) error {
 	return handler(c)
 }
 
-// handleImageSearch searches for images using repository
+// handleImageSearch searches for images using dedicated AdminImagesController
 func (ac *AdminController) handleImageSearch(c *fiber.Ctx, query string) error {
-	// Search images using repository
-	images, err := ac.repos.Image.Search(query)
-	if err != nil {
-		return ac.handleError(c, "Image search failed", err)
-	}
-
-	// Set search result message
-	fm := fiber.Map{
-		"type":    "info",
-		"message": "Search results for '" + query + "': " + strconv.Itoa(len(images)) + " images found",
-	}
-	flash.WithInfo(c, fm)
-
-	// Render results
-	imageManagement := admin_views.ImageManagement(images, 1, 1)
-	home := views.Home(" | Image Search", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
+	return GetAdminImagesController().HandleAdminImageSearch(c, query)
 }
 
 // handleError handles errors consistently
@@ -339,57 +321,71 @@ func (ac *AdminController) handleError(c *fiber.Ctx, message string, err error) 
 	return flash.WithError(c, fm).Redirect(redirectPath)
 }
 
-// getLastSevenDaysStats generates statistics for the last 7 days
-// Note: This should be moved to a service layer in future refactoring
-func (ac *AdminController) getLastSevenDaysStats(_ string) []models.DailyStats {
-	result := make([]models.DailyStats, 7)
+// getLastSevenDaysStats generates statistics for the last 7 days using repositories
+func (ac *AdminController) getLastSevenDaysStats(statsType string) []models.DailyStats {
 	now := time.Now()
+	// Start date is 7 days ago at midnight
+	startDate := now.AddDate(0, 0, -6).Truncate(24 * time.Hour)
+	// End date is today at 23:59:59
+	endDate := now.Truncate(24 * time.Hour).Add(24*time.Hour - time.Nanosecond)
 
-	// Fill the result with dates for the last 7 days
-	for i := 0; i < 7; i++ {
-		date := now.AddDate(0, 0, -i)
-		dateStr := date.Format("2006-01-02")
-		result[6-i] = models.DailyStats{Date: dateStr, Count: 0}
+	var stats []models.DailyStats
+	var err error
+
+	// Get stats from appropriate repository
+	switch statsType {
+	case "users":
+		stats, err = ac.repos.User.GetDailyStats(startDate, endDate)
+	case "images":
+		stats, err = ac.repos.Image.GetDailyStats(startDate, endDate)
+	default:
+		// Return empty stats for unknown type
+		return ac.createEmptyDailyStats(7)
 	}
 
-	// This is a simplified implementation - in a real service layer,
-	// this would use repository methods for date-range queries
-	// For now, we'll return the initialized slice with zero counts
-	// TODO: Implement proper date-range queries in repositories
+	if err != nil {
+		// Log error and return empty stats
+		log.Printf("Error getting daily stats for %s: %v", statsType, err)
+		return ac.createEmptyDailyStats(7)
+	}
+
+	// Fill gaps for days with no data
+	return ac.fillStatGaps(stats, startDate, 7)
+}
+
+// createEmptyDailyStats creates a slice of DailyStats with zero counts for the last n days
+func (ac *AdminController) createEmptyDailyStats(days int) []models.DailyStats {
+	result := make([]models.DailyStats, days)
+	now := time.Now()
+
+	for i := 0; i < days; i++ {
+		date := now.AddDate(0, 0, -(days - 1 - i))
+		dateStr := date.Format("2006-01-02")
+		result[i] = models.DailyStats{Date: dateStr, Count: 0}
+	}
 
 	return result
 }
 
-// HandleImages renders the image management page with repository pattern
-func (ac *AdminController) HandleImages(c *fiber.Ctx) error {
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	perPage := 20
-	offset := (page - 1) * perPage
+// fillStatGaps fills missing dates in stats with zero counts
+func (ac *AdminController) fillStatGaps(stats []models.DailyStats, startDate time.Time, days int) []models.DailyStats {
+	result := make([]models.DailyStats, days)
+	statsMap := make(map[string]int)
 
-	// Get total image count
-	totalImages, err := ac.repos.Image.Count()
-	if err != nil {
-		return ac.handleError(c, "Failed to get image count", err)
+	// Create map for quick lookup
+	for _, stat := range stats {
+		statsMap[stat.Date] = stat.Count
 	}
 
-	// Get images using repository
-	images, err := ac.repos.Image.List(offset, perPage)
-	if err != nil {
-		return ac.handleError(c, "Failed to get images", err)
+	// Fill result with data or zero counts
+	for i := 0; i < days; i++ {
+		date := startDate.AddDate(0, 0, i)
+		dateStr := date.Format("2006-01-02")
+		count := statsMap[dateStr] // defaults to 0 if not found
+		result[i] = models.DailyStats{Date: dateStr, Count: count}
 	}
 
-	// Calculate pagination
-	totalPages := int(totalImages) / perPage
-	if int(totalImages)%perPage > 0 {
-		totalPages++
-	}
-
-	// Render image management page
-	imageManagement := admin_views.ImageManagement(images, page, totalPages)
-	home := views.Home(" | Image Management", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
+	return result
 }
 
 // HandleSettings renders the settings page
@@ -524,111 +520,6 @@ func (ac *AdminController) HandleResendActivation(c *fiber.Ctx) error {
 	}
 
 	return flash.WithSuccess(c, fm).Redirect("/admin/users")
-}
-
-// HandleImageEdit renders the image edit page using repository pattern
-func (ac *AdminController) HandleImageEdit(c *fiber.Ctx) error {
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.Redirect("/admin/images")
-	}
-
-	// Get image using repository
-	image, err := ac.repos.Image.GetByUUID(imageUUID)
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Bild nicht gefunden",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
-	}
-
-	// Render image edit page
-	imageEdit := admin_views.ImageEdit(*image)
-	home := views.Home(" | Bild bearbeiten", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-	return handler(c)
-}
-
-// HandleImageUpdate handles image update using repository pattern
-func (ac *AdminController) HandleImageUpdate(c *fiber.Ctx) error {
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.Redirect("/admin/images")
-	}
-
-	// Get image using repository
-	image, err := ac.repos.Image.GetByUUID(imageUUID)
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Bild nicht gefunden",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
-	}
-
-	// Get form data
-	title := c.FormValue("title")
-	description := c.FormValue("description")
-	isPublic := c.FormValue("is_public") == "on"
-
-	// Update image
-	image.Title = title
-	image.Description = description
-	image.IsPublic = isPublic
-
-	// Save using repository
-	if err := ac.repos.Image.Update(image); err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Fehler beim Aktualisieren des Bildes: " + err.Error(),
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images/edit/" + imageUUID)
-	}
-
-	// Success message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Bild erfolgreich aktualisiert",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/images")
-}
-
-// HandleImageDelete handles image deletion using repository pattern
-func (ac *AdminController) HandleImageDelete(c *fiber.Ctx) error {
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.Redirect("/admin/images")
-	}
-
-	// Get image using repository
-	image, err := ac.repos.Image.GetByUUID(imageUUID)
-	if err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Bild nicht gefunden",
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
-	}
-
-	// Delete image using repository (this should handle file cleanup and variants)
-	if err := ac.repos.Image.Delete(image.ID); err != nil {
-		fm := fiber.Map{
-			"type":    "error",
-			"message": "Fehler beim Löschen des Bildes: " + err.Error(),
-		}
-		return flash.WithError(c, fm).Redirect("/admin/images")
-	}
-
-	// Success message
-	fm := fiber.Map{
-		"type":    "success",
-		"message": "Bild erfolgreich gelöscht",
-	}
-
-	return flash.WithSuccess(c, fm).Redirect("/admin/images")
 }
 
 // Example of how to register the refactored controller in your router:
