@@ -118,3 +118,76 @@ func (r *storagePoolRepository) GetStats(id uint) (*models.StoragePoolStats, err
 func (r *storagePoolRepository) GetAllStats() ([]models.StoragePoolStats, error) {
 	return models.GetAllStoragePoolStats(r.db)
 }
+
+// GetHealthStatus performs health checks on all storage pools
+func (r *storagePoolRepository) GetHealthStatus() (map[uint]bool, error) {
+	pools, err := r.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	healthStatus := make(map[uint]bool)
+	for _, pool := range pools {
+		healthStatus[pool.ID] = pool.IsHealthy()
+	}
+
+	return healthStatus, nil
+}
+
+// IsPoolHealthy checks if a specific storage pool is healthy
+func (r *storagePoolRepository) IsPoolHealthy(id uint) (bool, error) {
+	pool, err := r.GetByID(id)
+	if err != nil {
+		return false, err
+	}
+
+	return pool.IsHealthy(), nil
+}
+
+// CountImagesInPool counts the number of images in a specific storage pool
+func (r *storagePoolRepository) CountImagesInPool(poolID uint) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Image{}).Where("storage_pool_id = ?", poolID).Count(&count).Error
+	return count, err
+}
+
+// CountVariantsInPool counts the number of image variants in a specific storage pool
+func (r *storagePoolRepository) CountVariantsInPool(poolID uint) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&count).Error
+	return count, err
+}
+
+// RecalculatePoolUsage recalculates the actual usage of a storage pool
+func (r *storagePoolRepository) RecalculatePoolUsage(poolID uint) (int64, error) {
+	// Sum image file sizes
+	var imageSize int64
+	err := r.db.Model(&models.Image{}).
+		Where("storage_pool_id = ?", poolID).
+		Select("COALESCE(SUM(file_size), 0)").
+		Scan(&imageSize).Error
+	if err != nil {
+		return 0, err
+	}
+
+	// Sum variant file sizes
+	var variantSize int64
+	err = r.db.Model(&models.ImageVariant{}).
+		Where("storage_pool_id = ?", poolID).
+		Select("COALESCE(SUM(file_size), 0)").
+		Scan(&variantSize).Error
+	if err != nil {
+		return 0, err
+	}
+
+	totalSize := imageSize + variantSize
+
+	// Update the pool with calculated usage
+	err = r.db.Model(&models.StoragePool{}).Where("id = ?", poolID).
+		Update("used_size", totalSize).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return totalSize, nil
+}

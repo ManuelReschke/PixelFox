@@ -12,19 +12,40 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
+	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
 
-// HandleAdminStorageManagement renders the storage management dashboard
-func HandleAdminStorageManagement(c *fiber.Ctx) error {
-	db := database.GetDB()
-	storageManager := storage.NewStorageManager()
+// ============================================================================
+// ADMIN STORAGE CONTROLLER - Repository Pattern
+// ============================================================================
 
-	// Get all storage pool statistics
-	poolStats, err := storageManager.GetAllPoolStats()
+// AdminStorageController handles admin storage-related HTTP requests using repository pattern
+type AdminStorageController struct {
+	storagePoolRepo repository.StoragePoolRepository
+}
+
+// NewAdminStorageController creates a new admin storage controller with repository
+func NewAdminStorageController(storagePoolRepo repository.StoragePoolRepository) *AdminStorageController {
+	return &AdminStorageController{
+		storagePoolRepo: storagePoolRepo,
+	}
+}
+
+// handleError is a helper method for consistent error handling
+func (asc *AdminStorageController) handleError(c *fiber.Ctx, message string, err error) error {
+	fm := fiber.Map{
+		"type":    "error",
+		"message": message + ": " + err.Error(),
+	}
+	return flash.WithError(c, fm).Redirect("/admin/storage")
+}
+
+// HandleAdminStorageManagement renders the storage management dashboard using repository pattern
+func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) error {
+	// Get all storage pool statistics using repository
+	poolStats, err := asc.storagePoolRepo.GetAllStats()
 	if err != nil {
 		fm := fiber.Map{
 			"type":    "error",
@@ -34,8 +55,8 @@ func HandleAdminStorageManagement(c *fiber.Ctx) error {
 		poolStats = []models.StoragePoolStats{}
 	}
 
-	// Perform health checks
-	healthStatus, err := storageManager.HealthCheck()
+	// Perform health checks using repository
+	healthStatus, err := asc.storagePoolRepo.GetHealthStatus()
 	if err != nil {
 		fm := fiber.Map{
 			"type":    "error",
@@ -45,8 +66,8 @@ func HandleAdminStorageManagement(c *fiber.Ctx) error {
 		healthStatus = make(map[uint]bool)
 	}
 
-	// Get all storage pools for management
-	pools, err := models.FindAllStoragePools(db)
+	// Get all storage pools for management using repository
+	pools, err := asc.storagePoolRepo.GetAll()
 	if err != nil {
 		fm := fiber.Map{
 			"type":    "error",
@@ -112,8 +133,8 @@ func HandleAdminStorageManagement(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// HandleAdminCreateStoragePool shows the create storage pool form
-func HandleAdminCreateStoragePool(c *fiber.Ctx) error {
+// HandleAdminCreateStoragePool shows the create storage pool form using repository pattern
+func (asc *AdminStorageController) HandleAdminCreateStoragePool(c *fiber.Ctx) error {
 	csrfToken := c.Locals("csrf").(string)
 
 	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false, csrfToken)
@@ -123,10 +144,8 @@ func HandleAdminCreateStoragePool(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// HandleAdminCreateStoragePoolPost processes the create storage pool form
-func HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
-	db := database.GetDB()
-
+// HandleAdminCreateStoragePoolPost processes the create storage pool form using repository pattern
+func (asc *AdminStorageController) HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
 	// Parse form data
 	pool := models.StoragePool{
 		Name:        strings.TrimSpace(c.FormValue("name")),
@@ -235,8 +254,8 @@ func HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage/create")
 	}
 
-	// Create storage pool
-	if err := db.Create(&pool).Error; err != nil {
+	// Create storage pool using repository
+	if err := asc.storagePoolRepo.Create(&pool); err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			fm := fiber.Map{
 				"type":    "error",
@@ -261,10 +280,8 @@ func HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
 	return c.Redirect("/admin/storage")
 }
 
-// HandleAdminEditStoragePool shows the edit storage pool form
-func HandleAdminEditStoragePool(c *fiber.Ctx) error {
-	db := database.GetDB()
-
+// HandleAdminEditStoragePool shows the edit storage pool form using repository pattern
+func (asc *AdminStorageController) HandleAdminEditStoragePool(c *fiber.Ctx) error {
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		fm := fiber.Map{
@@ -275,7 +292,7 @@ func HandleAdminEditStoragePool(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage")
 	}
 
-	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	pool, err := asc.storagePoolRepo.GetByID(uint(poolID))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			fm := fiber.Map{
@@ -302,10 +319,8 @@ func HandleAdminEditStoragePool(c *fiber.Ctx) error {
 	return handler(c)
 }
 
-// HandleAdminEditStoragePoolPost processes the edit storage pool form
-func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
-	db := database.GetDB()
-
+// HandleAdminEditStoragePoolPost processes the edit storage pool form using repository pattern
+func (asc *AdminStorageController) HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		fm := fiber.Map{
@@ -316,8 +331,8 @@ func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage")
 	}
 
-	// Find existing pool
-	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	// Find existing pool using repository
+	pool, err := asc.storagePoolRepo.GetByID(uint(poolID))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			fm := fiber.Map{
@@ -439,8 +454,8 @@ func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage/edit/" + c.Params("id"))
 	}
 
-	// Save changes
-	if err := db.Save(pool).Error; err != nil {
+	// Save changes using repository
+	if err := asc.storagePoolRepo.Update(pool); err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			fm := fiber.Map{
 				"type":    "error",
@@ -465,10 +480,8 @@ func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
 	return c.Redirect("/admin/storage")
 }
 
-// HandleAdminDeleteStoragePool deletes a storage pool
-func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
-	db := database.GetDB()
-
+// HandleAdminDeleteStoragePool deletes a storage pool using repository pattern
+func (asc *AdminStorageController) HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		fm := fiber.Map{
@@ -479,8 +492,8 @@ func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage")
 	}
 
-	// Find existing pool
-	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	// Find existing pool using repository
+	pool, err := asc.storagePoolRepo.GetByID(uint(poolID))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			fm := fiber.Map{
@@ -508,12 +521,16 @@ func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage")
 	}
 
-	// Check if pool has files
-	var imageCount int64
-	db.Model(&models.Image{}).Where("storage_pool_id = ?", poolID).Count(&imageCount)
+	// Check if pool has files using repository
+	imageCount, err := asc.storagePoolRepo.CountImagesInPool(uint(poolID))
+	if err != nil {
+		return asc.handleError(c, "Fehler beim Zählen der Bilder", err)
+	}
 
-	var variantCount int64
-	db.Model(&models.ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&variantCount)
+	variantCount, err := asc.storagePoolRepo.CountVariantsInPool(uint(poolID))
+	if err != nil {
+		return asc.handleError(c, "Fehler beim Zählen der Varianten", err)
+	}
 
 	if imageCount > 0 || variantCount > 0 {
 		fm := fiber.Map{
@@ -524,8 +541,8 @@ func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
 		return c.Redirect("/admin/storage")
 	}
 
-	// Delete the pool
-	if err := db.Delete(pool).Error; err != nil {
+	// Delete the pool using repository
+	if err := asc.storagePoolRepo.Delete(uint(poolID)); err != nil {
 		fm := fiber.Map{
 			"type":    "error",
 			"message": "Fehler beim Löschen des Speicherpools: " + err.Error(),
@@ -542,8 +559,8 @@ func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
 	return c.Redirect("/admin/storage")
 }
 
-// HandleAdminStoragePoolHealthCheck performs health check on a specific pool
-func HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
+// HandleAdminStoragePoolHealthCheck performs health check on a specific pool using repository pattern
+func (asc *AdminStorageController) HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{
@@ -552,8 +569,7 @@ func HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
 		})
 	}
 
-	db := database.GetDB()
-	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	pool, err := asc.storagePoolRepo.GetByID(uint(poolID))
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"success": false,
@@ -561,7 +577,13 @@ func HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
 		})
 	}
 
-	isHealthy := pool.IsHealthy()
+	isHealthy, err := asc.storagePoolRepo.IsPoolHealthy(uint(poolID))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"success": false,
+			"error":   "Fehler beim Gesundheitscheck: " + err.Error(),
+		})
+	}
 
 	return c.JSON(fiber.Map{
 		"success":   true,
@@ -571,8 +593,8 @@ func HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
 	})
 }
 
-// HandleAdminRecalculateStorageUsage recalculates storage usage for a pool
-func HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
+// HandleAdminRecalculateStorageUsage recalculates storage usage for a pool using repository pattern
+func (asc *AdminStorageController) HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{
@@ -581,8 +603,7 @@ func HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
 		})
 	}
 
-	db := database.GetDB()
-	pool, err := models.FindStoragePoolByID(db, uint(poolID))
+	pool, err := asc.storagePoolRepo.GetByID(uint(poolID))
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"success": false,
@@ -590,40 +611,48 @@ func HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
 		})
 	}
 
-	// Calculate actual usage from database
-	var totalSize int64
+	oldUsedSize := pool.UsedSize
 
-	// Sum image file sizes
-	var imageSize int64
-	db.Model(&models.Image{}).
-		Where("storage_pool_id = ?", poolID).
-		Select("COALESCE(SUM(file_size), 0)").
-		Scan(&imageSize)
-
-	// Sum variant file sizes
-	var variantSize int64
-	db.Model(&models.ImageVariant{}).
-		Where("storage_pool_id = ?", poolID).
-		Select("COALESCE(SUM(file_size), 0)").
-		Scan(&variantSize)
-
-	totalSize = imageSize + variantSize
-
-	// Update pool usage
-	if err := db.Model(pool).Update("used_size", totalSize).Error; err != nil {
+	// Recalculate usage using repository
+	newUsedSize, err := asc.storagePoolRepo.RecalculatePoolUsage(uint(poolID))
+	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"success": false,
-			"error":   "Fehler beim Aktualisieren der Speichernutzung: " + err.Error(),
+			"error":   "Fehler beim Neuberechnen der Speichernutzung: " + err.Error(),
 		})
 	}
+
+	// Get image and variant counts for detailed response
+	imageCount, _ := asc.storagePoolRepo.CountImagesInPool(uint(poolID))
+	variantCount, _ := asc.storagePoolRepo.CountVariantsInPool(uint(poolID))
 
 	return c.JSON(fiber.Map{
 		"success":       true,
 		"pool_id":       pool.ID,
 		"pool_name":     pool.Name,
-		"old_used_size": pool.UsedSize,
-		"new_used_size": totalSize,
-		"image_size":    imageSize,
-		"variant_size":  variantSize,
+		"old_used_size": oldUsedSize,
+		"new_used_size": newUsedSize,
+		"image_count":   imageCount,
+		"variant_count": variantCount,
 	})
+}
+
+// ============================================================================
+// GLOBAL ADMIN STORAGE CONTROLLER INSTANCE - Singleton Pattern
+// ============================================================================
+
+var adminStorageController *AdminStorageController
+
+// InitializeAdminStorageController initializes the global admin storage controller
+func InitializeAdminStorageController() {
+	storagePoolRepo := repository.GetGlobalFactory().GetStoragePoolRepository()
+	adminStorageController = NewAdminStorageController(storagePoolRepo)
+}
+
+// GetAdminStorageController returns the global admin storage controller instance
+func GetAdminStorageController() *AdminStorageController {
+	if adminStorageController == nil {
+		InitializeAdminStorageController()
+	}
+	return adminStorageController
 }

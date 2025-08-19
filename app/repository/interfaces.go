@@ -72,6 +72,13 @@ type StoragePoolRepository interface {
 	UpdateUsage(id uint, sizeChange int64) error
 	GetStats(id uint) (*models.StoragePoolStats, error)
 	GetAllStats() ([]models.StoragePoolStats, error)
+
+	// Additional methods for admin storage management
+	GetHealthStatus() (map[uint]bool, error)
+	IsPoolHealthy(id uint) (bool, error)
+	CountImagesInPool(poolID uint) (int64, error)
+	CountVariantsInPool(poolID uint) (int64, error)
+	RecalculatePoolUsage(poolID uint) (int64, error)
 }
 
 // SettingRepository defines the interface for application settings

@@ -140,7 +140,47 @@ func HandleAdminQueueDelete(c *fiber.Ctx) error {
 	return GetAdminQueueController().HandleAdminQueueDelete(c)
 }
 
-// Storage Management - These functions exist in admin_storage_controller.go
+// Storage Management - Repository Pattern Functions using dedicated AdminStorageController
+
+// HandleAdminStorageManagement - Adapter for storage management dashboard
+func HandleAdminStorageManagement(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminStorageManagement(c)
+}
+
+// HandleAdminCreateStoragePool - Adapter for create storage pool form
+func HandleAdminCreateStoragePool(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminCreateStoragePool(c)
+}
+
+// HandleAdminCreateStoragePoolPost - Adapter for create storage pool form submission
+func HandleAdminCreateStoragePoolPost(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminCreateStoragePoolPost(c)
+}
+
+// HandleAdminEditStoragePool - Adapter for edit storage pool form
+func HandleAdminEditStoragePool(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminEditStoragePool(c)
+}
+
+// HandleAdminEditStoragePoolPost - Adapter for edit storage pool form submission
+func HandleAdminEditStoragePoolPost(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminEditStoragePoolPost(c)
+}
+
+// HandleAdminDeleteStoragePool - Adapter for storage pool deletion
+func HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminDeleteStoragePool(c)
+}
+
+// HandleAdminStoragePoolHealthCheck - Adapter for storage pool health check
+func HandleAdminStoragePoolHealthCheck(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminStoragePoolHealthCheck(c)
+}
+
+// HandleAdminRecalculateStorageUsage - Adapter for storage usage recalculation
+func HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminRecalculateStorageUsage(c)
+}
 
 // Page Management - Repository Pattern Functions using dedicated AdminPageController
 
@@ -173,7 +213,3 @@ func HandleAdminPageUpdate(c *fiber.Ctx) error {
 func HandleAdminPageDelete(c *fiber.Ctx) error {
 	return GetAdminPageController().HandleAdminPageDelete(c)
 }
-
-// Storage Pool Management - These functions exist in admin_storage_controller.go
-
-// Public News Functions - These functions exist in admin_news_controller.go

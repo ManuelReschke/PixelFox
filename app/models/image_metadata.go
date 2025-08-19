@@ -17,6 +17,14 @@ func (j JSON) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
 	}
+
+	// Validate JSON before returning
+	var temp interface{}
+	if err := json.Unmarshal(j, &temp); err != nil {
+		// If JSON is invalid, return empty JSON object
+		return "{}", nil
+	}
+
 	return string(j), nil
 }
 

@@ -29,6 +29,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// Initialize admin queue controller with repository
 	controllers.InitializeAdminQueueController()
 
+	// Initialize admin storage controller with repository
+	controllers.InitializeAdminStorageController()
+
 	// API
 	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)
 

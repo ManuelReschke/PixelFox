@@ -24,6 +24,8 @@ Important! If you want to make changes to the database, modify the model, check 
 
 ## Development Commands
 
+If you want to check if your changes are working just connect to app container and look into the logs. Auto build is not enabled by default.
+
 ### Docker Environment
 ```bash
 # Start development environment
@@ -109,9 +111,9 @@ make test-in-docker-internal
   - `pixelfox/` - Main application
   - `migrate/` - Database migration utility
 - `app/` - Application logic
-  - `controllers/` - HTTP handlers
+  - `controllers/` - HTTP handlers with Repository Pattern architecture
   - `models/` - GORM models
-  - `repository/` - Data access layer
+  - `repository/` - Data access layer with interfaces and implementations
 - `internal/` - Internal packages
   - `api/v1/` - Auto-generated API handlers and models from OpenAPI spec
   - `pkg/` - Internal packages
@@ -152,6 +154,20 @@ The project uses OpenAPI 3.0 specifications for API documentation and oapi-codeg
 
 #### Database Models
 Main entities include User, Image, Album, Tag, News, Comment, ImageBackup, and StoragePool models with GORM relationships.
+
+#### Repository Pattern Architecture
+The application uses a clean Repository Pattern for all admin controllers:
+- **Interface-Based Design**: All repositories implement interfaces for testability and flexibility
+- **Dependency Injection**: Controllers receive repositories via constructor injection through a factory pattern
+- **Singleton Pattern**: Global controller instances are initialized once and reused for performance
+- **Modular Controllers**: Each admin domain has its own dedicated controller:
+  - `AdminNewsController` - News management with NewsRepository
+  - `AdminPageController` - Page management with PageRepository  
+  - `AdminQueueController` - Queue/Cache management with QueueRepository
+  - `AdminStorageController` - Storage pool management with StoragePoolRepository
+- **Adapter Pattern**: `admin_handler_adapter.go` provides backward compatibility for existing routes
+- **Clean Architecture**: Separation of concerns between HTTP handling, business logic, and data access
+- **Factory Pattern**: Repository factory manages all repository instances and dependencies
 
 #### S3 Backup System
 The S3 backup system provides automatic cloud backup functionality:
@@ -213,6 +229,7 @@ The storage pool system provides flexible storage management with tiering capabi
 4. **Frontend**: Use `make watch-css` during development for CSS changes
 5. **Templates**: In development, Air automatically handles template compilation and hot reload
 6. **Testing**: Use `make test-in-docker` to run tests in the containerized environment
+7. **Repository Pattern**: All admin controllers use modular repository-based architecture for maintainability
 
 ### Hot Reload in Development
 
@@ -303,3 +320,13 @@ The `/admin/settings` interface provides comprehensive system configuration:
   - Retry interval: 1-60 minutes (wait time between retry attempts)
 - **All settings**: Stored in database with validation and real-time application
 - **Performance Tuning**: Adjust worker counts and intervals based on system resources
+
+### Repository Pattern Implementation Notes
+The admin controllers follow a consistent Repository Pattern architecture:
+- **Controller Initialization**: All admin controllers are initialized in `http_router.go` during application startup
+- **Factory Pattern**: `repository.GetGlobalFactory()` provides access to all repository instances
+- **Interface Contracts**: All repositories implement clearly defined interfaces in `app/repository/interfaces.go`
+- **Adapter Functions**: Legacy route compatibility maintained through `admin_handler_adapter.go`
+- **Error Handling**: Consistent error handling patterns across all repository-based controllers
+- **Testing**: Repository interfaces enable easy mocking and unit testing
+- **Performance**: Singleton controllers and repository instances optimize memory usage and performance
