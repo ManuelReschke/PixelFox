@@ -85,12 +85,12 @@ func albumCoverImage(albumData AlbumWithGalleryImages) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"max-w-full max-h-full object-contain\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"w-full h-full object-cover rounded-t-lg\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"flex items-center justify-center h-full text-gray-400\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-16 h-16\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"flex items-center justify-center h-full text-base-content/30\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-12 h-12\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -183,30 +183,30 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"w-full mx-auto px-4 py-8\"><div class=\"flex justify-between items-center mb-6\"><div><h1 class=\"text-2xl font-bold mb-1\">Meine Alben</h1><p class=\"text-sm text-gray-500\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"container mx-auto px-4 py-8\"><div class=\"flex justify-between items-center mb-6\"><div><h1 class=\"text-2xl font-bold mb-1\">Meine Alben</h1><p class=\"text-sm text-base-content/70 mb-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Alben", len(albums)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 71, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 71, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><a href=\"/user/albums/create\" class=\"btn btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 mr-2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Neues Album</a></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><a href=\"/user/albums/create\" class=\"btn btn-primary gap-2\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Neues Album</a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(albums) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"albums-grid gap-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, albumData := range albums {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"card bg-base-100 shadow-lg flex flex-col h-full\"><figure class=\"h-24 bg-gray-200 flex items-center justify-center overflow-hidden\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-200\"><figure class=\"h-32 bg-base-200 flex items-center justify-center overflow-hidden\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -214,14 +214,14 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</figure><div class=\"card-body p-3 flex flex-col flex-grow\"><div class=\"flex-grow\"><h2 class=\"card-title text-sm\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</figure><div class=\"card-body p-4\"><h2 class=\"card-title text-sm font-semibold truncate\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(albumData.Album.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 90, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 89, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -232,14 +232,14 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 					return templ_7745c5c3_Err
 				}
 				if albumData.Album.Description != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-xs text-gray-600 truncate\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<p class=\"text-xs text-base-content/60 truncate mb-2\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(albumData.Album.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 92, Col: 80}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 91, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -250,14 +250,14 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"flex items-center justify-between text-xs text-gray-500 mt-1\"><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"flex items-center justify-between text-xs text-base-content/50 mb-3\"><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Bilder", len(albumData.Images)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 95, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 94, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -270,26 +270,26 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(albumData.Album.CreatedAt.Format("02.01.2006"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 96, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 95, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</span></div></div><div class=\"card-actions justify-end mt-2 gap-1\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</span></div><div class=\"card-actions justify-center gap-2\"><a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 templ.SafeURL
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 100, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 98, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"album-btn album-btn-primary\">Ansehen</a> <a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"btn btn-primary btn-xs\">Ansehen</a> <a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -302,20 +302,20 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"album-btn album-btn-outline\">Bearbeiten</a> <a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"btn btn-outline btn-xs\">Bearbeiten</a> <a href=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var14 templ.SafeURL
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 102, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 104, Col: 86}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"album-btn album-btn-error\" onclick=\"return confirm('Möchten Sie dieses Album wirklich löschen?')\">Löschen</a></div></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"btn btn-error btn-outline btn-xs\" onclick=\"return confirm('Möchten Sie dieses Album wirklich löschen?')\">Löschen</a></div></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -325,12 +325,12 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"flex flex-col items-center justify-center py-12\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-16 h-16 mb-4 text-gray-400\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg><h3 class=\"text-xl font-semibold mb-2\">Keine Alben gefunden</h3><p class=\"text-gray-500 mb-4\">Du hast noch keine Alben erstellt.</p><a href=\"/user/albums/create\" class=\"btn btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 mr-2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Erstes Album erstellen</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"flex flex-col items-center justify-center py-16\"><div class=\"text-center max-w-md\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-20 h-20 mx-auto mb-4 text-base-content/40\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg><h3 class=\"text-2xl font-bold mb-2\">Keine Alben vorhanden</h3><p class=\"text-base-content/60 mb-6\">Erstelle dein erstes Album, um deine Bilder zu organisieren.</p><a href=\"/user/albums/create\" class=\"btn btn-primary gap-2\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Erstes Album erstellen</a></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div><!-- Custom CSS for responsive album grid --><style>\n\t\t.albums-grid {\n\t\t\tdisplay: grid;\n\t\t\tgrid-template-columns: repeat(2, 1fr);\n\t\t\tgap: 12px;\n\t\t}\n\n\t\t/* Mobile */\n\t\t@media (min-width: 480px) {\n\t\t\t.albums-grid {\n\t\t\t\tgrid-template-columns: repeat(3, 1fr);\n\t\t\t}\n\t\t}\n\n\t\t/* Tablet */\n\t\t@media (min-width: 768px) {\n\t\t\t.albums-grid {\n\t\t\t\tgrid-template-columns: repeat(4, 1fr);\n\t\t\t}\n\t\t}\n\n\t\t/* Laptop */\n\t\t@media (min-width: 1024px) {\n\t\t\t.albums-grid {\n\t\t\t\tgrid-template-columns: repeat(5, 1fr);\n\t\t\t}\n\t\t}\n\n\t\t/* Desktop */\n\t\t@media (min-width: 1280px) {\n\t\t\t.albums-grid {\n\t\t\t\tgrid-template-columns: repeat(6, 1fr);\n\t\t\t}\n\t\t}\n\n\t\t/* Large Desktop / Full HD */\n\t\t@media (min-width: 1600px) {\n\t\t\t.albums-grid {\n\t\t\t\tgrid-template-columns: repeat(7, 1fr);\n\t\t\t}\n\t\t}\n\n\t\t/* Ultra Wide */\n\t\t@media (min-width: 2000px) {\n\t\t\t.albums-grid {\n\t\t\t\tgrid-template-columns: repeat(8, 1fr);\n\t\t\t}\n\t\t}\n\n\t\t/* Super small album buttons */\n\t\t.album-btn {\n\t\t\tdisplay: inline-flex;\n\t\t\talign-items: center;\n\t\t\tjustify-content: center;\n\t\t\tpadding: 2px 6px;\n\t\t\tfont-size: 10px;\n\t\t\tfont-weight: 500;\n\t\t\tline-height: 1;\n\t\t\tborder-radius: 4px;\n\t\t\tborder: 1px solid transparent;\n\t\t\ttext-decoration: none;\n\t\t\tcursor: pointer;\n\t\t\ttransition: all 0.2s ease;\n\t\t}\n\n\t\t.album-btn-primary {\n\t\t\tbackground-color: #3b82f6;\n\t\t\tcolor: white;\n\t\t\tborder-color: #3b82f6;\n\t\t}\n\n\t\t.album-btn-primary:hover {\n\t\t\tbackground-color: #2563eb;\n\t\t\tborder-color: #2563eb;\n\t\t}\n\n\t\t.album-btn-outline {\n\t\t\tbackground-color: transparent;\n\t\t\tcolor: #6b7280;\n\t\t\tborder-color: #d1d5db;\n\t\t}\n\n\t\t.album-btn-outline:hover {\n\t\t\tbackground-color: #f3f4f6;\n\t\t\tborder-color: #9ca3af;\n\t\t}\n\n\t\t.album-btn-error {\n\t\t\tbackground-color: transparent;\n\t\t\tcolor: #dc2626;\n\t\t\tborder-color: #fca5a5;\n\t\t}\n\n\t\t.album-btn-error:hover {\n\t\t\tbackground-color: #fee2e2;\n\t\t\tborder-color: #f87171;\n\t\t}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

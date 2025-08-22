@@ -31,10 +31,10 @@ func getCoverImage(albumData AlbumWithGalleryImages) *GalleryImage {
 
 templ albumCoverImage(albumData AlbumWithGalleryImages) {
 	if getCoverImage(albumData) != nil {
-		<img src={ getCoverImage(albumData).SmallPreviewPath } alt={ albumData.Album.Title } class="max-w-full max-h-full object-contain" />
+		<img src={ getCoverImage(albumData).SmallPreviewPath } alt={ albumData.Album.Title } class="w-full h-full object-cover rounded-t-lg" />
 	} else {
-		<div class="flex items-center justify-center h-full text-gray-400">
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+		<div class="flex items-center justify-center h-full text-base-content/30">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
 			</svg>
 		</div>
@@ -64,14 +64,14 @@ templ Albums(
 }
 
 templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryImages) {
-	<div class="w-full mx-auto px-4 py-8">
+	<div class="container mx-auto px-4 py-8">
 		<div class="flex justify-between items-center mb-6">
 			<div>
 				<h1 class="text-2xl font-bold mb-1">Meine Alben</h1>
-				<p class="text-sm text-gray-500">{ fmt.Sprintf("%d Alben", len(albums)) }</p>
+				<p class="text-sm text-base-content/70 mb-6">{ fmt.Sprintf("%d Alben", len(albums)) }</p>
 			</div>
-			<a href="/user/albums/create" class="btn btn-primary">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+			<a href="/user/albums/create" class="btn btn-primary gap-2">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 				</svg>
 				Neues Album
@@ -79,28 +79,30 @@ templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIm
 		</div>
 
 		if len(albums) > 0 {
-			<div class="albums-grid gap-3">
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
 				for _, albumData := range albums {
-					<div class="card bg-base-100 shadow-lg flex flex-col h-full">
-						<figure class="h-24 bg-gray-200 flex items-center justify-center overflow-hidden">
+					<div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-200">
+						<figure class="h-32 bg-base-200 flex items-center justify-center overflow-hidden">
 							@albumCoverImage(albumData)
 						</figure>
-						<div class="card-body p-3 flex flex-col flex-grow">
-							<div class="flex-grow">
-								<h2 class="card-title text-sm">{ albumData.Album.Title }</h2>
-								if albumData.Album.Description != "" {
-									<p class="text-xs text-gray-600 truncate">{ albumData.Album.Description }</p>
-								}
-								<div class="flex items-center justify-between text-xs text-gray-500 mt-1">
-									<span>{ fmt.Sprintf("%d Bilder", len(albumData.Images)) }</span>
-									<span>{ albumData.Album.CreatedAt.Format("02.01.2006") }</span>
-								</div>
+						<div class="card-body p-4">
+							<h2 class="card-title text-sm font-semibold truncate">{ albumData.Album.Title }</h2>
+							if albumData.Album.Description != "" {
+								<p class="text-xs text-base-content/60 truncate mb-2">{ albumData.Album.Description }</p>
+							}
+							<div class="flex items-center justify-between text-xs text-base-content/50 mb-3">
+								<span>{ fmt.Sprintf("%d Bilder", len(albumData.Images)) }</span>
+								<span>{ albumData.Album.CreatedAt.Format("02.01.2006") }</span>
 							</div>
-							<div class="card-actions justify-end mt-2 gap-1">
-								<a href={ templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)) } class="album-btn album-btn-primary">Ansehen</a>
-								<a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="album-btn album-btn-outline">Bearbeiten</a>
+							<div class="card-actions justify-center gap-2">
+								<a href={ templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)) } class="btn btn-primary btn-xs">
+									Ansehen
+								</a>
+								<a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="btn btn-outline btn-xs">
+									Bearbeiten
+								</a>
 								<a href={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } 
-								   class="album-btn album-btn-error"
+								   class="btn btn-error btn-outline btn-xs"
 								   onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
 									Löschen
 								</a>
@@ -110,119 +112,21 @@ templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIm
 				}
 			</div>
 		} else {
-			<div class="flex flex-col items-center justify-center py-12">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-4 text-gray-400">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-				</svg>
-				<h3 class="text-xl font-semibold mb-2">Keine Alben gefunden</h3>
-				<p class="text-gray-500 mb-4">Du hast noch keine Alben erstellt.</p>
-				<a href="/user/albums/create" class="btn btn-primary">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+			<div class="flex flex-col items-center justify-center py-16">
+				<div class="text-center max-w-md">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 mx-auto mb-4 text-base-content/40">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
 					</svg>
-					Erstes Album erstellen
-				</a>
+					<h3 class="text-2xl font-bold mb-2">Keine Alben vorhanden</h3>
+					<p class="text-base-content/60 mb-6">Erstelle dein erstes Album, um deine Bilder zu organisieren.</p>
+					<a href="/user/albums/create" class="btn btn-primary gap-2">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+						</svg>
+						Erstes Album erstellen
+					</a>
+				</div>
 			</div>
 		}
 	</div>
-
-	<!-- Custom CSS for responsive album grid -->
-	<style>
-		.albums-grid {
-			display: grid;
-			grid-template-columns: repeat(2, 1fr);
-			gap: 12px;
-		}
-
-		/* Mobile */
-		@media (min-width: 480px) {
-			.albums-grid {
-				grid-template-columns: repeat(3, 1fr);
-			}
-		}
-
-		/* Tablet */
-		@media (min-width: 768px) {
-			.albums-grid {
-				grid-template-columns: repeat(4, 1fr);
-			}
-		}
-
-		/* Laptop */
-		@media (min-width: 1024px) {
-			.albums-grid {
-				grid-template-columns: repeat(5, 1fr);
-			}
-		}
-
-		/* Desktop */
-		@media (min-width: 1280px) {
-			.albums-grid {
-				grid-template-columns: repeat(6, 1fr);
-			}
-		}
-
-		/* Large Desktop / Full HD */
-		@media (min-width: 1600px) {
-			.albums-grid {
-				grid-template-columns: repeat(7, 1fr);
-			}
-		}
-
-		/* Ultra Wide */
-		@media (min-width: 2000px) {
-			.albums-grid {
-				grid-template-columns: repeat(8, 1fr);
-			}
-		}
-
-		/* Super small album buttons */
-		.album-btn {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			padding: 2px 6px;
-			font-size: 10px;
-			font-weight: 500;
-			line-height: 1;
-			border-radius: 4px;
-			border: 1px solid transparent;
-			text-decoration: none;
-			cursor: pointer;
-			transition: all 0.2s ease;
-		}
-
-		.album-btn-primary {
-			background-color: #3b82f6;
-			color: white;
-			border-color: #3b82f6;
-		}
-
-		.album-btn-primary:hover {
-			background-color: #2563eb;
-			border-color: #2563eb;
-		}
-
-		.album-btn-outline {
-			background-color: transparent;
-			color: #6b7280;
-			border-color: #d1d5db;
-		}
-
-		.album-btn-outline:hover {
-			background-color: #f3f4f6;
-			border-color: #9ca3af;
-		}
-
-		.album-btn-error {
-			background-color: transparent;
-			color: #dc2626;
-			border-color: #fca5a5;
-		}
-
-		.album-btn-error:hover {
-			background-color: #fee2e2;
-			border-color: #f87171;
-		}
-	</style>
 }
