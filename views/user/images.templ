@@ -16,6 +16,7 @@ type GalleryImage struct {
 	SmallPreviewPath string
 	OriginalPath     string
 	CreatedAt        string
+	IsPublic         bool
 }
 
 templ Images(
@@ -220,6 +221,20 @@ templ GalleryItems(images []GalleryImage, page int) {
 				<a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="block">
 					<img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
 				</a>
+				
+				<!-- Status Badge oben links -->
+				<div class="absolute top-2 left-2 flex gap-1">
+					if image.IsPublic {
+						<div class="badge badge-success badge-xs">Öffentlich</div>
+					} else {
+						<div class="badge badge-warning badge-xs flex items-center gap-1">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+							</svg>
+						</div>
+					}
+				</div>
+				
 				<div class="overlay">
 					<div class="image-title-overlay">{ image.Title }</div>
 					<div class="overlay-content flex flex-row gap-2">

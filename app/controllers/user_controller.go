@@ -140,6 +140,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 			PreviewPath:  previewPath,
 			OriginalPath: originalPath,
 			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
+			IsPublic:     img.IsPublic,
 		})
 	}
 
@@ -223,6 +224,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			PreviewPath:  previewPath,
 			OriginalPath: originalPath,
 			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
+			IsPublic:     img.IsPublic,
 		})
 	}
 
