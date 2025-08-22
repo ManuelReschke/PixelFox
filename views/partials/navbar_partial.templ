@@ -7,7 +7,8 @@ import "github.com/ManuelReschke/PixelFox/app/models"
 templ Navbar(appName string, layout viewmodel.Layout) {
     <nav class="navbar bg-neutral text-neutral-content fixed z-10 w-full">
 		<div class="navbar-start">
-			<a hx-swap="transition:true" class="btn btn-ghost text-xl hover:bg-base-200 hover:text-base-content" href="/">
+			<a hx-swap="transition:true" class="btn btn-ghost text-xl hover:bg-base-200 hover:text-base-content flex items-center gap-2" href="/">
+				<img loading="lazy" src="/img/pixelfox-logo.png" class="w-8 h-8" alt="PixelFox Logo"/>
 				{ models.GetAppSettings().GetSiteTitle() }
 			</a>
 		</div>
