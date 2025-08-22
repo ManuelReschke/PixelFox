@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 
 	"github.com/a-h/templ"
@@ -11,11 +14,14 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/views"
+	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
 )
 
@@ -360,4 +366,309 @@ func enqueueUserS3DeleteJobsIfEnabled(image *models.Image) {
 
 		fmt.Printf("[S3Delete] Successfully enqueued delete job %s for image %s\n", job.ID, image.UUID)
 	}
+}
+
+func HandleUserProfileEdit(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+	username := sess.Get(USER_NAME).(string)
+	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+
+	// Get user data from database
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "User not found"})
+		return c.Redirect("/")
+	}
+
+	csrfToken := c.Locals("csrf").(string)
+
+	profileEditIndex := user_views.ProfileEditIndex(username, csrfToken, user)
+	profileEdit := user_views.ProfileEdit(
+		" | Profil bearbeiten", isLoggedIn(c), false, flash.Get(c), username, profileEditIndex, isAdmin,
+	)
+
+	handler := adaptor.HTTPHandler(templ.Handler(profileEdit))
+	return handler(c)
+}
+
+func HandleUserProfileEditPost(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+	formType := c.FormValue("form_type")
+
+	// Get user from database
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "User not found"})
+		return c.Redirect("/user/profile/edit")
+	}
+
+	switch formType {
+	case "profile":
+		return handleProfileUpdate(c, &user)
+	case "password":
+		return handlePasswordUpdate(c, &user)
+	default:
+		flash.WithError(c, fiber.Map{"message": "Ungültiger Formulartyp"})
+		return c.Redirect("/user/profile/edit")
+	}
+}
+
+func handleProfileUpdate(c *fiber.Ctx, user *models.User) error {
+	newName := c.FormValue("name")
+	newEmail := c.FormValue("email")
+
+	// Validate input
+	if newName == "" || newEmail == "" {
+		flash.WithError(c, fiber.Map{"message": "Bitte alle Felder ausfüllen"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Check if name is taken by another user (optional - names don't need to be unique)
+	// Removing this check since names don't need to be unique like usernames
+
+	// Check if email is taken by another user
+	if newEmail != user.Email {
+		var existingUser models.User
+		if database.DB.Where("email = ? AND id != ?", newEmail, user.ID).First(&existingUser).Error == nil {
+			flash.WithError(c, fiber.Map{"message": "E-Mail-Adresse bereits vergeben"})
+			if c.Get("HX-Request") == "true" {
+				c.Set("HX-Redirect", "/user/profile/edit")
+				return c.SendStatus(fiber.StatusNoContent)
+			}
+			return c.Redirect("/user/profile/edit")
+		}
+	}
+
+	// Update user data
+	user.Name = newName
+
+	// Handle email change securely
+	emailChanged := user.Email != newEmail
+	if emailChanged {
+		// Don't change the actual email yet - store as pending
+		user.PendingEmail = newEmail
+
+		// Generate email change token
+		if err := user.GenerateEmailChangeToken(); err != nil {
+			flash.WithError(c, fiber.Map{"message": "Fehler beim Generieren des Bestätigungstokens"})
+			if c.Get("HX-Request") == "true" {
+				c.Set("HX-Redirect", "/user/profile/edit")
+				return c.SendStatus(fiber.StatusNoContent)
+			}
+			return c.Redirect("/user/profile/edit")
+		}
+
+		// Send verification email to new address
+		domain := env.GetEnv("PUBLIC_DOMAIN", "")
+		verificationURL := fmt.Sprintf("%s/user/profile/verify-email-change?token=%s", domain, user.EmailChangeToken)
+		rec := httptest.NewRecorder()
+		templ.Handler(email_views.EmailChangeEmail(user.Email, user.PendingEmail, templ.SafeURL(verificationURL), user.EmailChangeToken)).ServeHTTP(rec, &http.Request{})
+		body := rec.Body.String()
+
+		go func() {
+			if err := mail.SendMail(user.PendingEmail, "E-Mail-Adresse bestätigen - PIXELFOX.cc", body); err != nil {
+				log.Printf("Email change verification email error: %v", err)
+			}
+		}()
+	}
+
+	if err := database.DB.Save(user).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Fehler beim Speichern der Änderungen"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Update session if name changed
+	if newName != user.Name {
+		sess, _ := session.GetSessionStore().Get(c)
+		sess.Set(USER_NAME, newName)
+		sess.Save()
+	}
+
+	// Success response - always redirect with flash message for consistency
+	successMsg := "Profil erfolgreich aktualisiert"
+	if emailChanged {
+		successMsg = "Profil aktualisiert! Bestätigungslink wurde an die neue E-Mail-Adresse gesendet."
+	}
+	flash.WithSuccess(c, fiber.Map{"message": successMsg})
+
+	// For HTMX requests, return redirect instruction
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/user/profile/edit")
+		return c.SendStatus(fiber.StatusNoContent)
+	}
+
+	return c.Redirect("/user/profile/edit")
+}
+
+func handlePasswordUpdate(c *fiber.Ctx, user *models.User) error {
+	currentPassword := c.FormValue("current_password")
+	newPassword := c.FormValue("new_password")
+	confirmPassword := c.FormValue("confirm_password")
+
+	// Validate input
+	if currentPassword == "" || newPassword == "" || confirmPassword == "" {
+		flash.WithError(c, fiber.Map{"message": "Bitte alle Passwort-Felder ausfüllen"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Check if new passwords match
+	if newPassword != confirmPassword {
+		flash.WithError(c, fiber.Map{"message": "Neue Passwörter stimmen nicht überein"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Validate current password
+	if !user.CheckPassword(currentPassword) {
+		flash.WithError(c, fiber.Map{"message": "Aktuelles Passwort ist falsch"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Update password
+	if err := user.SetPassword(newPassword); err != nil {
+		flash.WithError(c, fiber.Map{"message": "Fehler beim Setzen des neuen Passworts"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Save to database
+	if err := database.DB.Save(user).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Fehler beim Speichern des neuen Passworts"})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/user/profile/edit")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Success response - always redirect with flash message for consistency
+	flash.WithSuccess(c, fiber.Map{"message": "Passwort erfolgreich geändert"})
+
+	// For HTMX requests, return redirect instruction
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/user/profile/edit")
+		return c.SendStatus(fiber.StatusNoContent)
+	}
+
+	return c.Redirect("/user/profile/edit")
+}
+
+// HandleEmailChangeVerification handles the email change verification from the link in email
+func HandleEmailChangeVerification(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		flash.WithError(c, fiber.Map{"message": "Ungültiger Bestätigungslink"})
+		return c.Redirect("/")
+	}
+
+	// Find user by token
+	var user models.User
+	result := database.DB.Where("email_change_token = ?", token).First(&user)
+	if result.Error != nil {
+		flash.WithError(c, fiber.Map{"message": "Ungültiger oder abgelaufener Bestätigungslink"})
+		return c.Redirect("/")
+	}
+
+	// Verify token is still valid
+	if !user.IsEmailChangeTokenValid(token) {
+		flash.WithError(c, fiber.Map{"message": "Bestätigungslink ist abgelaufen"})
+		return c.Redirect("/")
+	}
+
+	// Change email and clear pending change
+	user.Email = user.PendingEmail
+	user.ClearEmailChangeRequest()
+
+	// Save changes
+	if err := database.DB.Save(&user).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Fehler beim Bestätigen der E-Mail-Adresse"})
+		return c.Redirect("/")
+	}
+
+	flash.WithSuccess(c, fiber.Map{"message": "E-Mail-Adresse erfolgreich geändert!"})
+	return c.Redirect("/user/profile")
+}
+
+// HandleCancelEmailChange allows user to cancel pending email change
+func HandleCancelEmailChange(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+
+	// Get user from database
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "User not found"})
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Clear pending email change
+	user.ClearEmailChangeRequest()
+
+	// Save changes
+	if err := database.DB.Save(&user).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Fehler beim Abbrechen der E-Mail-Änderung"})
+		return c.Redirect("/user/profile/edit")
+	}
+
+	flash.WithSuccess(c, fiber.Map{"message": "E-Mail-Änderung abgebrochen"})
+	return c.Redirect("/user/profile/edit")
+}
+
+// HandleResendEmailChange resends the email change verification email
+func HandleResendEmailChange(c *fiber.Ctx) error {
+	sess, _ := session.GetSessionStore().Get(c)
+	userID := sess.Get(USER_ID).(uint)
+
+	// Get user from database
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "User not found"})
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Check if user has pending email change
+	if !user.HasPendingEmailChange() {
+		flash.WithError(c, fiber.Map{"message": "Keine ausstehende E-Mail-Änderung gefunden"})
+		return c.Redirect("/user/profile/edit")
+	}
+
+	// Send verification email to new address
+	domain := env.GetEnv("PUBLIC_DOMAIN", "")
+	verificationURL := fmt.Sprintf("%s/user/profile/verify-email-change?token=%s", domain, user.EmailChangeToken)
+	rec := httptest.NewRecorder()
+	templ.Handler(email_views.EmailChangeEmail(user.Email, user.PendingEmail, templ.SafeURL(verificationURL), user.EmailChangeToken)).ServeHTTP(rec, &http.Request{})
+	body := rec.Body.String()
+
+	go func() {
+		if err := mail.SendMail(user.PendingEmail, "E-Mail-Adresse bestätigen - PIXELFOX.cc", body); err != nil {
+			log.Printf("Email change verification email error: %v", err)
+		}
+	}()
+
+	flash.WithSuccess(c, fiber.Map{"message": "Bestätigungslink wurde erneut gesendet"})
+	return c.Redirect("/user/profile/edit")
 }
