@@ -32,8 +32,10 @@ func FlashMessages(msg fiber.Map) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if msg["message"] != nil {
-			var templ_7745c5c3_Var2 = []any{"alert alert-soft fixed top-20 right-4 z-50 shadow-lg w-fit min-w-[300px] max-w-md", templ.KV("alert-success", msg["type"] == "success"),
-				templ.KV("alert-error", msg["type"] == "error")}
+			var templ_7745c5c3_Var2 = []any{"alert alert-soft fixed top-20 right-4 z-50 shadow-lg w-fit min-w-[300px] max-w-md",
+				templ.KV("alert-success", msg["type"] == "success"),
+				templ.KV("alert-error", msg["type"] == "error"),
+				templ.KV("alert-info", msg["type"] == "info")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var2...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -56,30 +58,58 @@ func FlashMessages(msg fiber.Map) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if msg["type"] == "error" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else if msg["type"] == "info" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"stroke-current shrink-0 h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"flex flex-col\"><span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(msg["message"].(string))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/flashmessages_partial.templ`, Line: 32, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/flashmessages_partial.templ`, Line: 45, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</span> <button class=\"text-3xl font-black\" _=\"on click remove the closest <div/>\">×</button></div><style>\n            #flash-message {\n                animation: slide-in 0.3s ease-out, fade-in 0.3s ease-out;\n            }\n            \n            #flash-message.fade-out {\n                animation: slide-out 0.3s ease-out, fade-out 0.3s ease-out;\n            }\n            \n            @keyframes slide-in {\n                from { transform: translateX(100%); }\n                to { transform: translateX(0); }\n            }\n            \n            @keyframes slide-out {\n                from { transform: translateX(0); }\n                to { transform: translateX(100%); }\n            }\n            \n            @keyframes fade-in {\n                from { opacity: 0; }\n                to { opacity: 1; }\n            }\n            \n            @keyframes fade-out {\n                from { opacity: 1; }\n                to { opacity: 0; }\n            }\n        </style> <script>\n            setTimeout(function() {\n                var flashMessage = document.getElementById('flash-message');\n                if (flashMessage) {\n                    flashMessage.classList.add('fade-out');\n                    setTimeout(function() {\n                        flashMessage.remove();\n                    }, 400);\n                }\n            }, 4000);\n        </script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span><!-- Special handling for duplicate image messages -->")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if msg["existing_image"] != nil {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"mt-2\"><a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 templ.SafeURL
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/image/" + msg["existing_image"].(string)))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/flashmessages_partial.templ`, Line: 50, Col: 73}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" class=\"btn btn-sm btn-outline\">📷 Vorhandenes Bild ansehen</a></div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><button class=\"text-3xl font-black\" _=\"on click remove the closest <div/>\">×</button></div><style>\n            #flash-message {\n                animation: slide-in 0.3s ease-out, fade-in 0.3s ease-out;\n            }\n            \n            #flash-message.fade-out {\n                animation: slide-out 0.3s ease-out, fade-out 0.3s ease-out;\n            }\n            \n            @keyframes slide-in {\n                from { transform: translateX(100%); }\n                to { transform: translateX(0); }\n            }\n            \n            @keyframes slide-out {\n                from { transform: translateX(0); }\n                to { transform: translateX(100%); }\n            }\n            \n            @keyframes fade-in {\n                from { opacity: 0; }\n                to { opacity: 1; }\n            }\n            \n            @keyframes fade-out {\n                from { opacity: 1; }\n                to { opacity: 0; }\n            }\n        </style> <script>\n            setTimeout(function() {\n                var flashMessage = document.getElementById('flash-message');\n                if (flashMessage) {\n                    flashMessage.classList.add('fade-out');\n                    setTimeout(function() {\n                        flashMessage.remove();\n                    }, 400);\n                }\n            }, 4000);\n        </script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

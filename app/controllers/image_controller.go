@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +29,15 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 )
+
+// calculateFileHash calculates SHA-256 hash of file content
+func calculateFileHash(file io.Reader) (string, error) {
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
 
 func HandleUpload(c *fiber.Ctx) error {
 	if !isLoggedIn(c) {
@@ -144,11 +155,85 @@ func HandleUpload(c *fiber.Ctx) error {
 	}
 	defer src.Close()
 
+	// Calculate file hash for duplicate detection
+	fileHash, err := calculateFileHash(src)
+	if err != nil {
+		fiberlog.Error(fmt.Sprintf("Error calculating file hash: %v", err))
+
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Fehler beim Verarbeiten der Datei",
+		}
+		flash.WithError(c, fm)
+
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Verarbeiten der Datei")
+		}
+		return c.Redirect("/")
+	}
+
+	// Reset file position after hash calculation
+	src.Close()
+	src, err = file.Open()
+	if err != nil {
+		fiberlog.Error(fmt.Sprintf("Error reopening file: %v", err))
+		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Verarbeiten der Datei")
+	}
+	defer src.Close()
+
+	// Check for duplicate files by this user
+	userID := c.Locals(USER_ID).(uint)
+	db := database.GetDB()
+	var existingImage models.Image
+	result := db.Where("user_id = ? AND file_hash = ?", userID, fileHash).First(&existingImage)
+	if result.Error == nil {
+		// Duplicate found! Return user-friendly response
+		fiberlog.Info(fmt.Sprintf("[Upload] Duplicate file detected for user %d, redirecting to existing image %s", userID, existingImage.UUID))
+
+		if c.Get("HX-Request") == "true" {
+			// Return user-friendly HTML response for HTMX
+			duplicateTitle := existingImage.Title
+			if duplicateTitle == "" {
+				duplicateTitle = existingImage.FileName
+			}
+
+			htmlResponse := fmt.Sprintf(`
+				<div class="alert alert-info shadow-lg mb-4">
+					<div>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+						<div>
+							<h3 class="font-bold">Bild bereits vorhanden!</h3>
+							<div class="text-xs">Du hast dieses Bild bereits hochgeladen: "%s"</div>
+						</div>
+					</div>
+					<div class="flex-none">
+						<a href="/image/%s" class="btn btn-sm btn-outline">
+							📷 Bild ansehen
+						</a>
+					</div>
+				</div>
+			`, duplicateTitle, existingImage.UUID)
+
+			return c.Status(fiber.StatusOK).Type("text/html").SendString(htmlResponse)
+		} else {
+			// For normal form submits, set flash message and redirect
+			fm := fiber.Map{
+				"type":           "info",
+				"message":        "Du hast dieses Bild bereits hochgeladen!",
+				"existing_image": existingImage.UUID,
+				"existing_title": existingImage.Title,
+			}
+			flash.WithInfo(c, fm)
+			return c.Redirect("/image/" + existingImage.UUID)
+		}
+	}
+
 	// Generate UUID for the image
 	imageUUID := uuid.New().String()
 
 	// Select optimal storage pool for upload (hot-storage-first)
-	db := database.GetDB()
 	storageManager := storage.NewStorageManager()
 	selectedPool, err := storageManager.SelectPoolForUpload(file.Size)
 	if err != nil {
@@ -246,6 +331,7 @@ func HandleUpload(c *fiber.Ctx) error {
 		FileSize:      file.Size,
 		FileType:      fileExt,
 		Title:         file.Filename,
+		FileHash:      fileHash,
 		IPv4:          ipv4,
 		IPv6:          ipv6,
 	}

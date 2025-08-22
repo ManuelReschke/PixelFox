@@ -12,7 +12,7 @@ import (
 type Image struct {
 	ID            uint         `gorm:"primaryKey" json:"id"`
 	UUID          string       `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"uuid"`
-	UserID        uint         `gorm:"index" json:"user_id"`
+	UserID        uint         `gorm:"index;index:idx_user_file_hash,composite" json:"user_id"`
 	User          User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Title         string       `gorm:"type:varchar(255)" json:"title"`
 	Description   string       `gorm:"type:text" json:"description"`
@@ -26,9 +26,10 @@ type Image struct {
 	IsPublic      bool         `gorm:"default:false" json:"is_public"`
 	ViewCount     int          `gorm:"default:0" json:"view_count"`
 	DownloadCount int          `gorm:"default:0" json:"download_count"`
-	IPv4          string       `gorm:"type:varchar(15);default:null" json:"-"`    // IPv4 address of the uploader
-	IPv6          string       `gorm:"type:varchar(45);default:null" json:"-"`    // IPv6 address of the uploader
-	StoragePoolID uint         `gorm:"index;default:null" json:"storage_pool_id"` // Reference to storage pool
+	IPv4          string       `gorm:"type:varchar(15);default:null" json:"-"`                                                   // IPv4 address of the uploader
+	IPv6          string       `gorm:"type:varchar(45);default:null" json:"-"`                                                   // IPv6 address of the uploader
+	FileHash      string       `gorm:"type:varchar(64);not null;default:'';index:idx_user_file_hash,composite" json:"file_hash"` // SHA-256 hash for duplicate detection
+	StoragePoolID uint         `gorm:"index;default:null" json:"storage_pool_id"`                                                // Reference to storage pool
 	StoragePool   *StoragePool `gorm:"foreignKey:StoragePoolID" json:"storage_pool,omitempty"`
 	// relations
 	Metadata  *ImageMetadata `gorm:"foreignKey:ImageID" json:"metadata,omitempty"`
