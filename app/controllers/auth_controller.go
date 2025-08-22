@@ -91,7 +91,7 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/login")
 		}
 
-		database.GetDB().Model(&user).Update("last_login_at", time.Now())
+		database.GetDB().Model(&user).UpdateColumn("last_login_at", time.Now())
 
 		fm = fiber.Map{
 			"type":    "success",

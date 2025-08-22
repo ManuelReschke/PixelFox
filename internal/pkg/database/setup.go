@@ -36,6 +36,20 @@ func SetupDatabase() {
 			SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
 		}), &gorm.Config{})
 		if err == nil {
+			// Configure optimized connection pool settings
+			sqlDB, err := DB.DB()
+			if err != nil {
+				log.Printf("Failed to get underlying sql.DB: %v", err)
+			} else {
+				// Optimize connection pool for higher load
+				sqlDB.SetMaxIdleConns(10)                  // Max idle connections in pool (default: 2)
+				sqlDB.SetMaxOpenConns(100)                 // Max concurrent connections (default: unlimited)
+				sqlDB.SetConnMaxLifetime(time.Hour)        // Connection lifetime (default: never expire)
+				sqlDB.SetConnMaxIdleTime(10 * time.Minute) // Max idle time before closing (MySQL 8.0+)
+
+				log.Printf("Database connection pool configured: MaxIdle=10, MaxOpen=100, MaxLifetime=1h")
+			}
+
 			DB.AutoMigrate(
 				&models.User{},
 				&models.Image{},
