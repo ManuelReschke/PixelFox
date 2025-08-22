@@ -339,6 +339,15 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
+	// Get current user ID from session if logged in
+	var currentUserID uint = 0
+	if isLoggedIn(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		if userID := sess.Get(USER_ID); userID != nil {
+			currentUserID = userID.(uint)
+		}
+	}
+
 	// The FilePath contains the relative path within the uploads folder
 	domain := env.GetEnv("PUBLIC_DOMAIN", "")
 
@@ -546,7 +555,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		}(),
 	}
 
-	imageViewer := views.ImageViewer(imageModel)
+	imageViewer := views.ImageViewerWithUser(imageModel, currentUserID, image.UserID)
 
 	ogViewModel := &viewmodel.OpenGraph{
 		URL:         shareURL,
@@ -578,6 +587,15 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	if err != nil {
 		fiberlog.Error(err)
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
+	}
+
+	// Get current user ID from session if logged in
+	var currentUserID uint = 0
+	if isLoggedIn(c) {
+		sess, _ := session.GetSessionStore().Get(c)
+		if userID := sess.Get(USER_ID); userID != nil {
+			currentUserID = userID.(uint)
+		}
 	}
 
 	// Check if any optimized versions are available (for Ajax response)
@@ -653,7 +671,7 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		}
 
 		// Render the entire card with IsProcessing = true
-		return views.ImageViewer(imageModel).Render(c.Context(), c.Response().BodyWriter())
+		return views.ImageViewerWithUser(imageModel, currentUserID, image.UserID).Render(c.Context(), c.Response().BodyWriter())
 	}
 
 	// If the image is not found or processing is not complete,
@@ -824,7 +842,7 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 
 	// Render the entire card with the ImageViewer
-	return views.ImageViewer(imageModel).Render(c.Context(), c.Response().BodyWriter())
+	return views.ImageViewerWithUser(imageModel, currentUserID, image.UserID).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // enqueueS3BackupIfEnabled is deprecated - replaced by unified queue system

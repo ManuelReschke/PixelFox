@@ -266,8 +266,12 @@ func HandleUserImageUpdate(c *fiber.Ctx) error {
 	}
 	title := c.FormValue("title")
 	description := c.FormValue("description")
+	isPublic := c.FormValue("is_public") == "on"
+
 	image.Title = title
 	image.Description = description
+	image.IsPublic = isPublic
+
 	db.Save(image)
 	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild aktualisiert"})
 	return c.Redirect("/user/images")

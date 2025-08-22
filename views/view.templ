@@ -547,6 +547,10 @@ templ ImageOptions(model viewmodel.Image) {
 }
 
 templ ImageViewer(model viewmodel.Image) {
+	@ImageViewerWithUser(model, 0, 0) // Fallback für Backward Compatibility
+}
+
+templ ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID uint) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
 		<!-- Gesamte Card wird mit der hx-id versehen, damit wir die vollständige Karte aktualisieren können -->
 		<div class="card w-[32rem] bg-base-100 shadow-xl" id="full-image-card"
@@ -575,7 +579,19 @@ templ ImageViewer(model viewmodel.Image) {
 				}
 			</figure>
 			<div class="card-body bg-base-100">
-				<h2 class="card-title mx-auto truncate max-w-full" title={model.DisplayName}>{model.DisplayName}</h2>
+				<div class="flex items-center justify-center gap-2">
+					<h2 class="card-title mx-auto truncate max-w-full" title={model.DisplayName}>{model.DisplayName}</h2>
+					<!-- Edit Icon nur für Bildbesitzer anzeigen -->
+					if currentUserID > 0 && currentUserID == imageOwnerID {
+						<div class="tooltip tooltip-left" data-tip="Bild bearbeiten">
+							<a href={templ.SafeURL("/user/images/edit/" + model.UUID)} class="btn btn-ghost btn-sm btn-circle text-gray-600 hover:text-primary">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+								</svg>
+							</a>
+						</div>
+					}
+				</div>
 				
 				<!-- Link-Optionen und Buttons in der Card-Body -->
 				@ImageOptions(model)
