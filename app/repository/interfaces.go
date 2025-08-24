@@ -44,6 +44,7 @@ type ImageRepository interface {
 	GetVariants(imageID uint) ([]models.ImageVariant, error)
 	DeleteVariants(imageID uint) error
 	GetDailyStats(startDate, endDate time.Time) ([]models.DailyStats, error)
+	GetByUserIDAndFileHash(userID uint, fileHash string) (*models.Image, error)
 }
 
 // AlbumRepository defines the interface for album-related database operations

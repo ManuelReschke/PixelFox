@@ -189,3 +189,13 @@ func (r *imageRepository) GetDailyStats(startDate, endDate time.Time) ([]models.
 
 	return dailyStats, nil
 }
+
+// GetByUserIDAndFileHash retrieves an image by user ID and file hash for duplicate detection
+func (r *imageRepository) GetByUserIDAndFileHash(userID uint, fileHash string) (*models.Image, error) {
+	var image models.Image
+	err := r.db.Where("user_id = ? AND file_hash = ?", userID, fileHash).First(&image).Error
+	if err != nil {
+		return nil, err
+	}
+	return &image, nil
+}

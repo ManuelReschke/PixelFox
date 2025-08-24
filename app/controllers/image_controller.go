@@ -19,7 +19,7 @@ import (
 	"github.com/sujit-baniya/flash"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
@@ -183,10 +183,9 @@ func HandleUpload(c *fiber.Ctx) error {
 
 	// Check for duplicate files by this user
 	userID := c.Locals(USER_ID).(uint)
-	db := database.GetDB()
-	var existingImage models.Image
-	result := db.Where("user_id = ? AND file_hash = ?", userID, fileHash).First(&existingImage)
-	if result.Error == nil {
+	imageRepo := repository.GetGlobalFactory().GetImageRepository()
+	existingImage, err := imageRepo.GetByUserIDAndFileHash(userID, fileHash)
+	if err == nil {
 		// Duplicate found! Return user-friendly response
 		fiberlog.Info(fmt.Sprintf("[Upload] Duplicate file detected for user %d, redirecting to existing image %s", userID, existingImage.UUID))
 
@@ -335,7 +334,7 @@ func HandleUpload(c *fiber.Ctx) error {
 		IPv4:          ipv4,
 		IPv6:          ipv6,
 	}
-	if err := db.Create(&image).Error; err != nil {
+	if err := imageRepo.Create(&image); err != nil {
 		fiberlog.Error(fmt.Sprintf("Error saving image to database: %v", err))
 
 		// Clean up the file if database insertion fails
@@ -393,9 +392,9 @@ func HandleShareLink(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
-	db := database.GetDB()
-	var image models.Image
-	if err := db.Where("share_link = ?", sharelink).First(&image).Error; err != nil {
+	imageRepo := repository.GetGlobalFactory().GetImageRepository()
+	image, err := imageRepo.GetByShareLink(sharelink)
+	if err != nil {
 		fiberlog.Info(fmt.Sprintf("Image not found with ShareLink: %s, Error: %v", sharelink, err))
 		return c.Redirect("/")
 	}
@@ -417,8 +416,8 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	}
 
 	// Try to find the image by UUID first
-	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, identifier)
+	imageRepo := repository.GetGlobalFactory().GetImageRepository()
+	image, err := imageRepo.GetByUUID(identifier)
 	if err != nil {
 		fiberlog.Info(fmt.Sprintf("Image not found with UUID: %s, Error: %v", identifier, err))
 
@@ -438,7 +437,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	domain := env.GetEnv("PUBLIC_DOMAIN", "")
 
 	// Increase the view counter
-	image.IncrementViewCount(db)
+	imageRepo.UpdateViewCount(image.ID)
 
 	// Korrekte URL-Konstruktion für das Original-Bild mit GetImageURL
 	filePathComplete := imageprocessor.GetImageURL(image, "original", "")
@@ -668,8 +667,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	isComplete := imageprocessor.IsImageProcessingComplete(uuid)
 
 	// Get the image from the database
-	db := database.GetDB()
-	image, err := models.FindImageByUUID(db, uuid)
+	imageRepo := repository.GetGlobalFactory().GetImageRepository()
+	image, err := imageRepo.GetByUUID(uuid)
 	if err != nil {
 		fiberlog.Error(err)
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
