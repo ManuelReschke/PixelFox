@@ -127,7 +127,7 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 
 	// Render storage management using the standard layout
 	storageManagement := admin_views.StorageManagement(viewData)
-	home := views.Home(" | Speicherverwaltung", isLoggedIn(c), false, flash.Get(c), storageManagement, true, nil)
+	home := views.HomeCtx(c, " | Speicherverwaltung", isLoggedIn(c), false, flash.Get(c), storageManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -138,7 +138,7 @@ func (asc *AdminStorageController) HandleAdminCreateStoragePool(c *fiber.Ctx) er
 	csrfToken := c.Locals("csrf").(string)
 
 	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false, csrfToken)
-	home := views.Home(" | Speicherpool erstellen", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
+	home := views.HomeCtx(c, " | Speicherpool erstellen", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -313,7 +313,7 @@ func (asc *AdminStorageController) HandleAdminEditStoragePool(c *fiber.Ctx) erro
 	csrfToken := c.Locals("csrf").(string)
 
 	poolForm := admin_views.StoragePoolForm(*pool, true, csrfToken)
-	home := views.Home(" | Speicherpool bearbeiten", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
+	home := views.HomeCtx(c, " | Speicherpool bearbeiten", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

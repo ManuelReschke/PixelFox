@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/ManuelReschke/PixelFox/app/controllers"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/middleware"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 
 	"time"
@@ -17,6 +18,9 @@ type HttpRouter struct {
 func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// init session
 	session.NewSessionStore()
+
+	// Apply UserContext middleware globally as first middleware
+	app.Use(middleware.UserContextMiddleware)
 
 	// Initialize admin controller with repositories
 	controllers.InitializeAdminController()
@@ -159,107 +163,33 @@ func NewHttpRouter() *HttpRouter {
 }
 
 func loggedInMiddleware(c *fiber.Ctx) error {
-	// Get session with error handling
-	sess, err := session.GetSessionStore().Get(c)
-	if err != nil {
-		// On error: treat user as not logged in
-		c.Locals(controllers.FROM_PROTECTED, false)
-		return c.Next()
-	}
-
-	// Get user ID from session
-	userId := sess.Get(controllers.USER_ID)
-
-	// If no user ID exists, user is not logged in
-	if userId == nil {
-		c.Locals(controllers.FROM_PROTECTED, false)
-		return c.Next()
-	}
-
-	// Get username from session
-	userName := sess.Get(controllers.USER_NAME)
-
-	// If user ID exists but username is missing, something is inconsistent
-	if userName == nil {
-		// Still consider as logged in, but log a warning
-		c.Locals(controllers.FROM_PROTECTED, true)
-		c.Locals(controllers.USER_ID, userId.(uint))
-		return c.Next()
-	}
-
-	// User is fully logged in
-	c.Locals(controllers.FROM_PROTECTED, true)
-	c.Locals(controllers.USER_NAME, userName)
-	c.Locals(controllers.USER_ID, userId.(uint))
-
-	// We can use the global map, but only when necessary
-	// This is thread-safe thanks to our mutex
-	session.SetKeyValue(controllers.USER_NAME, userName.(string))
-
+	// UserContextMiddleware already set all user context
+	// This middleware now just passes through - no additional logic needed
+	// All user information is available via usercontext.GetUserContext(c)
 	return c.Next()
 }
 
 func requireAuthMiddleware(c *fiber.Ctx) error {
-	// Get session with error handling
-	sess, err := session.GetSessionStore().Get(c)
-	if err != nil {
-		// On error: redirect to login page
+	// UserContextMiddleware already parsed session data
+	// Just check if user is logged in, redirect if not
+	if !c.Locals(controllers.FROM_PROTECTED).(bool) {
 		return c.Redirect("/login", fiber.StatusSeeOther)
 	}
-
-	// Get user ID from session
-	userId := sess.Get(controllers.USER_ID)
-
-	// If no user ID exists, user is not logged in - redirect to login page
-	if userId == nil {
-		return c.Redirect("/login", fiber.StatusSeeOther)
-	}
-
-	// Get username from session
-	userName := sess.Get(controllers.USER_NAME)
-
-	// If user ID exists but username is missing, something is inconsistent
-	if userName == nil {
-		// Still consider as logged in, but only set user ID
-		c.Locals(controllers.FROM_PROTECTED, true)
-		c.Locals(controllers.USER_ID, userId.(uint))
-		return c.Next()
-	}
-
-	// User is fully logged in - set all locals
-	c.Locals(controllers.FROM_PROTECTED, true)
-	c.Locals(controllers.USER_NAME, userName)
-	c.Locals(controllers.USER_ID, userId.(uint))
-
-	// Store username in the global map (thread-safe)
-	session.SetKeyValue(controllers.USER_NAME, userName.(string))
 
 	return c.Next()
 }
 
 func RequireAdminMiddleware(c *fiber.Ctx) error {
-	// First check if user is authenticated
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(controllers.USER_ID)
-
-	// User is not logged in
-	if userID == nil {
+	// UserContextMiddleware already parsed session data
+	// Check if user is logged in
+	if !c.Locals(controllers.FROM_PROTECTED).(bool) {
 		return c.Redirect("/login", fiber.StatusSeeOther)
 	}
 
-	// Check if user is admin based on session value
-	isAdmin := sess.Get(controllers.USER_IS_ADMIN)
-	if isAdmin == nil || isAdmin.(bool) != true {
-		// User is not an admin
+	// Check if user is admin
+	if !c.Locals(controllers.USER_IS_ADMIN).(bool) {
 		return c.Redirect("/", fiber.StatusSeeOther)
 	}
-
-	// Set user info in context
-	session.SetKeyValue(controllers.USER_NAME, sess.Get(controllers.USER_NAME).(string))
-	c.Locals(controllers.FROM_PROTECTED, true)
-	c.Locals(controllers.USER_NAME, sess.Get(controllers.USER_NAME))
-	c.Locals(controllers.USER_ID, userID.(uint))
-	c.Locals(controllers.USER_IS_ADMIN, true)
 
 	return c.Next()
 }

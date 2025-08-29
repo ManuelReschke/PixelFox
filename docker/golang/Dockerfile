@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.24-alpine AS fetch-stage
+FROM golang:1.25-alpine AS fetch-stage
 WORKDIR /app
 RUN apk add --no-cache build-base ffmpeg libwebp-dev
 # enable CGO (needed for kolesa-teamgo webp)
@@ -14,7 +14,7 @@ COPY --chown=65532:65532 . /app
 WORKDIR /app
 RUN ["templ", "generate"]
 
-FROM golang:1.24-alpine AS build-stage
+FROM golang:1.25-alpine AS build-stage
 COPY --from=generate-stage /app /app
 WORKDIR /app
 RUN go build -o /app/pixelfox-app ./cmd/pixelfox

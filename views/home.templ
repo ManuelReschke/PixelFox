@@ -125,6 +125,42 @@ templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.Statistic
     }
 }
 
+
+func extractUsername(c *fiber.Ctx) string {
+	if c == nil {
+		return ""
+	}
+	if userNameValue := c.Locals("username"); userNameValue != nil {
+		if userName, ok := userNameValue.(string); ok {
+			return userName
+		}
+	}
+	return ""
+}
+
+templ HomeCtx(
+	c *fiber.Ctx,
+	page string,
+	fromProtected bool,
+	isError bool,
+	msg fiber.Map,
+	cmp templ.Component,
+	isAdmin bool,
+	ogViewModel *viewmodel.OpenGraph,
+) {
+	@Layout(viewmodel.Layout{
+                    Page:          page,
+                    FromProtected: fromProtected,
+                    IsError:       isError,
+                    Msg:           msg,
+                    Username:      extractUsername(c),
+                    IsAdmin:       isAdmin,
+                    OGViewModel:   ogViewModel,
+    }) {
+		@cmp
+	}
+}
+
 templ Home(
 	page string,
 	fromProtected bool,
@@ -139,13 +175,14 @@ templ Home(
                     FromProtected: fromProtected,
                     IsError:       isError,
                     Msg:           msg,
-                    Username:      "",
+                    Username:      "", // Legacy - Username not available
                     IsAdmin:       isAdmin,
                     OGViewModel:   ogViewModel,
     }) {
 		@cmp
 	}
 }
+
 
 templ FilePicker() {
 

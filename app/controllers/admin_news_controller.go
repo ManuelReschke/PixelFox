@@ -12,7 +12,6 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
@@ -53,7 +52,7 @@ func (anc *AdminNewsController) HandleAdminNews(c *fiber.Ctx) error {
 
 	// Render the news management page
 	newsManagement := admin_views.NewsManagement(newsList)
-	home := views.Home(" | News-Verwaltung", isLoggedIn(c), false, flash.Get(c), newsManagement, true, &viewmodel.OpenGraph{
+	home := views.HomeCtx(c, " | News-Verwaltung", isLoggedIn(c), false, flash.Get(c), newsManagement, true, &viewmodel.OpenGraph{
 		Title:       "News-Verwaltung - PixelFox Admin",
 		Description: "Verwaltung der News-Artikel",
 		Image:       "/img/pixelfox-logo.png",
@@ -68,7 +67,7 @@ func (anc *AdminNewsController) HandleAdminNews(c *fiber.Ctx) error {
 func (anc *AdminNewsController) HandleAdminNewsCreate(c *fiber.Ctx) error {
 	// Render the news creation page
 	newsCreate := admin_views.NewsCreate()
-	home := views.Home(" | Neuen News-Artikel erstellen", isLoggedIn(c), false, flash.Get(c), newsCreate, true, &viewmodel.OpenGraph{
+	home := views.HomeCtx(c, " | Neuen News-Artikel erstellen", isLoggedIn(c), false, flash.Get(c), newsCreate, true, &viewmodel.OpenGraph{
 		Title:       "News erstellen - PixelFox Admin",
 		Description: "Erstellen eines neuen News-Artikels",
 		Image:       "/img/pixelfox-logo.png",
@@ -162,7 +161,7 @@ func (anc *AdminNewsController) HandleAdminNewsEdit(c *fiber.Ctx) error {
 
 	// Render the news edit page
 	newsEdit := admin_views.NewsEdit(*news)
-	home := views.Home(" | News-Artikel bearbeiten", isLoggedIn(c), false, flash.Get(c), newsEdit, true, &viewmodel.OpenGraph{
+	home := views.HomeCtx(c, " | News-Artikel bearbeiten", isLoggedIn(c), false, flash.Get(c), newsEdit, true, &viewmodel.OpenGraph{
 		Title:       "News bearbeiten - PixelFox Admin",
 		Description: "Bearbeiten eines News-Artikels",
 		Image:       "/img/pixelfox-logo.png",
@@ -309,41 +308,41 @@ func GetAdminNewsController() *AdminNewsController {
 	return adminNewsController
 }
 
-// ============================================================================
-// PUBLIC NEWS FUNCTIONS - These remain standalone and use direct DB access
-// ============================================================================
-
-// HandleNewsIndex renders the public news page
-func HandleNewsIndex(c *fiber.Ctx) error {
-	// Get published news articles
-	var newsList []models.News
-	result := database.DB.Preload("User").Where("published = ?", true).Order("created_at DESC").Find(&newsList)
-	if result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch news articles")
-	}
-
-	// Render the news index page
-	newsIndex := views.NewsIndex(newsList, isLoggedIn(c), fiber.Map(flash.Get(c)))
-
-	handler := adaptor.HTTPHandler(templ.Handler(newsIndex))
-	return handler(c)
-}
-
-// HandleNewsShow renders a single news article
-func HandleNewsShow(c *fiber.Ctx) error {
-	// Get news slug from URL
-	newsSlug := c.Params("slug")
-
-	// Get news article
-	var news models.News
-	result := database.DB.Preload("User").Where("slug = ? AND published = ?", newsSlug, true).First(&news)
-	if result.Error != nil {
-		return c.Status(fiber.StatusNotFound).SendString("News article not found")
-	}
-
-	// Render the news show page
-	newsShow := views.NewsShow(news, isLoggedIn(c), fiber.Map(flash.Get(c)))
-
-	handler := adaptor.HTTPHandler(templ.Handler(newsShow))
-	return handler(c)
-}
+//// ============================================================================
+//// PUBLIC NEWS FUNCTIONS - These remain standalone and use direct DB access
+//// ============================================================================
+//
+//// HandleNewsIndex renders the public news page
+//func HandleNewsIndex(c *fiber.Ctx) error {
+//	// Get published news articles
+//	var newsList []models.News
+//	result := database.DB.Preload("User").Where("published = ?", true).Order("created_at DESC").Find(&newsList)
+//	if result.Error != nil {
+//		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch news articles")
+//	}
+//
+//	// Render the news index page
+//	newsIndex := views.NewsIndex(newsList, isLoggedIn(c), fiber.Map(flash.Get(c)))
+//
+//	handler := adaptor.HTTPHandler(templ.Handler(newsIndex))
+//	return handler(c)
+//}
+//
+//// HandleNewsShow renders a single news article
+//func HandleNewsShow(c *fiber.Ctx) error {
+//	// Get news slug from URL
+//	newsSlug := c.Params("slug")
+//
+//	// Get news article
+//	var news models.News
+//	result := database.DB.Preload("User").Where("slug = ? AND published = ?", newsSlug, true).First(&news)
+//	if result.Error != nil {
+//		return c.Status(fiber.StatusNotFound).SendString("News article not found")
+//	}
+//
+//	// Render the news show page
+//	newsShow := views.NewsShow(news, isLoggedIn(c), fiber.Map(flash.Get(c)))
+//
+//	handler := adaptor.HTTPHandler(templ.Handler(newsShow))
+//	return handler(c)
+//}

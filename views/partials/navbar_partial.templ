@@ -1,6 +1,5 @@
 package partials
 
-import "github.com/ManuelReschke/PixelFox/internal/pkg/session"
 import "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 import "github.com/ManuelReschke/PixelFox/app/models"
 
@@ -15,7 +14,7 @@ templ Navbar(appName string, layout viewmodel.Layout) {
 		<div class="navbar-end">
 			if layout.FromProtected {
                 <a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/user/profile">
-                    Hallo, <span class="font-bold text-indigo-200"> { session.GetValueByKey("username") }</span>
+                    Hallo, <span class="font-bold text-indigo-200"> { layout.Username }</span>
                 </a>
 				<a hx-swap="transition:true" class="btn btn-ghost text-base hover:bg-base-200 hover:text-base-content" href="/user/images">
 					Meine Bilder

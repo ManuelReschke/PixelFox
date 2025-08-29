@@ -12,7 +12,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
 )
 
@@ -83,10 +83,10 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 }
 
 func HandleUserAlbums(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	var albums []models.Album
 	if err := database.DB.Where("user_id = ?", userID).Preload("Images.StoragePool").Find(&albums).Error; err != nil {
@@ -118,10 +118,10 @@ func HandleUserAlbums(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumCreate(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	if c.Method() == "POST" {
 		title := c.FormValue("title")
@@ -159,10 +159,10 @@ func HandleUserAlbumCreate(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumEdit(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	albumIDStr := c.Params("id")
 	albumID, err := strconv.ParseUint(albumIDStr, 10, 32)
@@ -221,8 +221,8 @@ func HandleUserAlbumEdit(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumDelete(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 
 	albumIDStr := c.Params("id")
 	albumID, err := strconv.ParseUint(albumIDStr, 10, 32)
@@ -249,10 +249,10 @@ func HandleUserAlbumDelete(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumView(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	albumIDStr := c.Params("id")
 	albumID, err := strconv.ParseUint(albumIDStr, 10, 32)
@@ -293,8 +293,8 @@ func HandleUserAlbumView(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumAddImage(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 
 	albumIDStr := c.Params("id")
 	albumID, err := strconv.ParseUint(albumIDStr, 10, 32)
@@ -343,8 +343,8 @@ func HandleUserAlbumAddImage(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumRemoveImage(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 
 	albumIDStr := c.Params("id")
 	albumID, err := strconv.ParseUint(albumIDStr, 10, 32)

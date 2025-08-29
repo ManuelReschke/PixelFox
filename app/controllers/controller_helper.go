@@ -14,6 +14,18 @@ func isLoggedIn(c *fiber.Ctx) bool {
 	return fromProtected
 }
 
+// ExtractUsername gets the username from Locals (set by middleware)
+func ExtractUsername(c *fiber.Ctx) string {
+	// Get from Locals (set by authentication middleware)
+	if userNameValue := c.Locals(USER_NAME); userNameValue != nil {
+		if userName, ok := userNameValue.(string); ok {
+			return userName
+		}
+	}
+
+	return ""
+}
+
 // GetClientIP determines the actual client IP address considering proxies and dual stack
 // Returns both IPv4 and IPv6 addresses if available
 func GetClientIP(c *fiber.Ctx) (string, string) {

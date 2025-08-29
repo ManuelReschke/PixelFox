@@ -29,7 +29,7 @@ const (
 const (
 	PENDING_TTL    = 30 * time.Minute // Längere Zeit für unverarbeitete Bilder
 	PROCESSING_TTL = 30 * time.Minute // Längere Zeit für Bilder in Verarbeitung
-	COMPLETED_TTL  = 5 * time.Minute  // Kurze Zeit für erfolgreich verarbeitete Bilder
+	COMPLETED_TTL  = 1 * time.Minute  // Kurze Zeit für erfolgreich verarbeitete Bilder
 	FAILED_TTL     = 1 * time.Hour    // Längere Zeit für fehlgeschlagene Bilder (für Fehleranalyse)
 )
 

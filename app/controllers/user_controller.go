@@ -20,16 +20,17 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
 )
 
 func HandleUserProfile(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	// Get user data from database
 	var user models.User
@@ -53,7 +54,7 @@ func HandleUserProfile(c *fiber.Ctx) error {
 
 	profileIndex := user_views.ProfileIndex(username, csrfToken, user, int(imageCount), int(albumCount), int64(totalStorage))
 	profile := user_views.Profile(
-		" | Profil", isLoggedIn(c), false, flash.Get(c), username, profileIndex, isAdmin,
+		" | Profil", userCtx.IsLoggedIn, false, flash.Get(c), username, profileIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(profile))
@@ -62,16 +63,15 @@ func HandleUserProfile(c *fiber.Ctx) error {
 }
 
 func HandleUserSettings(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	_ = sess.Get(USER_ID) // Using _ to avoid unused variable warning
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	csrfToken := c.Locals("csrf").(string)
 
 	settingsIndex := user_views.SettingsIndex(username, csrfToken)
 	settings := user_views.Settings(
-		" | Einstellungen", isLoggedIn(c), false, flash.Get(c), username, settingsIndex, isAdmin,
+		" | Einstellungen", userCtx.IsLoggedIn, false, flash.Get(c), username, settingsIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(settings))
@@ -80,10 +80,10 @@ func HandleUserSettings(c *fiber.Ctx) error {
 }
 
 func HandleUserImages(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	var images []models.Image
 	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Find(&images)
@@ -152,7 +152,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 
 	imagesGallery := user_views.ImagesGallery(username, galleryImages)
 	imagesPage := user_views.Images(
-		" | Meine Bilder", isLoggedIn(c), false, flash.Get(c), username, imagesGallery, isAdmin,
+		" | Meine Bilder", userCtx.IsLoggedIn, false, flash.Get(c), username, imagesGallery, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(imagesPage))
@@ -161,8 +161,8 @@ func HandleUserImages(c *fiber.Ctx) error {
 }
 
 func HandleLoadMoreImages(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 
 	page, err := strconv.Atoi(c.Query("page", "1"))
 	if err != nil || page < 1 {
@@ -239,8 +239,8 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 
 // HandleUserImageEdit allows users to edit their own images
 func HandleUserImageEdit(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 	uuid := c.Params("uuid")
 	if uuid == "" {
 		return c.Redirect("/user/images")
@@ -253,15 +253,15 @@ func HandleUserImageEdit(c *fiber.Ctx) error {
 	}
 	csrfToken := c.Locals("csrf").(string)
 	userEdit := user_views.UserImageEdit(*image, csrfToken)
-	page := views.Home(fmt.Sprintf("| Bild %s bearbeiten", image.Title), isLoggedIn(c), false, flash.Get(c), userEdit, sess.Get(USER_IS_ADMIN).(bool), nil)
+	page := views.HomeCtx(c, fmt.Sprintf("| Bild %s bearbeiten", image.Title), userCtx.IsLoggedIn, false, flash.Get(c), userEdit, userCtx.IsAdmin, nil)
 	handler := adaptor.HTTPHandler(templ.Handler(page))
 	return handler(c)
 }
 
 // HandleUserImageUpdate processes the edit form
 func HandleUserImageUpdate(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 	uuid := c.Params("uuid")
 	if uuid == "" {
 		return c.Redirect("/user/images")
@@ -287,8 +287,8 @@ func HandleUserImageUpdate(c *fiber.Ctx) error {
 
 // HandleUserImageDelete removes user's image and all variants
 func HandleUserImageDelete(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 	uuid := c.Params("uuid")
 	if uuid == "" {
 		return c.Redirect("/user/images")
@@ -369,10 +369,10 @@ func enqueueUserS3DeleteJobsIfEnabled(image *models.Image) {
 }
 
 func HandleUserProfileEdit(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
-	username := sess.Get(USER_NAME).(string)
-	isAdmin := sess.Get(USER_IS_ADMIN).(bool)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
 
 	// Get user data from database
 	var user models.User
@@ -385,7 +385,7 @@ func HandleUserProfileEdit(c *fiber.Ctx) error {
 
 	profileEditIndex := user_views.ProfileEditIndex(username, csrfToken, user)
 	profileEdit := user_views.ProfileEdit(
-		" | Profil bearbeiten", isLoggedIn(c), false, flash.Get(c), username, profileEditIndex, isAdmin,
+		" | Profil bearbeiten", userCtx.IsLoggedIn, false, flash.Get(c), username, profileEditIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(profileEdit))
@@ -393,8 +393,8 @@ func HandleUserProfileEdit(c *fiber.Ctx) error {
 }
 
 func HandleUserProfileEditPost(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 	formType := c.FormValue("form_type")
 
 	// Get user from database
@@ -615,8 +615,8 @@ func HandleEmailChangeVerification(c *fiber.Ctx) error {
 
 // HandleCancelEmailChange allows user to cancel pending email change
 func HandleCancelEmailChange(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 
 	// Get user from database
 	var user models.User
@@ -640,8 +640,8 @@ func HandleCancelEmailChange(c *fiber.Ctx) error {
 
 // HandleResendEmailChange resends the email change verification email
 func HandleResendEmailChange(c *fiber.Ctx) error {
-	sess, _ := session.GetSessionStore().Get(c)
-	userID := sess.Get(USER_ID).(uint)
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
 
 	// Get user from database
 	var user models.User

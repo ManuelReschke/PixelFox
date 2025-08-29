@@ -4,46 +4,31 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/gofiber/fiber/v2"
+	"strings"
 )
 
-templ NewsShow(news models.News, fromProtected bool, flashMsg fiber.Map) {
-	@Layout(viewmodel.Layout{
-		Page:          "news",
-		FromProtected: fromProtected,
-		IsError:       false,
-		Msg:           flashMsg,
-		Username:      "",
-		IsAdmin:       false,
-		OGViewModel:   &viewmodel.OpenGraph{
-			Title:       news.Title + " - PixelFox News",
-			Description: stripHTMLAndTruncate(news.Content, 150),
-			Image:       "/img/pixelfox-logo.png",
-			URL:         "/news/" + news.Slug,
-		},
-	}) {
-		<div class="container mx-auto px-4 py-8 max-w-4xl">
-			<div class="mb-6">
-				<a href="/news" class="btn btn-ghost btn-sm">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-					</svg>
-					Zurück zur Übersicht
-				</a>
-			</div>
-			
-			<article class="max-w-none">
-				<h1 class="text-3xl font-bold mb-2">{ news.Title }</h1>
-				<div class="flex items-center gap-2 text-base-content/70 mb-6">
-					<span>Von { news.User.Name }</span>
-					<span>•</span>
-					<span>{ news.CreatedAt.Format("02.01.2006 15:04") }</span>
-				</div>
-				
-				<div class="mt-6 content-output">
-					@templ.Raw(news.Content)
-				</div>
-			</article>
+templ NewsShowContent(news models.News) {
+	<div class="container mx-auto px-4 py-8 max-w-4xl">
+		<div class="mb-6">
+			<a href="/news" class="btn btn-ghost btn-sm">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+				</svg>
+				Zurück zur Übersicht
+			</a>
 		</div>
 		
-	}
+		<article class="max-w-none">
+			<h1 class="text-3xl font-bold mb-2">{ news.Title }</h1>
+			<div class="flex items-center gap-2 text-base-content/70 mb-6">
+				<span>Von { news.User.Name }</span>
+				<span>•</span>
+				<span>{ news.CreatedAt.Format("02.01.2006 15:04") }</span>
+			</div>
+			
+			<div class="mt-6 content-output">
+				@templ.Raw(news.Content)
+			</div>
+		</article>
+	</div>
 }

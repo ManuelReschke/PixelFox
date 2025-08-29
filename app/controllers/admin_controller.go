@@ -55,7 +55,7 @@ func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
 
 	// Render dashboard
 	dashboard := admin_views.Dashboard(int(totalUsers), int(totalImages), recentUsers, imageStats, userStats)
-	home := views.Home(" | Admin Dashboard", isLoggedIn(c), false, flash.Get(c), dashboard, true, nil)
+	home := views.HomeCtx(c, " | Admin Dashboard", isLoggedIn(c), false, flash.Get(c), dashboard, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -102,7 +102,7 @@ func (ac *AdminController) HandleUsers(c *fiber.Ctx) error {
 
 	// Render user management page
 	userManagement := admin_views.UserManagement(adminUsers, page, pages)
-	home := views.Home(" | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
+	home := views.HomeCtx(c, " | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -132,7 +132,7 @@ func (ac *AdminController) HandleUserEdit(c *fiber.Ctx) error {
 
 	// Render user edit page
 	userEdit := admin_views.UserEdit(*user)
-	home := views.Home(" | Edit User", isLoggedIn(c), false, flash.Get(c), userEdit, true, nil)
+	home := views.HomeCtx(c, " | Edit User", isLoggedIn(c), false, flash.Get(c), userEdit, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -286,7 +286,7 @@ func (ac *AdminController) handleUserSearch(c *fiber.Ctx, query string) error {
 
 	// Render results
 	userManagement := admin_views.UserManagement(adminUsers, 1, []int{1})
-	home := views.Home(" | User Search", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
+	home := views.HomeCtx(c, " | User Search", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -401,7 +401,7 @@ func (ac *AdminController) HandleSettings(c *fiber.Ctx) error {
 
 	// Render settings page
 	settingsView := admin_views.Settings(*settings, csrfToken)
-	home := views.Home(" | Einstellungen", isLoggedIn(c), false, flash.Get(c), settingsView, true, nil)
+	home := views.HomeCtx(c, " | Einstellungen", isLoggedIn(c), false, flash.Get(c), settingsView, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

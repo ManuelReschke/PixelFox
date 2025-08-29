@@ -50,7 +50,7 @@ func (apc *AdminPageController) HandleAdminPages(c *fiber.Ctx) error {
 
 	// Render page management
 	pageManagement := admin_views.PageManagement(pages)
-	home := views.Home(" | Seiten-Verwaltung", isLoggedIn(c), false, flash.Get(c), pageManagement, true, nil)
+	home := views.HomeCtx(c, " | Seiten-Verwaltung", isLoggedIn(c), false, flash.Get(c), pageManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -66,7 +66,7 @@ func (apc *AdminPageController) HandleAdminPageCreate(c *fiber.Ctx) error {
 
 	// Render page creation form (reuse PageEdit with isEdit=false)
 	pageCreate := admin_views.PageEdit(emptyPage, false, csrfToken)
-	home := views.Home(" | Neue Seite erstellen", isLoggedIn(c), false, flash.Get(c), pageCreate, true, nil)
+	home := views.HomeCtx(c, " | Neue Seite erstellen", isLoggedIn(c), false, flash.Get(c), pageCreate, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -158,7 +158,7 @@ func (apc *AdminPageController) HandleAdminPageEdit(c *fiber.Ctx) error {
 
 	// Render page edit form
 	pageEdit := admin_views.PageEdit(*page, true, csrfToken)
-	home := views.Home(" | Seite bearbeiten", isLoggedIn(c), false, flash.Get(c), pageEdit, true, nil)
+	home := views.HomeCtx(c, " | Seite bearbeiten", isLoggedIn(c), false, flash.Get(c), pageEdit, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

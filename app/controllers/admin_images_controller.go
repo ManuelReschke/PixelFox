@@ -68,7 +68,7 @@ func (aic *AdminImagesController) HandleAdminImages(c *fiber.Ctx) error {
 
 	// Render image management page
 	imageManagement := admin_views.ImageManagement(images, page, totalPages)
-	home := views.Home(" | Image Management", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
+	home := views.HomeCtx(c, " | Image Management", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -91,7 +91,7 @@ func (aic *AdminImagesController) HandleAdminImageSearch(c *fiber.Ctx, query str
 
 	// Render results
 	imageManagement := admin_views.ImageManagement(images, 1, 1)
-	home := views.Home(" | Image Search", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
+	home := views.HomeCtx(c, " | Image Search", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -116,7 +116,7 @@ func (aic *AdminImagesController) HandleAdminImageEdit(c *fiber.Ctx) error {
 
 	// Render image edit page
 	imageEdit := admin_views.ImageEdit(*image)
-	home := views.Home(" | Bild bearbeiten", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
+	home := views.HomeCtx(c, " | Bild bearbeiten", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

@@ -23,9 +23,9 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 )
@@ -40,7 +40,8 @@ func calculateFileHash(file io.Reader) (string, error) {
 }
 
 func HandleUpload(c *fiber.Ctx) error {
-	if !isLoggedIn(c) {
+	userCtx := usercontext.GetUserContext(c)
+	if !userCtx.IsLoggedIn {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 	}
 
@@ -424,13 +425,11 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
-	// Get current user ID from session if logged in
+	// Get current user ID from UserContext
+	userCtx := usercontext.GetUserContext(c)
 	var currentUserID uint = 0
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		if userID := sess.Get(USER_ID); userID != nil {
-			currentUserID = userID.(uint)
-		}
+	if userCtx.IsLoggedIn {
+		currentUserID = userCtx.UserID
 	}
 
 	// The FilePath contains the relative path within the uploads folder
@@ -561,11 +560,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	ogTitle := fmt.Sprintf("%s - %s", displayName, "PIXELFOX.cc")
 	ogDescription := "Image uploaded on PIXELFOX.cc - Free image hosting"
 
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	isAdmin := userCtx.IsAdmin
 
 	// Create the ImageViewModel
 	imageModel := viewmodel.Image{
@@ -650,7 +645,7 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		Description: ogDescription,
 	}
 
-	home := views.Home(fmt.Sprintf("| Bild %s ansehen", imageModel.DisplayName), isLoggedIn(c), false, flash.Get(c), imageViewer, isAdmin, ogViewModel)
+	home := views.HomeCtx(c, fmt.Sprintf("| Bild %s ansehen", imageModel.DisplayName), userCtx.IsLoggedIn, false, flash.Get(c), imageViewer, isAdmin, ogViewModel)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -674,13 +669,11 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Image not found")
 	}
 
-	// Get current user ID from session if logged in
+	// Get current user ID from UserContext
+	userCtx := usercontext.GetUserContext(c)
 	var currentUserID uint = 0
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		if userID := sess.Get(USER_ID); userID != nil {
-			currentUserID = userID.(uint)
-		}
+	if userCtx.IsLoggedIn {
+		currentUserID = userCtx.UserID
 	}
 
 	// Check if any optimized versions are available (for Ajax response)

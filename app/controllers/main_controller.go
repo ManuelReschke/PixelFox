@@ -3,8 +3,8 @@ package controllers
 import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	pages "github.com/ManuelReschke/PixelFox/views/pages"
 	"github.com/a-h/templ"
@@ -14,36 +14,14 @@ import (
 )
 
 func HandleStart(c *fiber.Ctx) error {
-	fromProtected := isLoggedIn(c)
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 	csrfToken := c.Locals("csrf").(string)
-
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if fromProtected {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
 
 	stats := statistics.GetStatisticsData()
 
-	page := views.HomeIndex(fromProtected, csrfToken, stats)
-	home := views.Home("", fromProtected, false, flash.Get(c), page, isAdmin, nil)
-
-	handler := adaptor.HTTPHandler(templ.Handler(home))
-
-	return handler(c)
-}
-
-func HandleNews(c *fiber.Ctx) error {
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
-
-	page := pages.NewsPage()
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+	page := views.HomeIndex(userCtx.IsLoggedIn, csrfToken, stats)
+	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -51,15 +29,11 @@ func HandleNews(c *fiber.Ctx) error {
 }
 
 func HandleAbout(c *fiber.Ctx) error {
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 
 	page := views.AboutPage()
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -67,15 +41,11 @@ func HandleAbout(c *fiber.Ctx) error {
 }
 
 func HandleContact(c *fiber.Ctx) error {
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 
 	page := views.ContactPage()
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -83,15 +53,11 @@ func HandleContact(c *fiber.Ctx) error {
 }
 
 func HandlePricing(c *fiber.Ctx) error {
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 
 	page := views.PricingPage()
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -99,15 +65,11 @@ func HandlePricing(c *fiber.Ctx) error {
 }
 
 func HandleJobs(c *fiber.Ctx) error {
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 
 	page := pages.JobsPage()
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -115,15 +77,11 @@ func HandleJobs(c *fiber.Ctx) error {
 }
 
 func HandleDocsAPI(c *fiber.Ctx) error {
-	// Überprüfe, ob der Benutzer ein Admin ist
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 
 	page := views.APIPage()
-	home := views.Home("", isLoggedIn(c), false, flash.Get(c), page, isAdmin, nil)
+	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 
@@ -144,16 +102,12 @@ func HandlePageDisplay(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).Render("error/404", nil)
 	}
 
-	// Check if user is admin
-	isAdmin := false
-	if isLoggedIn(c) {
-		sess, _ := session.GetSessionStore().Get(c)
-		isAdmin = sess.Get(USER_IS_ADMIN).(bool)
-	}
+	// Get user context - all user data centrally managed
+	userCtx := usercontext.GetUserContext(c)
 
 	// Create page view
 	pageView := views.PageDisplay(*page)
-	home := views.Home(" | "+page.Title, isLoggedIn(c), false, flash.Get(c), pageView, isAdmin, nil)
+	home := views.HomeCtx(c, " | "+page.Title, userCtx.IsLoggedIn, false, flash.Get(c), pageView, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 

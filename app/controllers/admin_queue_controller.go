@@ -56,7 +56,7 @@ func (aqc *AdminQueueController) HandleAdminQueues(c *fiber.Ctx) error {
 	component := admin_views.QueueItems(queueItems, time.Now())
 
 	// Wrap in the main home layout with proper title
-	home := views.Home(" | Cache & Queue Monitor", isLoggedIn(c), false, flash.Get(c), component, true, nil)
+	home := views.HomeCtx(c, " | Cache & Queue Monitor", isLoggedIn(c), false, flash.Get(c), component, true, nil)
 
 	// Convert the templ component to an HTTP handler and serve it
 	handler := adaptor.HTTPHandler(templ.Handler(home))

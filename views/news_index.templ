@@ -7,61 +7,46 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-templ NewsIndex(newsList []models.News, fromProtected bool, flashMsg fiber.Map) {
-	@Layout(viewmodel.Layout{
-		Page:          "news",
-		FromProtected: fromProtected,
-		IsError:       false,
-		Msg:           flashMsg,
-		Username:      "",
-		IsAdmin:       false,
-		OGViewModel:   &viewmodel.OpenGraph{
-			Title:       "News - PixelFox",
-			Description: "Aktuelle News und Updates von PixelFox",
-			Image:       "/img/pixelfox-logo.png",
-			URL:         "/news",
-		},
-	}) {
-		<div class="container mx-auto px-4 py-8">
-			<h1 class="text-3xl font-bold mb-8 text-center">News</h1>
-			
-			if len(newsList) > 0 {
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					for _, news := range newsList {
-						<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
-							<div class="card-body">
-								<h2 class="card-title">{ news.Title }</h2>
-								<p class="text-sm text-base-content/70">
-									Von { news.User.Name } • { news.CreatedAt.Format("02.01.2006") }
-								</p>
-								<div class="mt-2">
-									if len(news.Content) > 200 {
-										// Strip HTML and limit content preview
-										@templ.Raw(stripHTMLAndTruncate(news.Content, 200))
-										<span>...</span>
-									} else {
-										@templ.Raw(news.Content)
-									}
-								</div>
-								<div class="card-actions justify-end mt-4">
-									<a href={ templ.SafeURL("/news/" + news.Slug) } class="btn btn-primary btn-sm">
-										Weiterlesen
-									</a>
-								</div>
+templ NewsContent(newsList []models.News) {
+	<div class="container mx-auto px-4 py-8">
+		<h1 class="text-3xl font-bold mb-8 text-center">News</h1>
+		
+		if len(newsList) > 0 {
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				for _, news := range newsList {
+					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+						<div class="card-body">
+							<h2 class="card-title">{ news.Title }</h2>
+							<p class="text-sm text-base-content/70">
+								Von { news.User.Name } • { news.CreatedAt.Format("02.01.2006") }
+							</p>
+							<div class="mt-2">
+								if len(news.Content) > 200 {
+									// Strip HTML and limit content preview
+									@templ.Raw(stripHTMLAndTruncate(news.Content, 200))
+									<span>...</span>
+								} else {
+									@templ.Raw(news.Content)
+								}
+							</div>
+							<div class="card-actions justify-end mt-4">
+								<a href={ templ.SafeURL("/news/" + news.Slug) } class="btn btn-primary btn-sm">
+									Weiterlesen
+								</a>
 							</div>
 						</div>
-					}
-				</div>
-			} else {
-				<div class="flex flex-col items-center justify-center py-12">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16 text-base-content/50 mb-4">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-					</svg>
-					<p class="text-xl text-base-content/70">Aktuell sind keine News verfügbar</p>
-				</div>
-			}
-		</div>
-	}
+					</div>
+				}
+			</div>
+		} else {
+			<div class="flex flex-col items-center justify-center py-12">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-16 text-base-content/50 mb-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+				</svg>
+				<p class="text-xl text-base-content/70">Aktuell sind keine News verfügbar</p>
+			</div>
+		}
+	</div>
 }
 
 func stripHTMLAndTruncate(html string, maxLength int) string {
