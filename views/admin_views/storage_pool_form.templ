@@ -107,6 +107,52 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) {
 								<span class="label-text-alt">Absoluter Pfad zum Speicherverzeichnis</span>
 							</label>
 						</div>
+
+						<!-- Node/URLs -->
+						<div class="form-control md:col-span-2">
+							<label class="label">
+								<span class="label-text">Public Base URL</span>
+							</label>
+							<input 
+								type="url" 
+								name="public_base_url" 
+								value={ pool.PublicBaseURL }
+								placeholder="https://s01.pixelfox.cc" 
+								class="input input-bordered"/>
+							<label class="label">
+								<span class="label-text-alt">Öffentliche Basis-URL dieses Pools für Direktlinks/CDN</span>
+							</label>
+						</div>
+
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Upload API URL</span>
+							</label>
+							<input 
+								type="url" 
+								name="upload_api_url" 
+								value={ pool.UploadAPIURL }
+								placeholder="https://s01.pixelfox.cc/api/internal/upload" 
+								class="input input-bordered"/>
+							<label class="label">
+								<span class="label-text-alt">Interne Upload-API dieses Storage-Knotens (Direct-to-Storage)</span>
+							</label>
+						</div>
+
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Node ID</span>
+							</label>
+							<input 
+								type="text" 
+								name="node_id" 
+								value={ pool.NodeID }
+								placeholder="s01" 
+								class="input input-bordered"/>
+							<label class="label">
+								<span class="label-text-alt">Logische Kennung des Storage-Knotens</span>
+							</label>
+						</div>
 						
 						<!-- S3-specific Configuration (only shown when storage_type is 's3') -->
 						<div id="s3-config" class="md:col-span-2 border-2 border-dashed border-base-300 rounded-lg p-4 space-y-4" style="display: none;">

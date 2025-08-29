@@ -20,7 +20,6 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
@@ -432,19 +431,19 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		currentUserID = userCtx.UserID
 	}
 
-	// The FilePath contains the relative path within the uploads folder
-	domain := env.GetEnv("PUBLIC_DOMAIN", "")
+	// Determine the preferred public base URL for this image's storage pool
+	domain := imageprocessor.GetPublicBaseURLForImage(image)
 
 	// Increase the view counter
 	imageRepo.UpdateViewCount(image.ID)
 
-	// Korrekte URL-Konstruktion für das Original-Bild mit GetImageURL
+	// Korrekte URL-Konstruktion (absolut) für das Original-Bild
 	filePathComplete := imageprocessor.GetImageURL(image, "original", "")
 	fiberlog.Debugf("[ImageController] Original-Pfad: %s", filePathComplete)
-	filePathWithDomain := filepath.Join(domain, filePathComplete)
+	filePathWithDomain := imageprocessor.MakeAbsoluteURL(domain, filePathComplete)
 
-	// Generate the share link URL with the domain and the new /i/ path
-	shareURL := filepath.Join(domain, "/i/", image.ShareLink)
+	// Share-Seite bleibt auf App-Domain
+	shareURL := fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink)
 
 	// Get variant information for this image
 	variantInfo, err := imageprocessor.GetImageVariantInfo(image.ID)
@@ -537,14 +536,16 @@ func HandleImageViewer(c *fiber.Ctx) error {
 	optimizedWebpPath := webpPath
 	optimizedAvifPath := avifPath
 
+	// Keep variant paths relative for copy boxes and prefix in templates for display
+
 	// Prepare Open Graph meta tags
 	ogImage := ""
 	if variantInfo.HasThumbnailSmall {
 		// Use small thumbnail for OG tags
 		if smallThumbAvifPath != "" {
-			ogImage = filepath.Join(domain, smallThumbAvifPath)
+			ogImage = imageprocessor.MakeAbsoluteURL(domain, smallThumbAvifPath)
 		} else if smallThumbWebpPath != "" {
-			ogImage = filepath.Join(domain, smallThumbWebpPath)
+			ogImage = imageprocessor.MakeAbsoluteURL(domain, smallThumbWebpPath)
 		}
 	} else {
 		// If no thumbnails are available, use the original
@@ -562,8 +563,11 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	isAdmin := userCtx.IsAdmin
 
+	// Keep variant paths relative for copy boxes; templates prepend Domain where needed
+
 	// Create the ImageViewModel
 	imageModel := viewmodel.Image{
+		// Domain liefert Base-URL für Kopier-Boxen
 		Domain:               domain,
 		PreviewPath:          previewPath,
 		FilePathWithDomain:   filePathWithDomain,
@@ -801,7 +805,8 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		mediumThumbOriginalPath = path
 	}
 
-	// Original path for download
+	// Base URL for storage domain and relative original path
+	base := imageprocessor.GetPublicBaseURLForImage(image)
 	originalPath := imageprocessor.GetImageURL(image, "original", "")
 
 	// Use the medium thumbnail for the preview
@@ -847,7 +852,7 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	optimizedWebpPath := webpPath
 	optimizedAvifPath := avifPath
 
-	// Create a simplified view model for image display only
+	// Create a simplified view model for image display only (use relative paths; templates prefix with Domain)
 	imageModel := viewmodel.Image{
 		PreviewPath:          previewPath,
 		PreviewWebPPath:      previewWebPPath,
@@ -867,7 +872,7 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		IsProcessing:         false,
 		UUID:                 image.UUID,
 		ShareURL:             fmt.Sprintf("%s/i/%s", c.BaseURL(), image.ShareLink),
-		Domain:               c.BaseURL(),
+		Domain:               base,
 		HasOptimizedVersions: hasOptimizedVersions,
 		CameraModel: func() string {
 			if image.Metadata != nil && image.Metadata.CameraModel != nil {

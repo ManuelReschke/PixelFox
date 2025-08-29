@@ -137,7 +137,12 @@ func HandleUserImages(c *fiber.Ctx) error {
 			title = img.Title
 		}
 
-		originalPath := imageprocessor.GetImageURL(&img, "original", "")
+		// Convert paths to absolute using storage base URL
+		base := imageprocessor.GetPublicBaseURLForImage(&img)
+		if previewPath != "" {
+			previewPath = imageprocessor.MakeAbsoluteURL(base, previewPath)
+		}
+		originalPath := imageprocessor.MakeAbsoluteURL(base, imageprocessor.GetImageURL(&img, "original", ""))
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,
@@ -216,12 +221,18 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			previewPath = imageprocessor.GetImageURL(&img, "original", "")
 		}
 
+		// Convert to absolute URLs based on storage base URL
+		base := imageprocessor.GetPublicBaseURLForImage(&img)
+		if previewPath != "" {
+			previewPath = imageprocessor.MakeAbsoluteURL(base, previewPath)
+		}
+
 		title := img.FileName
 		if img.Title != "" {
 			title = img.Title
 		}
 
-		originalPath := imageprocessor.GetImageURL(&img, "original", "")
+		originalPath := imageprocessor.MakeAbsoluteURL(base, imageprocessor.GetImageURL(&img, "original", ""))
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,

@@ -8,23 +8,23 @@ import (
 
 // ProcessedImageElement zeigt das verarbeitete Bild an
 templ ProcessedImageElement(model viewmodel.Image) {
-	<picture
-		data-avif-path={model.OptimizedAVIFPath}
-		data-webp-path={model.OptimizedWebPPath}
-		data-original-path={model.OriginalPath}
-		data-has-avif={fmt.Sprintf("%t", model.HasAVIF)}
-		data-has-webp={fmt.Sprintf("%t", model.HasWebP)}
-		data-display-name={model.DisplayName}
-		id="processed-image-element"
-	>
-		if model.HasAVIF {
-			<source srcset={model.PreviewAVIFPath} type="image/avif" />
-		}
-		if model.HasWebP {
-			<source srcset={model.PreviewWebPPath} type="image/webp" />
-		}
-		<img loading="lazy" src={model.PreviewPath} alt={model.DisplayName} class="rounded-xl max-h-48 object-contain cursor-pointer" id="preview-image" />
-	</picture>
+    <picture
+        data-avif-path={model.Domain + model.OptimizedAVIFPath}
+        data-webp-path={model.Domain + model.OptimizedWebPPath}
+        data-original-path={model.Domain + model.OriginalPath}
+        data-has-avif={fmt.Sprintf("%t", model.HasAVIF)}
+        data-has-webp={fmt.Sprintf("%t", model.HasWebP)}
+        data-display-name={model.DisplayName}
+        id="processed-image-element"
+    >
+        if model.HasAVIF {
+            <source srcset={model.Domain + model.PreviewAVIFPath} type="image/avif" />
+        }
+        if model.HasWebP {
+            <source srcset={model.Domain + model.PreviewWebPPath} type="image/webp" />
+        }
+        <img loading="lazy" src={model.Domain + model.PreviewPath} alt={model.DisplayName} class="rounded-xl max-h-48 object-contain cursor-pointer" id="preview-image" />
+    </picture>
 }
 
 // ImageContent ist der gesamte Bildbereich mit allen Links und Optionen

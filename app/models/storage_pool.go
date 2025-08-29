@@ -50,6 +50,11 @@ type StoragePool struct {
 	S3EndpointURL     *string `gorm:"type:varchar(500)" json:"s3_endpoint_url,omitempty"`           // S3 Endpoint URL (for S3-compatible services like Backblaze B2, MinIO)
 	S3PathPrefix      *string `gorm:"type:varchar(500);default:''" json:"s3_path_prefix,omitempty"` // Optional path prefix within bucket for organizing files
 
+	// Node-aware multi-VPS fields
+	PublicBaseURL string `gorm:"type:varchar(500);default:''" json:"public_base_url,omitempty"` // Public base URL for serving files, e.g. https://s01.pixelfox.cc
+	UploadAPIURL  string `gorm:"type:varchar(500);default:''" json:"upload_api_url,omitempty"`  // Internal/public upload API endpoint for direct-to-storage
+	NodeID        string `gorm:"type:varchar(100);default:'';index" json:"node_id,omitempty"`   // Logical node identifier, e.g. s01
+
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

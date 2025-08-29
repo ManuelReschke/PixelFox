@@ -160,6 +160,11 @@ func (asc *AdminStorageController) HandleAdminCreateStoragePoolPost(c *fiber.Ctx
 		IsDefault:   c.FormValue("is_default") == "on",
 	}
 
+	// Node/URL awareness
+	pool.PublicBaseURL = strings.TrimSpace(c.FormValue("public_base_url"))
+	pool.UploadAPIURL = strings.TrimSpace(c.FormValue("upload_api_url"))
+	pool.NodeID = strings.TrimSpace(c.FormValue("node_id"))
+
 	// Parse numeric values
 	maxSizeStr := strings.TrimSpace(c.FormValue("max_size"))
 	if maxSizeStr != "" {
@@ -362,6 +367,11 @@ func (asc *AdminStorageController) HandleAdminEditStoragePoolPost(c *fiber.Ctx) 
 	pool.Description = strings.TrimSpace(c.FormValue("description"))
 	pool.IsActive = c.FormValue("is_active") == "on"
 	pool.IsDefault = c.FormValue("is_default") == "on"
+
+	// Node/URL awareness
+	pool.PublicBaseURL = strings.TrimSpace(c.FormValue("public_base_url"))
+	pool.UploadAPIURL = strings.TrimSpace(c.FormValue("upload_api_url"))
+	pool.NodeID = strings.TrimSpace(c.FormValue("node_id"))
 
 	// Parse numeric values
 	maxSizeStr := strings.TrimSpace(c.FormValue("max_size"))

@@ -8,6 +8,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/gofiber/fiber/v2/log"
 )
 
@@ -183,4 +184,53 @@ func convertStoragePoolPathToWebPath(filePath, fileName string) string {
 	webPath = strings.ReplaceAll(webPath, "\\", "/")
 
 	return webPath
+}
+
+// GetPublicBaseURLForImage returns the preferred public base URL for serving an image
+// Priority: image.StoragePool.PublicBaseURL -> env PUBLIC_DOMAIN -> empty string
+func GetPublicBaseURLForImage(imageModel *models.Image) string {
+	if imageModel != nil && imageModel.StoragePool != nil {
+		if base := strings.TrimSpace(imageModel.StoragePool.PublicBaseURL); base != "" {
+			return strings.TrimRight(base, "/")
+		}
+	}
+	// Fallback to global public domain
+	return strings.TrimRight(env.GetEnv("PUBLIC_DOMAIN", ""), "/")
+}
+
+// MakeAbsoluteURL joins base URL and a web path ("/uploads/...") safely
+func MakeAbsoluteURL(baseURL, webPath string) string {
+	if webPath == "" {
+		return webPath
+	}
+	lower := strings.ToLower(webPath)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+		// already absolute
+		return webPath
+	}
+	if baseURL == "" {
+		return webPath
+	}
+	// Ensure single slash between base and path
+	if !strings.HasPrefix(webPath, "/") {
+		webPath = "/" + webPath
+	}
+	return strings.TrimRight(baseURL, "/") + webPath
+}
+
+// MakeAbsoluteForImage prefixes a relative web path with the image's public base URL
+func MakeAbsoluteForImage(imageModel *models.Image, webPath string) string {
+	base := GetPublicBaseURLForImage(imageModel)
+	// If already absolute (http/https), return as-is
+	lower := strings.ToLower(webPath)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+		return webPath
+	}
+	return MakeAbsoluteURL(base, webPath)
+}
+
+// GetImageAbsoluteURL returns an absolute URL for the requested variant based on the image's storage pool
+func GetImageAbsoluteURL(imageModel *models.Image, format string, size string) string {
+	rel := GetImageURL(imageModel, format, size)
+	return MakeAbsoluteForImage(imageModel, rel)
 }

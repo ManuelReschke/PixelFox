@@ -69,7 +69,15 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 		title = img.Title
 	}
 
-	originalPath := filepath.Join("/", img.FilePath, img.FileName)
+	// Convert to absolute URLs based on the image's storage pool base URL
+	base := imageprocessor.GetPublicBaseURLForImage(&img)
+	if previewPath != "" {
+		previewPath = imageprocessor.MakeAbsoluteURL(base, previewPath)
+	}
+	if smallPreviewPath != "" {
+		smallPreviewPath = imageprocessor.MakeAbsoluteURL(base, smallPreviewPath)
+	}
+	originalPath := imageprocessor.MakeAbsoluteURL(base, filepath.Join("/", img.FilePath, img.FileName))
 	return user_views.GalleryImage{
 		ID:               img.ID,
 		UUID:             img.UUID,

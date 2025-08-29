@@ -75,6 +75,9 @@ func SetupDatabase() {
 				log.Printf("Warning: Failed to load settings: %v", err)
 			}
 
+			// Apply sane defaults for default storage pool new fields
+			applyStoragePoolDefaults()
+
 			return
 		}
 
@@ -87,5 +90,39 @@ func SetupDatabase() {
 
 	if err != nil {
 		panic(err)
+	}
+}
+
+// applyStoragePoolDefaults ensures default pool has public_base_url/upload_api_url/node_id set
+func applyStoragePoolDefaults() {
+	db := GetDB()
+	if db == nil {
+		return
+	}
+	pool, err := models.FindDefaultStoragePool(db)
+	if err != nil || pool == nil {
+		return
+	}
+	changed := false
+	if pool.PublicBaseURL == "" {
+		pool.PublicBaseURL = env.GetEnv("PUBLIC_DOMAIN", "")
+		changed = true
+	}
+	if pool.UploadAPIURL == "" && pool.PublicBaseURL != "" {
+		base := pool.PublicBaseURL
+		if len(base) > 0 && base[len(base)-1] == '/' {
+			base = base[:len(base)-1]
+		}
+		pool.UploadAPIURL = base + "/api/internal/upload"
+		changed = true
+	}
+	if pool.NodeID == "" {
+		pool.NodeID = "local"
+		changed = true
+	}
+	if changed {
+		if err := db.Save(pool).Error; err != nil {
+			log.Printf("Warning: failed to apply storage pool defaults: %v", err)
+		}
 	}
 }
