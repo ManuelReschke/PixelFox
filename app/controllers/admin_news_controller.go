@@ -12,6 +12,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
@@ -44,6 +45,7 @@ func (anc *AdminNewsController) handleError(c *fiber.Ctx, message string, err er
 
 // HandleAdminNews renders the news management page using repository pattern
 func (anc *AdminNewsController) HandleAdminNews(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get all news articles using repository
 	newsList, err := anc.newsRepo.GetAllWithoutPagination()
 	if err != nil {
@@ -52,7 +54,7 @@ func (anc *AdminNewsController) HandleAdminNews(c *fiber.Ctx) error {
 
 	// Render the news management page
 	newsManagement := admin_views.NewsManagement(newsList)
-	home := views.HomeCtx(c, " | News-Verwaltung", isLoggedIn(c), false, flash.Get(c), newsManagement, true, &viewmodel.OpenGraph{
+	home := views.HomeCtx(c, " | News-Verwaltung", userCtx.IsLoggedIn, false, flash.Get(c), newsManagement, userCtx.IsAdmin, &viewmodel.OpenGraph{
 		Title:       "News-Verwaltung - PixelFox Admin",
 		Description: "Verwaltung der News-Artikel",
 		Image:       "/img/pixelfox-logo.png",
@@ -65,9 +67,10 @@ func (anc *AdminNewsController) HandleAdminNews(c *fiber.Ctx) error {
 
 // HandleAdminNewsCreate renders the news creation page using repository pattern
 func (anc *AdminNewsController) HandleAdminNewsCreate(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Render the news creation page
 	newsCreate := admin_views.NewsCreate()
-	home := views.HomeCtx(c, " | Neuen News-Artikel erstellen", isLoggedIn(c), false, flash.Get(c), newsCreate, true, &viewmodel.OpenGraph{
+	home := views.HomeCtx(c, " | Neuen News-Artikel erstellen", userCtx.IsLoggedIn, false, flash.Get(c), newsCreate, userCtx.IsAdmin, &viewmodel.OpenGraph{
 		Title:       "News erstellen - PixelFox Admin",
 		Description: "Erstellen eines neuen News-Artikels",
 		Image:       "/img/pixelfox-logo.png",
@@ -138,6 +141,7 @@ func (anc *AdminNewsController) HandleAdminNewsStore(c *fiber.Ctx) error {
 
 // HandleAdminNewsEdit renders the news edit page using repository pattern
 func (anc *AdminNewsController) HandleAdminNewsEdit(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get news ID from URL
 	idParam := c.Params("id")
 	if idParam == "" {
@@ -161,7 +165,7 @@ func (anc *AdminNewsController) HandleAdminNewsEdit(c *fiber.Ctx) error {
 
 	// Render the news edit page
 	newsEdit := admin_views.NewsEdit(*news)
-	home := views.HomeCtx(c, " | News-Artikel bearbeiten", isLoggedIn(c), false, flash.Get(c), newsEdit, true, &viewmodel.OpenGraph{
+	home := views.HomeCtx(c, " | News-Artikel bearbeiten", userCtx.IsLoggedIn, false, flash.Get(c), newsEdit, userCtx.IsAdmin, &viewmodel.OpenGraph{
 		Title:       "News bearbeiten - PixelFox Admin",
 		Description: "Bearbeiten eines News-Artikels",
 		Image:       "/img/pixelfox-logo.png",

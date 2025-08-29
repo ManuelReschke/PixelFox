@@ -14,6 +14,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
@@ -32,6 +33,7 @@ func NewAdminController(repos *repository.Repositories) *AdminController {
 
 // HandleDashboard renders the admin dashboard with clean repository usage
 func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get total counts using repositories
 	totalUsers, err := ac.repos.User.Count()
 	if err != nil {
@@ -55,7 +57,7 @@ func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
 
 	// Render dashboard
 	dashboard := admin_views.Dashboard(int(totalUsers), int(totalImages), recentUsers, imageStats, userStats)
-	home := views.HomeCtx(c, " | Admin Dashboard", isLoggedIn(c), false, flash.Get(c), dashboard, true, nil)
+	home := views.HomeCtx(c, " | Admin Dashboard", userCtx.IsLoggedIn, false, flash.Get(c), dashboard, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -63,6 +65,7 @@ func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
 
 // HandleUsers renders the user management page with repository pattern
 func (ac *AdminController) HandleUsers(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	perPage := 20
 	offset := (page - 1) * perPage
@@ -102,7 +105,7 @@ func (ac *AdminController) HandleUsers(c *fiber.Ctx) error {
 
 	// Render user management page
 	userManagement := admin_views.UserManagement(adminUsers, page, pages)
-	home := views.HomeCtx(c, " | User Management", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
+	home := views.HomeCtx(c, " | User Management", userCtx.IsLoggedIn, false, flash.Get(c), userManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -110,6 +113,7 @@ func (ac *AdminController) HandleUsers(c *fiber.Ctx) error {
 
 // HandleUserEdit renders the user edit page
 func (ac *AdminController) HandleUserEdit(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	userID := c.Params("id")
 	if userID == "" {
 		return c.Redirect("/admin/users")
@@ -132,7 +136,7 @@ func (ac *AdminController) HandleUserEdit(c *fiber.Ctx) error {
 
 	// Render user edit page
 	userEdit := admin_views.UserEdit(*user)
-	home := views.HomeCtx(c, " | Edit User", isLoggedIn(c), false, flash.Get(c), userEdit, true, nil)
+	home := views.HomeCtx(c, " | Edit User", userCtx.IsLoggedIn, false, flash.Get(c), userEdit, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -260,6 +264,7 @@ func (ac *AdminController) HandleSearch(c *fiber.Ctx) error {
 
 // handleUserSearch searches for users using repository
 func (ac *AdminController) handleUserSearch(c *fiber.Ctx, query string) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Search users with stats using repository
 	usersWithStats, err := ac.repos.User.SearchWithStats(query)
 	if err != nil {
@@ -286,7 +291,7 @@ func (ac *AdminController) handleUserSearch(c *fiber.Ctx, query string) error {
 
 	// Render results
 	userManagement := admin_views.UserManagement(adminUsers, 1, []int{1})
-	home := views.HomeCtx(c, " | User Search", isLoggedIn(c), false, flash.Get(c), userManagement, true, nil)
+	home := views.HomeCtx(c, " | User Search", userCtx.IsLoggedIn, false, flash.Get(c), userManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -390,6 +395,7 @@ func (ac *AdminController) fillStatGaps(stats []models.DailyStats, startDate tim
 
 // HandleSettings renders the settings page
 func (ac *AdminController) HandleSettings(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get current settings using repository
 	settings, err := ac.repos.Setting.Get()
 	if err != nil {
@@ -401,7 +407,7 @@ func (ac *AdminController) HandleSettings(c *fiber.Ctx) error {
 
 	// Render settings page
 	settingsView := admin_views.Settings(*settings, csrfToken)
-	home := views.HomeCtx(c, " | Einstellungen", isLoggedIn(c), false, flash.Get(c), settingsView, true, nil)
+	home := views.HomeCtx(c, " | Einstellungen", userCtx.IsLoggedIn, false, flash.Get(c), settingsView, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

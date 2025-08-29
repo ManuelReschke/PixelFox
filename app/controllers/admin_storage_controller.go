@@ -13,6 +13,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
@@ -44,6 +45,7 @@ func (asc *AdminStorageController) handleError(c *fiber.Ctx, message string, err
 
 // HandleAdminStorageManagement renders the storage management dashboard using repository pattern
 func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get all storage pool statistics using repository
 	poolStats, err := asc.storagePoolRepo.GetAllStats()
 	if err != nil {
@@ -127,7 +129,7 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 
 	// Render storage management using the standard layout
 	storageManagement := admin_views.StorageManagement(viewData)
-	home := views.HomeCtx(c, " | Speicherverwaltung", isLoggedIn(c), false, flash.Get(c), storageManagement, true, nil)
+	home := views.HomeCtx(c, " | Speicherverwaltung", userCtx.IsLoggedIn, false, flash.Get(c), storageManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -135,10 +137,11 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 
 // HandleAdminCreateStoragePool shows the create storage pool form using repository pattern
 func (asc *AdminStorageController) HandleAdminCreateStoragePool(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	csrfToken := c.Locals("csrf").(string)
 
 	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false, csrfToken)
-	home := views.HomeCtx(c, " | Speicherpool erstellen", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
+	home := views.HomeCtx(c, " | Speicherpool erstellen", userCtx.IsLoggedIn, false, flash.Get(c), poolForm, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -282,6 +285,7 @@ func (asc *AdminStorageController) HandleAdminCreateStoragePoolPost(c *fiber.Ctx
 
 // HandleAdminEditStoragePool shows the edit storage pool form using repository pattern
 func (asc *AdminStorageController) HandleAdminEditStoragePool(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		fm := fiber.Map{
@@ -313,7 +317,7 @@ func (asc *AdminStorageController) HandleAdminEditStoragePool(c *fiber.Ctx) erro
 	csrfToken := c.Locals("csrf").(string)
 
 	poolForm := admin_views.StoragePoolForm(*pool, true, csrfToken)
-	home := views.HomeCtx(c, " | Speicherpool bearbeiten", isLoggedIn(c), false, flash.Get(c), poolForm, true, nil)
+	home := views.HomeCtx(c, " | Speicherpool bearbeiten", userCtx.IsLoggedIn, false, flash.Get(c), poolForm, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

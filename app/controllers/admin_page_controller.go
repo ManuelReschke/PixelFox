@@ -11,6 +11,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
@@ -42,6 +43,7 @@ func (apc *AdminPageController) handleError(c *fiber.Ctx, message string, err er
 
 // HandleAdminPages renders the page management overview using repository pattern
 func (apc *AdminPageController) HandleAdminPages(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get all pages using repository
 	pages, err := apc.pageRepo.GetAll()
 	if err != nil {
@@ -50,7 +52,7 @@ func (apc *AdminPageController) HandleAdminPages(c *fiber.Ctx) error {
 
 	// Render page management
 	pageManagement := admin_views.PageManagement(pages)
-	home := views.HomeCtx(c, " | Seiten-Verwaltung", isLoggedIn(c), false, flash.Get(c), pageManagement, true, nil)
+	home := views.HomeCtx(c, " | Seiten-Verwaltung", userCtx.IsLoggedIn, false, flash.Get(c), pageManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -58,6 +60,7 @@ func (apc *AdminPageController) HandleAdminPages(c *fiber.Ctx) error {
 
 // HandleAdminPageCreate renders the page creation form using repository pattern
 func (apc *AdminPageController) HandleAdminPageCreate(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get CSRF token
 	csrfToken := c.Locals("csrf").(string)
 
@@ -66,7 +69,7 @@ func (apc *AdminPageController) HandleAdminPageCreate(c *fiber.Ctx) error {
 
 	// Render page creation form (reuse PageEdit with isEdit=false)
 	pageCreate := admin_views.PageEdit(emptyPage, false, csrfToken)
-	home := views.HomeCtx(c, " | Neue Seite erstellen", isLoggedIn(c), false, flash.Get(c), pageCreate, true, nil)
+	home := views.HomeCtx(c, " | Neue Seite erstellen", userCtx.IsLoggedIn, false, flash.Get(c), pageCreate, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -133,6 +136,7 @@ func (apc *AdminPageController) HandleAdminPageStore(c *fiber.Ctx) error {
 
 // HandleAdminPageEdit renders the page edit form using repository pattern
 func (apc *AdminPageController) HandleAdminPageEdit(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	pageID := c.Params("id")
 	if pageID == "" {
 		return c.Redirect("/admin/pages")
@@ -158,7 +162,7 @@ func (apc *AdminPageController) HandleAdminPageEdit(c *fiber.Ctx) error {
 
 	// Render page edit form
 	pageEdit := admin_views.PageEdit(*page, true, csrfToken)
-	home := views.HomeCtx(c, " | Seite bearbeiten", isLoggedIn(c), false, flash.Get(c), pageEdit, true, nil)
+	home := views.HomeCtx(c, " | Seite bearbeiten", userCtx.IsLoggedIn, false, flash.Get(c), pageEdit, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)

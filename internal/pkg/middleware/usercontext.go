@@ -20,6 +20,7 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 		})
 		// Set legacy compatibility locals
 		c.Locals(controllers.FROM_PROTECTED, false)
+		c.Locals(controllers.USER_IS_ADMIN, false)
 		return c.Next()
 	}
 
@@ -33,6 +34,7 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 		})
 		// Set legacy compatibility locals
 		c.Locals(controllers.FROM_PROTECTED, false)
+		c.Locals(controllers.USER_IS_ADMIN, false)
 		return c.Next()
 	}
 
@@ -53,6 +55,7 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 	c.Locals(controllers.FROM_PROTECTED, true)
 	c.Locals(controllers.USER_NAME, username)
 	c.Locals(controllers.USER_ID, userID.(uint))
+	c.Locals(controllers.USER_IS_ADMIN, userCtx.IsAdmin)
 
 	// Store username in user's individual session (multi-user safe)
 	session.SetSessionValue(c, controllers.USER_NAME, username)

@@ -15,6 +15,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
@@ -46,6 +47,7 @@ func (aqc *AdminQueueController) handleError(c *fiber.Ctx, message string, err e
 
 // HandleAdminQueues displays the admin queue monitor page using repository pattern
 func (aqc *AdminQueueController) HandleAdminQueues(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Get queue items using repository
 	queueItems, err := aqc.getQueueItems()
 	if err != nil {
@@ -56,7 +58,7 @@ func (aqc *AdminQueueController) HandleAdminQueues(c *fiber.Ctx) error {
 	component := admin_views.QueueItems(queueItems, time.Now())
 
 	// Wrap in the main home layout with proper title
-	home := views.HomeCtx(c, " | Cache & Queue Monitor", isLoggedIn(c), false, flash.Get(c), component, true, nil)
+	home := views.HomeCtx(c, " | Cache & Queue Monitor", userCtx.IsLoggedIn, false, flash.Get(c), component, userCtx.IsAdmin, nil)
 
 	// Convert the templ component to an HTTP handler and serve it
 	handler := adaptor.HTTPHandler(templ.Handler(home))

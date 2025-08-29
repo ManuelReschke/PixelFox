@@ -9,6 +9,7 @@ import (
 	"github.com/sujit-baniya/flash"
 
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
 )
@@ -44,6 +45,7 @@ func GetAdminImagesController() *AdminImagesController {
 
 // HandleAdminImages renders the image management page with repository pattern
 func (aic *AdminImagesController) HandleAdminImages(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	perPage := 20
 	offset := (page - 1) * perPage
@@ -68,7 +70,7 @@ func (aic *AdminImagesController) HandleAdminImages(c *fiber.Ctx) error {
 
 	// Render image management page
 	imageManagement := admin_views.ImageManagement(images, page, totalPages)
-	home := views.HomeCtx(c, " | Image Management", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
+	home := views.HomeCtx(c, " | Image Management", userCtx.IsLoggedIn, false, flash.Get(c), imageManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -76,6 +78,7 @@ func (aic *AdminImagesController) HandleAdminImages(c *fiber.Ctx) error {
 
 // HandleAdminImageSearch searches for images using repository
 func (aic *AdminImagesController) HandleAdminImageSearch(c *fiber.Ctx, query string) error {
+	userCtx := usercontext.GetUserContext(c)
 	// Search images using repository
 	images, err := aic.imageRepo.Search(query)
 	if err != nil {
@@ -91,7 +94,7 @@ func (aic *AdminImagesController) HandleAdminImageSearch(c *fiber.Ctx, query str
 
 	// Render results
 	imageManagement := admin_views.ImageManagement(images, 1, 1)
-	home := views.HomeCtx(c, " | Image Search", isLoggedIn(c), false, flash.Get(c), imageManagement, true, nil)
+	home := views.HomeCtx(c, " | Image Search", userCtx.IsLoggedIn, false, flash.Get(c), imageManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
@@ -99,6 +102,7 @@ func (aic *AdminImagesController) HandleAdminImageSearch(c *fiber.Ctx, query str
 
 // HandleAdminImageEdit renders the image edit page using repository pattern
 func (aic *AdminImagesController) HandleAdminImageEdit(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
 	imageUUID := c.Params("uuid")
 	if imageUUID == "" {
 		return c.Redirect("/admin/images")
@@ -116,7 +120,7 @@ func (aic *AdminImagesController) HandleAdminImageEdit(c *fiber.Ctx) error {
 
 	// Render image edit page
 	imageEdit := admin_views.ImageEdit(*image)
-	home := views.HomeCtx(c, " | Bild bearbeiten", isLoggedIn(c), false, flash.Get(c), imageEdit, true, nil)
+	home := views.HomeCtx(c, " | Bild bearbeiten", userCtx.IsLoggedIn, false, flash.Get(c), imageEdit, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
