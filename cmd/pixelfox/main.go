@@ -25,6 +25,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/router"
+	storagemod "github.com/ManuelReschke/PixelFox/internal/pkg/storage"
 )
 
 func main() {
@@ -34,6 +35,9 @@ func main() {
 	jobManager := jobqueue.GetManager()
 	jobManager.Start()
 
+	// Start storage health monitor (lightweight cache heartbeat)
+	storagemod.StartHealthMonitor()
+
 	// Setup graceful shutdown
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -42,6 +46,7 @@ func main() {
 		<-c
 		log.Println("Gracefully shutting down...")
 		jobManager.Stop()
+		storagemod.StopHealthMonitor()
 		app.Shutdown()
 	}()
 

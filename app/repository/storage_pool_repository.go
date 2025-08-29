@@ -1,7 +1,11 @@
 package repository
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
 	"gorm.io/gorm"
 )
 
@@ -128,6 +132,18 @@ func (r *storagePoolRepository) GetHealthStatus() (map[uint]bool, error) {
 
 	healthStatus := make(map[uint]bool)
 	for _, pool := range pools {
+		// Prefer cached health from heartbeat if available
+		key := fmt.Sprintf("storage_health:%d", pool.ID)
+		if s, err := cache.Get(key); err == nil && s != "" {
+			var payload struct {
+				Healthy bool `json:"healthy"`
+			}
+			if jsonErr := json.Unmarshal([]byte(s), &payload); jsonErr == nil {
+				healthStatus[pool.ID] = payload.Healthy
+				continue
+			}
+		}
+		// Fallback to direct check
 		healthStatus[pool.ID] = pool.IsHealthy()
 	}
 
