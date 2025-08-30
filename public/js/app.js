@@ -99,6 +99,7 @@ function initChangingWords() {
 function initUploadForm() {
     const uploadForm = document.getElementById('upload_form');
     if (!uploadForm) return;
+    const directUploadEnabled = (uploadForm.dataset.directUpload || '').toLowerCase() === 'true';
     
     const fileInput = document.getElementById('file-input');
     const dropArea = document.getElementById('drop-area');
@@ -207,7 +208,137 @@ function initUploadForm() {
         inlineImagePreview.src = '';
     }
 
-    // HTMX Event-Listener
+    // Direct-to-Storage flow
+    async function directUpload(file) {
+        try {
+            // Show progress UI
+            progressContainer.classList.remove('hidden');
+            uploadButton.disabled = true;
+            uploadStatus.textContent = 'Session...';
+
+            // 1) Request upload session
+            const sessRes = await fetch('/api/v1/upload/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ file_size: file.size })
+            });
+            if (!sessRes.ok) {
+                throw new Error('Session-Fehler: ' + (await sessRes.text()));
+            }
+            const sess = await sessRes.json();
+            if (!sess.upload_url || !sess.token) {
+                throw new Error('Ungültige Session-Antwort');
+            }
+
+            // (hint removed)
+
+            // 2) Upload directly to storage using XHR for progress
+            const uploadResultData = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', sess.upload_url, true);
+                xhr.setRequestHeader('Authorization', 'Bearer ' + sess.token);
+                xhr.upload.onprogress = (evt) => {
+                    if (evt.lengthComputable) {
+                        const percent = Math.round((evt.loaded / evt.total) * 100);
+                        progressBar.style.width = percent + '%';
+                        uploadPercentage.textContent = percent + '%';
+                        if (percent === 100) uploadStatus.textContent = 'Verarbeitung...';
+                    }
+                };
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const data = JSON.parse(xhr.responseText || '{}');
+                                resolve(data);
+                            } catch(_) {
+                                resolve({});
+                            }
+                        } else {
+                            reject({ status: xhr.status, body: xhr.responseText });
+                        }
+                    }
+                };
+                const fd = new FormData();
+                fd.append('file', file);
+                xhr.send(fd);
+            });
+
+            // Parse response of last XHR? Some servers return the body on xhr.responseText; we try JSON parse.
+            // We cannot reliably access it here due to Promise resolution; do a quick fetch to /image viewer by polling can be added later.
+            // For now, hide progress and show success and reload to home where flash shows redirect.
+            successMessage.classList.remove('hidden');
+            uploadResult.classList.remove('hidden');
+            uploadStatus.textContent = '';
+            const isDuplicate = !!(uploadResultData && uploadResultData.duplicate);
+            const maybeUUID = (uploadResultData && uploadResultData.image_uuid) || '';
+            const maybeView = (uploadResultData && uploadResultData.view_url) || '';
+            if (isDuplicate && maybeView) {
+                // Redirect via flash helper to show info message
+                window.location.href = '/flash/upload-duplicate?view=' + encodeURIComponent(maybeView);
+                return;
+            }
+            if (maybeUUID) {
+                uploadStatus.textContent = 'Verarbeitung...';
+                let attempts = 0;
+                const poll = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const r = await fetch(`/api/v1/image/status/${maybeUUID}`, { credentials: 'include' });
+                        if (r.ok) {
+                            const js = await r.json();
+                            if (js.complete) {
+                                clearInterval(poll);
+                                const dest = js.view_url || maybeView || '/user/images';
+                                window.location.href = dest;
+                            }
+                        }
+                    } catch(_) {}
+                    if (attempts > 120) { // ~3 Minuten
+                        clearInterval(poll);
+                        window.location.href = maybeView || '/user/images';
+                    }
+                }, 1500);
+            } else if (maybeView) {
+                window.location.href = maybeView;
+            } else {
+                window.location.href = '/user/images';
+            }
+            } catch (err) {
+            // Map rate-limit errors
+            if (err && err.status === 429) {
+                window.location.href = '/flash/upload-rate-limit';
+                return;
+            }
+            // Try to extract error message and show as flash
+            try {
+                let msg = '';
+                if (err && err.body) {
+                    try { const obj = JSON.parse(err.body); msg = (obj && obj.error) || ''; } catch(_) {}
+                }
+                if (msg) {
+                    window.location.href = '/flash/upload-error?msg=' + encodeURIComponent(msg);
+                    return;
+                }
+            } catch(_e) {}
+            // Fallback to original App upload
+            console.error('Direct upload failed, fallback to App upload:', err);
+            progressContainer.classList.add('hidden');
+            try { uploadForm.removeAttribute('data-direct-upload'); } catch(e) {}
+            uploadForm.submit();
+        }
+    }
+
+    // Intercept submit when direct upload enabled
+    uploadForm.addEventListener('submit', function(e) {
+        if (!directUploadEnabled) return; // let HTMX handle
+        e.preventDefault();
+        if (!fileInput.files.length) return;
+        directUpload(fileInput.files[0]);
+    });
+
+    // HTMX Event-Listener (fallback / non-direct mode)
     // Anfrage wird konfiguriert
     htmx.on('#upload_form', 'htmx:configRequest', function(evt) {
         progressContainer.classList.remove('hidden');
@@ -323,6 +454,23 @@ function initThemeToggle() {
         const newTheme = this.checked ? 'dark' : 'emerald';
         htmlElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+    });
+}
+
+// SweetAlert2 confirm for deleting a storage pool (admin)
+function confirmDelete(poolId, poolName) {
+    const name = poolName || '';
+    Swal.fire({
+        title: `Speicherpool "${name}" löschen?`,
+        text: 'Dieser Vorgang kann nicht rückgängig gemacht werden.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ja, löschen',
+        cancelButtonText: 'Abbrechen'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/admin/storage/delete/${poolId}`;
+        }
     });
 }
 

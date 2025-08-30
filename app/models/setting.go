@@ -23,9 +23,12 @@ type Setting struct {
 
 // AppSettings represents the application settings structure
 type AppSettings struct {
-	SiteTitle          string `json:"site_title" validate:"required,min=1,max=255"`
-	SiteDescription    string `json:"site_description" validate:"max=500"`
-	ImageUploadEnabled bool   `json:"image_upload_enabled"`
+	SiteTitle                    string `json:"site_title" validate:"required,min=1,max=255"`
+	SiteDescription              string `json:"site_description" validate:"max=500"`
+	ImageUploadEnabled           bool   `json:"image_upload_enabled"`
+	DirectUploadEnabled          bool   `json:"direct_upload_enabled"`
+	UploadRateLimitPerMinute     int    `json:"upload_rate_limit_per_minute" validate:"min=0,max=100000"`
+	UploadUserRateLimitPerMinute int    `json:"upload_user_rate_limit_per_minute" validate:"min=0,max=100000"`
 	// Thumbnail format settings
 	ThumbnailOriginalEnabled bool `json:"thumbnail_original_enabled"`
 	ThumbnailWebPEnabled     bool `json:"thumbnail_webp_enabled"`
@@ -58,16 +61,19 @@ func LoadSettings(db *gorm.DB) error {
 
 	// Initialize with defaults
 	appSettings = &AppSettings{
-		SiteTitle:                "PixelFox",
-		SiteDescription:          "Image sharing platform",
-		ImageUploadEnabled:       true,
-		ThumbnailOriginalEnabled: true,
-		ThumbnailWebPEnabled:     true,
-		ThumbnailAVIFEnabled:     true,
-		S3BackupDelayMinutes:     5, // Default: immediate backup (0 minutes delay)
-		S3BackupCheckInterval:    5, // Default: check every 5 minutes
-		S3RetryInterval:          2, // Default: retry every 2 minutes
-		JobQueueWorkerCount:      5, // Default: 5 workers
+		SiteTitle:                    "PixelFox",
+		SiteDescription:              "Image sharing platform",
+		ImageUploadEnabled:           true,
+		DirectUploadEnabled:          false,
+		UploadRateLimitPerMinute:     60,
+		UploadUserRateLimitPerMinute: 60,
+		ThumbnailOriginalEnabled:     true,
+		ThumbnailWebPEnabled:         true,
+		ThumbnailAVIFEnabled:         true,
+		S3BackupDelayMinutes:         5, // Default: immediate backup (0 minutes delay)
+		S3BackupCheckInterval:        5, // Default: check every 5 minutes
+		S3RetryInterval:              2, // Default: retry every 2 minutes
+		JobQueueWorkerCount:          5, // Default: 5 workers
 	}
 
 	// Load settings from database
@@ -85,6 +91,16 @@ func LoadSettings(db *gorm.DB) error {
 			appSettings.SiteDescription = setting.Value
 		case "image_upload_enabled":
 			appSettings.ImageUploadEnabled = setting.Value == "true"
+		case "direct_upload_enabled":
+			appSettings.DirectUploadEnabled = setting.Value == "true"
+		case "upload_rate_limit_per_minute":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.UploadRateLimitPerMinute = v
+			}
+		case "upload_user_rate_limit_per_minute":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.UploadUserRateLimitPerMinute = v
+			}
 		case "thumbnail_original_enabled":
 			appSettings.ThumbnailOriginalEnabled = setting.Value == "true"
 		case "thumbnail_webp_enabled":
@@ -125,16 +141,19 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 
 	// Convert settings to database format
 	settingsMap := map[string]interface{}{
-		"site_title":                 settings.SiteTitle,
-		"site_description":           settings.SiteDescription,
-		"image_upload_enabled":       fmt.Sprintf("%t", settings.ImageUploadEnabled),
-		"thumbnail_original_enabled": fmt.Sprintf("%t", settings.ThumbnailOriginalEnabled),
-		"thumbnail_webp_enabled":     fmt.Sprintf("%t", settings.ThumbnailWebPEnabled),
-		"thumbnail_avif_enabled":     fmt.Sprintf("%t", settings.ThumbnailAVIFEnabled),
-		"s3_backup_delay_minutes":    fmt.Sprintf("%d", settings.S3BackupDelayMinutes),
-		"s3_backup_check_interval":   fmt.Sprintf("%d", settings.S3BackupCheckInterval),
-		"s3_retry_interval":          fmt.Sprintf("%d", settings.S3RetryInterval),
-		"job_queue_worker_count":     fmt.Sprintf("%d", settings.JobQueueWorkerCount),
+		"site_title":                        settings.SiteTitle,
+		"site_description":                  settings.SiteDescription,
+		"image_upload_enabled":              fmt.Sprintf("%t", settings.ImageUploadEnabled),
+		"direct_upload_enabled":             fmt.Sprintf("%t", settings.DirectUploadEnabled),
+		"upload_rate_limit_per_minute":      fmt.Sprintf("%d", settings.UploadRateLimitPerMinute),
+		"upload_user_rate_limit_per_minute": fmt.Sprintf("%d", settings.UploadUserRateLimitPerMinute),
+		"thumbnail_original_enabled":        fmt.Sprintf("%t", settings.ThumbnailOriginalEnabled),
+		"thumbnail_webp_enabled":            fmt.Sprintf("%t", settings.ThumbnailWebPEnabled),
+		"thumbnail_avif_enabled":            fmt.Sprintf("%t", settings.ThumbnailAVIFEnabled),
+		"s3_backup_delay_minutes":           fmt.Sprintf("%d", settings.S3BackupDelayMinutes),
+		"s3_backup_check_interval":          fmt.Sprintf("%d", settings.S3BackupCheckInterval),
+		"s3_retry_interval":                 fmt.Sprintf("%d", settings.S3RetryInterval),
+		"job_queue_worker_count":            fmt.Sprintf("%d", settings.JobQueueWorkerCount),
 	}
 
 	// Save each setting
@@ -175,9 +194,9 @@ func getSettingType(key string) string {
 	switch key {
 	case "site_title", "site_description":
 		return "string"
-	case "image_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled":
+	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled":
 		return "boolean"
-	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count":
+	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count", "upload_rate_limit_per_minute", "upload_user_rate_limit_per_minute":
 		return "integer"
 	default:
 		return "string"
@@ -223,6 +242,27 @@ func (s *AppSettings) IsImageUploadEnabled() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.ImageUploadEnabled
+}
+
+// IsDirectUploadEnabled returns whether direct-to-storage upload is enabled
+func (s *AppSettings) IsDirectUploadEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.DirectUploadEnabled
+}
+
+// GetUploadRateLimitPerMinute returns API rate limit for uploads (0 = unlimited)
+func (s *AppSettings) GetUploadRateLimitPerMinute() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.UploadRateLimitPerMinute
+}
+
+// GetUploadUserRateLimitPerMinute returns per-user upload rate limit per minute (0 = unlimited)
+func (s *AppSettings) GetUploadUserRateLimitPerMinute() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.UploadUserRateLimitPerMinute
 }
 
 // IsThumbnailOriginalEnabled returns whether original format thumbnails are enabled

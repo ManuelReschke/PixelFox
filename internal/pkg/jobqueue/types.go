@@ -50,6 +50,8 @@ type ImageProcessingJobPayload struct {
 	FileName     string `json:"file_name"`     // Original file name
 	FileType     string `json:"file_type"`     // File extension (.jpg, .png, etc.)
 	EnableBackup bool   `json:"enable_backup"` // Whether to trigger S3 backup after processing
+	PoolID       uint   `json:"pool_id"`       // Storage pool ID (routing hint)
+	NodeID       string `json:"node_id"`       // Optional node ID (routing hint)
 }
 
 // ToMap converts the payload to a map for storage
@@ -61,6 +63,8 @@ func (p ImageProcessingJobPayload) ToMap() map[string]interface{} {
 		"file_name":     p.FileName,
 		"file_type":     p.FileType,
 		"enable_backup": p.EnableBackup,
+		"pool_id":       p.PoolID,
+		"node_id":       p.NodeID,
 	}
 }
 

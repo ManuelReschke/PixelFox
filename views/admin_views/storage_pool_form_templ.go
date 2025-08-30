@@ -134,119 +134,109 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">NFS</option> <option value=\"smb\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">NFS</option> <option value=\"s3\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if pool.StorageType == "smb" {
+		if pool.StorageType == "s3" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, ">SMB/CIFS</option> <option value=\"s3\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, ">S3 Compatible</option></select></div><!-- Storage Tier --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Performance-Tier *</span></label> <select name=\"storage_tier\" class=\"select select-bordered\"><option value=\"hot\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if pool.StorageType == "s3" {
+		if pool.StorageTier == "hot" || pool.StorageTier == "" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, ">S3 Compatible</option></select></div><!-- Storage Tier --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Performance-Tier *</span></label> <select name=\"storage_tier\" class=\"select select-bordered\"><option value=\"hot\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, ">🔥 Hot Storage (SSD)</option> <option value=\"warm\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if pool.StorageTier == "hot" || pool.StorageTier == "" {
+		if pool.StorageTier == "warm" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">🔥 Hot Storage (SSD)</option> <option value=\"warm\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ">🌡️ Warm Storage</option> <option value=\"cold\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if pool.StorageTier == "warm" {
+		if pool.StorageTier == "cold" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">🌡️ Warm Storage</option> <option value=\"cold\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, ">❄️ Cold Storage (HDD)</option> <option value=\"archive\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if pool.StorageTier == "cold" {
+		if pool.StorageTier == "archive" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " selected")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, ">❄️ Cold Storage (HDD)</option> <option value=\"archive\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if pool.StorageTier == "archive" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, " selected")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ">📦 Archive Storage</option></select> <label class=\"label\"><span class=\"label-text-alt\">Hot Storage für neue Uploads, Cold für Archive</span></label></div><!-- Base Path --><div class=\"form-control md:col-span-2\"><label class=\"label\"><span class=\"label-text\">Basis-Pfad *</span></label> <input type=\"text\" name=\"base_path\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, ">📦 Archive Storage</option></select> <label class=\"label\"><span class=\"label-text-alt\">Hot Storage für neue Uploads, Cold für Archive</span></label></div><!-- Base Path --><div class=\"form-control md:col-span-2\"><label class=\"label\"><span class=\"label-text\">Basis-Pfad *</span></label> <input type=\"text\" name=\"base_path\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(pool.BasePath)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 102, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 101, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" placeholder=\"/mnt/storage/images\" class=\"input input-bordered\" required> <label class=\"label\"><span class=\"label-text-alt\">Absoluter Pfad zum Speicherverzeichnis</span></label></div><!-- Node/URLs --><div class=\"form-control md:col-span-2\"><label class=\"label\"><span class=\"label-text\">Public Base URL</span></label> <input type=\"url\" name=\"public_base_url\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" placeholder=\"/mnt/storage/images\" class=\"input input-bordered\" required> <label class=\"label\"><span class=\"label-text-alt\">Absoluter Pfad zum Speicherverzeichnis</span></label></div><!-- Node/URLs --><div class=\"form-control md:col-span-2\"><label class=\"label\"><span class=\"label-text\">Public Base URL</span></label> <input type=\"url\" name=\"public_base_url\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(pool.PublicBaseURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 119, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 118, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" placeholder=\"https://s01.pixelfox.cc\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Öffentliche Basis-URL dieses Pools für Direktlinks/CDN</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Upload API URL</span></label> <input type=\"url\" name=\"upload_api_url\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\" placeholder=\"https://s01.pixelfox.cc\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Öffentliche Basis-URL dieses Pools für Direktlinks/CDN</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Upload API URL</span></label> <input type=\"url\" name=\"upload_api_url\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(pool.UploadAPIURL)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 134, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 133, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" placeholder=\"https://s01.pixelfox.cc/api/internal/upload\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Interne Upload-API dieses Storage-Knotens (Direct-to-Storage)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Node ID</span></label> <input type=\"text\" name=\"node_id\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" placeholder=\"https://s01.pixelfox.cc/api/internal/upload\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Interne Upload-API dieses Storage-Knotens (Direct-to-Storage)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Node ID</span></label> <input type=\"text\" name=\"node_id\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(pool.NodeID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 149, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 148, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" placeholder=\"s01\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Logische Kennung des Storage-Knotens</span></label></div><!-- S3-specific Configuration (only shown when storage_type is 's3') --><div id=\"s3-config\" class=\"md:col-span-2 border-2 border-dashed border-base-300 rounded-lg p-4 space-y-4\" style=\"display: none;\"><h3 class=\"font-semibold text-lg mb-3\">📦 S3-Konfiguration</h3><div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\"><!-- S3 Access Key ID --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Access Key ID *</span></label> <input type=\"text\" name=\"s3_access_key_id\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" placeholder=\"s01\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Logische Kennung des Storage-Knotens</span></label></div><!-- S3-specific Configuration (only shown when storage_type is 's3') --><div id=\"s3-config\" class=\"md:col-span-2 border-2 border-dashed border-base-300 rounded-lg p-4 space-y-4\" style=\"display: none;\"><h3 class=\"font-semibold text-lg mb-3\">📦 S3-Konfiguration</h3><div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\"><!-- S3 Access Key ID --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Access Key ID *</span></label> <input type=\"text\" name=\"s3_access_key_id\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -259,13 +249,13 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 170, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 169, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" placeholder=\"AKIA...\" class=\"input input-bordered\"></div><!-- S3 Secret Access Key --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Secret Access Key *</span></label> <input type=\"password\" name=\"s3_secret_access_key\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\" placeholder=\"AKIA...\" class=\"input input-bordered\"></div><!-- S3 Secret Access Key --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Secret Access Key *</span></label> <input type=\"password\" name=\"s3_secret_access_key\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -278,13 +268,13 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 183, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 182, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" placeholder=\"Secret Key\" class=\"input input-bordered\"></div><!-- S3 Region --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Region *</span></label> <input type=\"text\" name=\"s3_region\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" placeholder=\"Secret Key\" class=\"input input-bordered\"></div><!-- S3 Region --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Region *</span></label> <input type=\"text\" name=\"s3_region\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -297,13 +287,13 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 196, Col: 106}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 195, Col: 106}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" placeholder=\"us-west-2\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Z.B. us-west-001 für Backblaze B2</span></label></div><!-- S3 Bucket Name --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Bucket Name *</span></label> <input type=\"text\" name=\"s3_bucket_name\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" placeholder=\"us-west-2\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Z.B. us-west-001 für Backblaze B2</span></label></div><!-- S3 Bucket Name --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Bucket Name *</span></label> <input type=\"text\" name=\"s3_bucket_name\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -316,13 +306,13 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 212, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 211, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" placeholder=\"my-bucket\" class=\"input input-bordered\"></div><!-- S3 Endpoint URL --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Endpoint URL</span></label> <input type=\"url\" name=\"s3_endpoint_url\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" placeholder=\"my-bucket\" class=\"input input-bordered\"></div><!-- S3 Endpoint URL --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Endpoint URL</span></label> <input type=\"url\" name=\"s3_endpoint_url\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -335,13 +325,13 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 225, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 224, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" placeholder=\"https://s3.amazonaws.com\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Für S3-kompatible Services (optional)</span></label></div><!-- S3 Path Prefix --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Pfad-Präfix</span></label> <input type=\"text\" name=\"s3_path_prefix\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\" placeholder=\"https://s3.amazonaws.com\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Für S3-kompatible Services (optional)</span></label></div><!-- S3 Path Prefix --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Pfad-Präfix</span></label> <input type=\"text\" name=\"s3_path_prefix\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -354,123 +344,123 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 241, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 240, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" placeholder=\"images/pixelfox\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Verzeichnis-Präfix im Bucket (optional)</span></label></div></div></div><!-- Max Size --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Maximale Größe (GB) *</span></label> <input type=\"number\" name=\"max_size\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" placeholder=\"images/pixelfox\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Verzeichnis-Präfix im Bucket (optional)</span></label></div></div></div><!-- Max Size --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Maximale Größe (GB) *</span></label> <input type=\"number\" name=\"max_size\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(maxSizeValue)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 259, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 258, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" min=\"1\" placeholder=\"100\" class=\"input input-bordered\" required></div><!-- Priority --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Priorität</span></label> <input type=\"number\" name=\"priority\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" min=\"1\" placeholder=\"100\" class=\"input input-bordered\" required></div><!-- Priority --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Priorität</span></label> <input type=\"number\" name=\"priority\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(priorityValue)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 273, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 272, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" min=\"1\" max=\"1000\" placeholder=\"100\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Niedrigere Zahl = höhere Priorität</span></label></div><!-- Description --><div class=\"form-control md:col-span-2\"><label class=\"label\"><span class=\"label-text\">Beschreibung</span></label> <textarea name=\"description\" class=\"textarea textarea-bordered\" placeholder=\"Optionale Beschreibung des Speicherpools\" rows=\"3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" min=\"1\" max=\"1000\" placeholder=\"100\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Niedrigere Zahl = höhere Priorität</span></label></div><!-- Description --><div class=\"form-control md:col-span-2\"><label class=\"label\"><span class=\"label-text\">Beschreibung</span></label> <textarea name=\"description\" class=\"textarea textarea-bordered\" placeholder=\"Optionale Beschreibung des Speicherpools\" rows=\"3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(pool.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 291, Col: 35}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 290, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</textarea></div><!-- Checkboxes --><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text\">Aktiv</span> <input type=\"checkbox\" name=\"is_active\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</textarea></div><!-- Checkboxes --><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text\">Aktiv</span> <input type=\"checkbox\" name=\"is_active\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if pool.IsActive || !isEdit {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text\">Standard-Pool</span> <input type=\"checkbox\" name=\"is_default\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if pool.IsDefault {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text\">Standard-Pool</span> <input type=\"checkbox\" name=\"is_default\" class=\"checkbox\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if pool.IsDefault {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "></label> <label class=\"label\"><span class=\"label-text-alt\">Fallback wenn andere Pools voll sind</span></label></div></div><!-- Current Usage (only show when editing) -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "></label> <label class=\"label\"><span class=\"label-text-alt\">Fallback wenn andere Pools voll sind</span></label></div></div><!-- Current Usage (only show when editing) -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if isEdit && pool.ID > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<div class=\"divider\">Aktuelle Nutzung</div><div class=\"grid grid-cols-2 gap-4\"><div class=\"stat bg-base-200\"><div class=\"stat-title\">Verwendeter Speicher</div><div class=\"stat-value text-sm\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<div class=\"divider\">Aktuelle Nutzung</div><div class=\"grid grid-cols-2 gap-4\"><div class=\"stat bg-base-200\"><div class=\"stat-title\">Verwendeter Speicher</div><div class=\"stat-value text-sm\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytesInForm(pool.UsedSize))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 324, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 323, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</div></div><div class=\"stat bg-base-200\"><div class=\"stat-title\">Auslastung</div><div class=\"stat-value text-sm\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div></div><div class=\"stat bg-base-200\"><div class=\"stat-title\">Auslastung</div><div class=\"stat-value text-sm\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.1f%%", pool.GetUsagePercentage()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 328, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 327, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<div class=\"divider\"></div><!-- Actions --><div class=\"card-actions justify-end\"><a href=\"/admin/storage\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<div class=\"divider\"></div><!-- Actions --><div class=\"card-actions justify-end\"><a href=\"/admin/storage\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if isEdit {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\"></path></svg> Änderungen speichern")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\"></path></svg> Änderungen speichern")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Speicherpool erstellen")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Speicherpool erstellen")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</button></div></form></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</button></div></form></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -525,7 +515,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

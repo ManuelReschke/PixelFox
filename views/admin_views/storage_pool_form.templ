@@ -72,7 +72,6 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) {
 							<select name="storage_type" class="select select-bordered">
 								<option value="local" selected?={ pool.StorageType == "local" || pool.StorageType == "" }>Local</option>
 								<option value="nfs" selected?={ pool.StorageType == "nfs" }>NFS</option>
-								<option value="smb" selected?={ pool.StorageType == "smb" }>SMB/CIFS</option>
 								<option value="s3" selected?={ pool.StorageType == "s3" }>S3 Compatible</option>
 							</select>
 						</div>

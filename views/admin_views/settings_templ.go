@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 )
 
 func settingsContent(settings models.AppSettings, csrfToken string) templ.Component {
@@ -34,138 +35,194 @@ func settingsContent(settings models.AppSettings, csrfToken string) templ.Compon
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-4xl mx-auto\"><div class=\"flex items-center justify-between mb-6\"><h1 class=\"text-3xl font-bold\">Systemeinstellungen</h1></div><div class=\"bg-base-100 rounded-lg shadow-md p-6\"><form hx-post=\"/admin/settings\" hx-target=\"body\" hx-push-url=\"true\" method=\"POST\" action=\"/admin/settings\" class=\"space-y-6\"><input type=\"hidden\" name=\"_csrf\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-4xl mx-auto\"><div class=\"flex items-center justify-between mb-6\"><h1 class=\"text-3xl font-bold\">Systemeinstellungen</h1></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if env.GetEnv("UPLOAD_TOKEN_SECRET", "") == "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"alert alert-warning mb-4\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01M4.93 4.93a10 10 0 1014.14 14.14A10 10 0 004.93 4.93z\"></path></svg> <span>Hinweis: Direct‑to‑Storage benötigt ein gesetztes `UPLOAD_TOKEN_SECRET` (ENV). Ohne Secret werden Upload‑Sessions nicht ausgestellt.</span></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"bg-base-100 rounded-lg shadow-md p-6\"><form hx-post=\"/admin/settings\" hx-target=\"body\" hx-push-url=\"true\" method=\"POST\" action=\"/admin/settings\" class=\"space-y-6\"><input type=\"hidden\" name=\"_csrf\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 23, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 33, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"><!-- Site Title --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Seitentitel</span></label> <input type=\"text\" name=\"site_title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\"><!-- Site Title --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Seitentitel</span></label> <input type=\"text\" name=\"site_title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(settings.SiteTitle)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 33, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 43, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"input input-bordered w-full\" placeholder=\"Seitentitel eingeben\" required> <label class=\"label\"><span class=\"label-text-alt\">Dieser Titel wird in der Navigation und im Browser-Titel angezeigt.</span></label></div><!-- Site Description --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Seitenbeschreibung</span></label> <textarea name=\"site_description\" class=\"textarea textarea-bordered h-24\" placeholder=\"Seitenbeschreibung eingeben\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" class=\"input input-bordered w-full\" placeholder=\"Seitentitel eingeben\" required> <label class=\"label\"><span class=\"label-text-alt\">Dieser Titel wird in der Navigation und im Browser-Titel angezeigt.</span></label></div><!-- Site Description --><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Seitenbeschreibung</span></label> <textarea name=\"site_description\" class=\"textarea textarea-bordered h-24\" placeholder=\"Seitenbeschreibung eingeben\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(settings.SiteDescription)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 52, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 62, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</textarea> <label class=\"label\"><span class=\"label-text-alt\">Diese Beschreibung wird für Meta-Tags und SEO verwendet.</span></label></div><!-- Image Upload Settings --><div class=\"divider\">Bild-Upload Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Bild-Upload aktivieren</span> <input type=\"checkbox\" name=\"image_upload_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</textarea> <label class=\"label\"><span class=\"label-text-alt\">Diese Beschreibung wird für Meta-Tags und SEO verwendet.</span></label></div><!-- Image Upload Settings --><div class=\"divider\">Bild-Upload Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Bild-Upload aktivieren</span> <input type=\"checkbox\" name=\"image_upload_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if settings.ImageUploadEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn deaktiviert, können Benutzer keine neuen Bilder hochladen.</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Job Queue Worker Anzahl</span></label> <input type=\"number\" name=\"job_queue_worker_count\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn deaktiviert, können Benutzer keine neuen Bilder hochladen.</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Direct-to-Storage Upload aktivieren</span> <input type=\"checkbox\" name=\"direct_upload_enabled\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if settings.DirectUploadEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "></label> <label class=\"label\"><span class=\"label-text-alt\">Uploads gehen direkt an den ausgewählten Storage-Pool (schneller, entlastet den App‑Server). Fallback bei Fehler automatisch.</span> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if env.GetEnv("UPLOAD_TOKEN_SECRET", "") == "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<span class=\"label-text-alt text-error\">Erfordert ein gesetztes UPLOAD_TOKEN_SECRET in der Umgebung.</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">API Upload Rate Limit (Uploads/Minute)</span></label> <input type=\"number\" name=\"upload_rate_limit_per_minute\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
-		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.JobQueueWorkerCount))
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.UploadRateLimitPerMinute))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 85, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 115, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"20\" required> <label class=\"label\"><span class=\"label-text-alt\">Anzahl der gleichzeitigen Background-Prozesse (1-20). Bei 5 Workern werden 5 Jobs parallel abgearbeitet - nicht nacheinander</span></label></div><!-- S3 Backup Settings --><div class=\"divider\">S3 Backup Einstellungen</div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Verzögerung (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_delay_minutes\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" class=\"input input-bordered w-full\" placeholder=\"60\" min=\"0\" max=\"100000\" required> <label class=\"label\"><span class=\"label-text-alt\">Maximale Anzahl an Uploads pro Minute pro IP am Storage‑Endpoint. 0 = kein Limit.</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">API Upload Rate Limit pro Benutzer (Uploads/Minute)</span></label> <input type=\"number\" name=\"upload_user_rate_limit_per_minute\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3BackupDelayMinutes))
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.UploadUserRateLimitPerMinute))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 107, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 134, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" class=\"input input-bordered w-full\" placeholder=\"0\" min=\"0\" max=\"43200\" required> <label class=\"label\"><span class=\"label-text-alt\">Nach wie vielen Minuten nach dem Upload soll das S3 Backup erfolgen? 0 = sofort, 1440 = nach 24 Stunden</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Check Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_check_interval\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" class=\"input input-bordered w-full\" placeholder=\"60\" min=\"0\" max=\"100000\" required> <label class=\"label\"><span class=\"label-text-alt\">Zusätzliches Limit pro Benutzer-ID am Storage‑Endpoint. 0 = kein Limit.</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">Job Queue Worker Anzahl</span></label> <input type=\"number\" name=\"job_queue_worker_count\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3BackupCheckInterval))
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.JobQueueWorkerCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 126, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 153, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wie oft soll nach ausstehenden S3 Backups gesucht werden? (1-60 Minuten)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Retry Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_retry_interval\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"20\" required> <label class=\"label\"><span class=\"label-text-alt\">Anzahl der gleichzeitigen Background-Prozesse (1-20). Bei 5 Workern werden 5 Jobs parallel abgearbeitet - nicht nacheinander</span></label></div><!-- S3 Backup Settings --><div class=\"divider\">S3 Backup Einstellungen</div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Verzögerung (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_delay_minutes\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3RetryInterval))
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3BackupDelayMinutes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 145, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 175, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\" class=\"input input-bordered w-full\" placeholder=\"2\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wartezeit zwischen Wiederholungsversuchen für fehlgeschlagene S3 Backups (1-60 Minuten)</span></label></div><!-- Thumbnail Format Settings --><div class=\"divider\">Thumbnail-Format Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Original-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_original_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"input input-bordered w-full\" placeholder=\"0\" min=\"0\" max=\"43200\" required> <label class=\"label\"><span class=\"label-text-alt\">Nach wie vielen Minuten nach dem Upload soll das S3 Backup erfolgen? 0 = sofort, 1440 = nach 24 Stunden</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Check Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_check_interval\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3BackupCheckInterval))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 194, Col: 63}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wie oft soll nach ausstehenden S3 Backups gesucht werden? (1-60 Minuten)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Retry Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_retry_interval\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var10 string
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3RetryInterval))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 213, Col: 57}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"input input-bordered w-full\" placeholder=\"2\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wartezeit zwischen Wiederholungsversuchen für fehlgeschlagene S3 Backups (1-60 Minuten)</span></label></div><!-- Thumbnail Format Settings --><div class=\"divider\">Thumbnail-Format Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Original-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_original_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if settings.ThumbnailOriginalEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert Thumbnails im ursprünglichen Dateiformat (JPG, PNG, etc.).</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">WebP-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_webp_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert Thumbnails im ursprünglichen Dateiformat (JPG, PNG, etc.).</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">WebP-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_webp_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if settings.ThumbnailWebPEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert optimierte Thumbnails im WebP-Format für bessere Kompression.</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">AVIF-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_avif_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert optimierte Thumbnails im WebP-Format für bessere Kompression.</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">AVIF-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_avif_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if settings.ThumbnailAVIFEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert hochoptimierte Thumbnails im AVIF-Format (erfordert FFmpeg).</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert hochoptimierte Thumbnails im AVIF-Format (erfordert FFmpeg).</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -189,9 +246,9 @@ func Settings(settings models.AppSettings, csrfToken string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var9 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var9 == nil {
-			templ_7745c5c3_Var9 = templ.NopComponent
+		templ_7745c5c3_Var11 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var11 == nil {
+			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = AdminLayout(settingsContent(settings, csrfToken)).Render(ctx, templ_7745c5c3_Buffer)

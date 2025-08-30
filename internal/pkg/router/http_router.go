@@ -42,6 +42,15 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// API
 	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)
+	// Phase 2: Direct-to-Storage Upload Session API (requires auth)
+	app.Post("/api/v1/upload/sessions", requireAuthMiddleware, controllers.HandleCreateUploadSession)
+	// Storage-side upload endpoint (token protected) with CORS for cross-origin uploads
+	app.Post("/api/internal/upload", cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowHeaders:     "Authorization, Content-Type",
+		AllowMethods:     "POST, OPTIONS",
+		AllowCredentials: false,
+	}), controllers.HandleStorageDirectUpload)
 
 	// NO AUTH - GENERAL
 	//app.Get("/news", loggedInMiddleware, controllers.HandleNews)
@@ -55,6 +64,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// image processing status endpoint
 	app.Get("/image/status/:uuid", loggedInMiddleware, controllers.HandleImageProcessingStatus)
+	app.Get("/api/v1/image/status/:uuid", loggedInMiddleware, controllers.HandleImageStatusJSON)
 	// image viewer
 	app.Get("/image/:uuid", loggedInMiddleware, controllers.HandleImageViewer)
 
@@ -63,6 +73,11 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// public page display
 	app.Get("/page/:slug", loggedInMiddleware, controllers.HandlePageDisplay)
+
+	// flash helpers
+	app.Get("/flash/upload-rate-limit", loggedInMiddleware, controllers.HandleFlashUploadRateLimit)
+	app.Get("/flash/upload-duplicate", loggedInMiddleware, controllers.HandleFlashUploadDuplicate)
+	app.Get("/flash/upload-error", loggedInMiddleware, controllers.HandleFlashUploadError)
 
 	// auth
 	app.Post("/logout", requireAuthMiddleware, controllers.HandleAuthLogout)

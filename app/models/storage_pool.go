@@ -611,9 +611,9 @@ func GetStoragePoolStats(db *gorm.DB, poolID uint) (*StoragePoolStats, error) {
 		usedSize += variantUsedSize
 	}
 
-	// Update the pool's used size in database
+	// Update only the used_size to avoid overwriting other fields with stale values
 	pool.UsedSize = usedSize
-	db.Save(pool)
+	db.Model(&StoragePool{}).Where("id = ?", pool.ID).UpdateColumn("used_size", usedSize)
 
 	stats := &StoragePoolStats{
 		ID:              pool.ID,

@@ -33,6 +33,20 @@ func EnqueueImageProcessing(image *models.Image, enableBackup bool) error {
 		FileName:     image.FileName,
 		FileType:     image.FileType,
 		EnableBackup: enableBackup,
+		PoolID:       image.StoragePoolID,
+	}
+
+	// Optional: lookup node id for routing hint
+	if image.StoragePool != nil && image.StoragePool.NodeID != "" {
+		payload.NodeID = image.StoragePool.NodeID
+	} else {
+		// try to fetch pool
+		db := database.GetDB()
+		if db != nil && image.StoragePoolID > 0 {
+			if pool, err := models.FindStoragePoolByID(db, image.StoragePoolID); err == nil && pool != nil {
+				payload.NodeID = pool.NodeID
+			}
+		}
 	}
 
 	// Get the global queue manager

@@ -68,6 +68,9 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 		healthStatus = make(map[uint]bool)
 	}
 
+	// Extended heartbeat snapshots
+	snapshots, _ := asc.storagePoolRepo.GetHealthSnapshots()
+
 	// Get all storage pools for management using repository
 	pools, err := asc.storagePoolRepo.GetAll()
 	if err != nil {
@@ -107,6 +110,7 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 		PoolStats            []models.StoragePoolStats
 		HealthStatus         map[uint]bool
 		Pools                []models.StoragePool
+		Snapshots            map[uint]repository.HealthSnapshot
 		TotalUsedSize        int64
 		TotalMaxSize         int64
 		TotalUsagePercentage float64
@@ -118,6 +122,7 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 		PoolStats:            poolStats,
 		HealthStatus:         healthStatus,
 		Pools:                pools,
+		Snapshots:            snapshots,
 		TotalUsedSize:        totalUsedSize,
 		TotalMaxSize:         totalMaxSize,
 		TotalUsagePercentage: totalUsagePercentage,
@@ -158,6 +163,20 @@ func (asc *AdminStorageController) HandleAdminCreateStoragePoolPost(c *fiber.Ctx
 		Description: strings.TrimSpace(c.FormValue("description")),
 		IsActive:    c.FormValue("is_active") == "on",
 		IsDefault:   c.FormValue("is_default") == "on",
+	}
+	// Validate storage type early
+	switch pool.StorageType {
+	case models.StorageTypeLocal, models.StorageTypeNFS, models.StorageTypeS3:
+		// ok
+	case "":
+		pool.StorageType = models.StorageTypeLocal
+	default:
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Ungültiger Speichertyp. Erlaubt: local, nfs, s3",
+		}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage/create")
 	}
 
 	// Node/URL awareness
@@ -362,7 +381,20 @@ func (asc *AdminStorageController) HandleAdminEditStoragePoolPost(c *fiber.Ctx) 
 	// Update pool data
 	pool.Name = strings.TrimSpace(c.FormValue("name"))
 	pool.BasePath = strings.TrimSpace(c.FormValue("base_path"))
-	pool.StorageType = strings.TrimSpace(c.FormValue("storage_type"))
+	// Storage type guard: only accept supported values; keep current if empty
+	if st := strings.TrimSpace(c.FormValue("storage_type")); st != "" {
+		switch st {
+		case models.StorageTypeLocal, models.StorageTypeNFS, models.StorageTypeS3:
+			pool.StorageType = st
+		default:
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Ungültiger Speichertyp. Erlaubt: local, nfs, s3",
+			}
+			flash.WithError(c, fm)
+			return c.Redirect("/admin/storage/edit/" + c.Params("id"))
+		}
+	}
 	pool.StorageTier = strings.TrimSpace(c.FormValue("storage_tier"))
 	pool.Description = strings.TrimSpace(c.FormValue("description"))
 	pool.IsActive = c.FormValue("is_active") == "on"

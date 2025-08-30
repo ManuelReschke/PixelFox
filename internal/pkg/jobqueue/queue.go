@@ -214,6 +214,10 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 	}
 
 	if err != nil {
+		if err == ErrRequeue {
+			// Already requeued for node routing; do not mark failed or completed
+			return
+		}
 		log.Errorf("[JobQueue] Job %s failed: %v", job.ID, err)
 		job.MarkAsFailed(err.Error())
 
@@ -257,6 +261,22 @@ func (q *Queue) updateJob(ctx context.Context, job *Job) {
 	if err := q.client.Set(ctx, jobKey, jobData, JobTTL).Err(); err != nil {
 		log.Errorf("[JobQueue] Failed to update job %s: %v", job.ID, err)
 	}
+}
+
+// requeueJob moves a job back to the pending queue and resets its status
+func (q *Queue) requeueJob(ctx context.Context, job *Job) error {
+	job.Status = JobStatusPending
+	job.UpdatedAt = time.Now()
+	q.updateJob(ctx, job)
+	// Remove from processing list and push to the end of the queue
+	if err := q.client.LRem(ctx, JobProcessingKey, 1, job.ID).Err(); err != nil {
+		log.Errorf("[JobQueue] Failed to remove job %s from processing: %v", job.ID, err)
+	}
+	if err := q.client.RPush(ctx, JobQueueKey, job.ID).Err(); err != nil {
+		log.Errorf("[JobQueue] Failed to requeue job %s: %v", job.ID, err)
+		return err
+	}
+	return nil
 }
 
 // removeFromProcessing removes a job from the processing queue

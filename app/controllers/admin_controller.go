@@ -419,6 +419,20 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 	siteTitle := c.FormValue("site_title")
 	siteDescription := c.FormValue("site_description")
 	imageUploadEnabled := c.FormValue("image_upload_enabled") == "on"
+	directUploadEnabled := c.FormValue("direct_upload_enabled") == "on"
+	uploadRateLimitPerMinute, _ := strconv.Atoi(c.FormValue("upload_rate_limit_per_minute"))
+	if uploadRateLimitPerMinute < 0 {
+		uploadRateLimitPerMinute = 0
+	} else if uploadRateLimitPerMinute > 100000 {
+		uploadRateLimitPerMinute = 100000
+	}
+
+	uploadUserRateLimitPerMinute, _ := strconv.Atoi(c.FormValue("upload_user_rate_limit_per_minute"))
+	if uploadUserRateLimitPerMinute < 0 {
+		uploadUserRateLimitPerMinute = 0
+	} else if uploadUserRateLimitPerMinute > 100000 {
+		uploadUserRateLimitPerMinute = 100000
+	}
 
 	// Get thumbnail format settings
 	thumbnailOriginalEnabled := c.FormValue("thumbnail_original_enabled") == "on"
@@ -456,16 +470,19 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 
 	// Create new settings
 	newSettings := &models.AppSettings{
-		SiteTitle:                siteTitle,
-		SiteDescription:          siteDescription,
-		ImageUploadEnabled:       imageUploadEnabled,
-		ThumbnailOriginalEnabled: thumbnailOriginalEnabled,
-		ThumbnailWebPEnabled:     thumbnailWebPEnabled,
-		ThumbnailAVIFEnabled:     thumbnailAVIFEnabled,
-		S3BackupDelayMinutes:     s3BackupDelayMinutes,
-		S3BackupCheckInterval:    s3BackupCheckInterval,
-		S3RetryInterval:          s3RetryInterval,
-		JobQueueWorkerCount:      jobQueueWorkerCount,
+		SiteTitle:                    siteTitle,
+		SiteDescription:              siteDescription,
+		ImageUploadEnabled:           imageUploadEnabled,
+		DirectUploadEnabled:          directUploadEnabled,
+		UploadRateLimitPerMinute:     uploadRateLimitPerMinute,
+		UploadUserRateLimitPerMinute: uploadUserRateLimitPerMinute,
+		ThumbnailOriginalEnabled:     thumbnailOriginalEnabled,
+		ThumbnailWebPEnabled:         thumbnailWebPEnabled,
+		ThumbnailAVIFEnabled:         thumbnailAVIFEnabled,
+		S3BackupDelayMinutes:         s3BackupDelayMinutes,
+		S3BackupCheckInterval:        s3BackupCheckInterval,
+		S3RetryInterval:              s3RetryInterval,
+		JobQueueWorkerCount:          jobQueueWorkerCount,
 	}
 
 	// Save settings using repository

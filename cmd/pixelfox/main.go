@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -31,9 +32,16 @@ import (
 func main() {
 	app := NewApplication()
 
-	// Start job queue manager
+	// Start job queue manager (can be disabled on storage-only nodes)
 	jobManager := jobqueue.GetManager()
-	jobManager.Start()
+	disableWorkers := env.GetEnv("DISABLE_JOB_WORKERS", "")
+	startedWorkers := false
+	if disableWorkers == "" || disableWorkers == "0" || strings.ToLower(disableWorkers) == "false" {
+		jobManager.Start()
+		startedWorkers = true
+	} else {
+		log.Println("Job workers disabled by DISABLE_JOB_WORKERS env")
+	}
 
 	// Start storage health monitor (lightweight cache heartbeat)
 	storagemod.StartHealthMonitor()
@@ -45,7 +53,9 @@ func main() {
 	go func() {
 		<-c
 		log.Println("Gracefully shutting down...")
-		jobManager.Stop()
+		if startedWorkers {
+			jobManager.Stop()
+		}
 		storagemod.StopHealthMonitor()
 		app.Shutdown()
 	}()

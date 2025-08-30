@@ -150,6 +150,39 @@ func (r *storagePoolRepository) GetHealthStatus() (map[uint]bool, error) {
 	return healthStatus, nil
 }
 
+// HealthSnapshot represents extended heartbeat info
+type HealthSnapshot struct {
+	Healthy            bool   `json:"healthy"`
+	UploadAPIReachable bool   `json:"upload_api_reachable"`
+	CheckedAt          string `json:"checked_at"`
+}
+
+// GetHealthSnapshots reads cached heartbeats and returns extended info
+func (r *storagePoolRepository) GetHealthSnapshots() (map[uint]HealthSnapshot, error) {
+	result := make(map[uint]HealthSnapshot)
+	pools, err := r.GetAll()
+	if err != nil {
+		return result, err
+	}
+	for _, pool := range pools {
+		key := fmt.Sprintf("storage_health:%d", pool.ID)
+		if s, err := cache.Get(key); err == nil && s != "" {
+			var payload struct {
+				Healthy            bool   `json:"healthy"`
+				UploadAPIReachable bool   `json:"upload_api_reachable"`
+				CheckedAt          string `json:"checked_at"`
+			}
+			if jsonErr := json.Unmarshal([]byte(s), &payload); jsonErr == nil {
+				result[pool.ID] = HealthSnapshot{Healthy: payload.Healthy, UploadAPIReachable: payload.UploadAPIReachable, CheckedAt: payload.CheckedAt}
+				continue
+			}
+		}
+		// Fallback only with healthy
+		result[pool.ID] = HealthSnapshot{Healthy: pool.IsHealthy(), UploadAPIReachable: false, CheckedAt: ""}
+	}
+	return result, nil
+}
+
 // IsPoolHealthy checks if a specific storage pool is healthy
 func (r *storagePoolRepository) IsPoolHealthy(id uint) (bool, error) {
 	pool, err := r.GetByID(id)

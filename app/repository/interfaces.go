@@ -82,6 +82,7 @@ type StoragePoolRepository interface {
 	CountImagesInPool(poolID uint) (int64, error)
 	CountVariantsInPool(poolID uint) (int64, error)
 	RecalculatePoolUsage(poolID uint) (int64, error)
+	GetHealthSnapshots() (map[uint]HealthSnapshot, error)
 }
 
 // SettingRepository defines the interface for application settings

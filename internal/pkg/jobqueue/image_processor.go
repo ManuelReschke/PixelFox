@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
+
+var ErrRequeue = fmt.Errorf("requeue job for another node")
 
 // processImageProcessingJob processes an image processing job
 func (q *Queue) processImageProcessingJob(ctx context.Context, job *Job) error {
@@ -33,6 +37,21 @@ func (q *Queue) processImageProcessingJob(ctx context.Context, job *Job) error {
 	var image models.Image
 	if err := db.Preload("StoragePool").Where("uuid = ?", payload.ImageUUID).First(&image).Error; err != nil {
 		return fmt.Errorf("failed to find image %s: %w", payload.ImageUUID, err)
+	}
+
+	// Optional routing: Only process jobs for this node if NODE_ID is set
+	nodeID := strings.TrimSpace(env.GetEnv("NODE_ID", ""))
+	if nodeID != "" && image.StoragePool != nil {
+		poolNode := strings.TrimSpace(image.StoragePool.NodeID)
+		if poolNode != "" && !strings.EqualFold(nodeID, poolNode) {
+			// Requeue for another node
+			if err := q.requeueJob(ctx, job); err != nil {
+				log.Errorf("[JobQueue] Failed to requeue job %s for node routing: %v", job.ID, err)
+			} else {
+				log.Infof("[JobQueue] Requeued job %s for node %s (current node %s)", job.ID, poolNode, nodeID)
+			}
+			return ErrRequeue
+		}
 	}
 
 	// Verify the original file exists using storage pool-aware path construction

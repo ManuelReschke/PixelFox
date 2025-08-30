@@ -1,16 +1,19 @@
 package admin_views
 
 import (
-	"fmt"
-	"strconv"
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/views/partials"
+    "fmt"
+    "strconv"
+    "strings"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/app/repository"
+    "github.com/ManuelReschke/PixelFox/views/partials"
 )
 
 templ StorageManagement(data struct {
 	PoolStats             []models.StoragePoolStats
 	HealthStatus          map[uint]bool
 	Pools                 []models.StoragePool
+	Snapshots             map[uint]repository.HealthSnapshot
 	TotalUsedSize         int64
 	TotalMaxSize          int64
 	TotalUsagePercentage  float64
@@ -98,16 +101,38 @@ templ StorageManagement(data struct {
 						<tbody>
 							for _, stats := range data.PoolStats {
 								<tr>
-									<td>
-										<div class="flex items-center space-x-3">
-											<div>
-												<div class="font-bold">{ stats.Name }</div>
-												if pool := findPoolByID(data.Pools, stats.ID); pool != nil && pool.Description != "" {
-													<div class="text-sm text-gray-500">{ pool.Description }</div>
-												}
-											</div>
-										</div>
-									</td>
+                            <td>
+                                <div class="flex items-center space-x-3">
+                                    <div>
+                                        <div class="font-bold">{ stats.Name }</div>
+                                        if pool := findPoolByID(data.Pools, stats.ID); pool != nil {
+                                            if pool.Description != "" {
+                                                <div class="text-sm text-gray-500">{ pool.Description }</div>
+                                            }
+                                            <div class="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                                if pool.NodeID != "" {
+                                                    <span class="badge badge-outline badge-xs">node: { pool.NodeID }</span>
+                                                }
+                                                if pool.PublicBaseURL != "" {
+                                                    <a href={ templ.URL(pool.PublicBaseURL) } target="_blank" class="link link-hover text-xs" title={ pool.PublicBaseURL }>
+                                                        { strings.TrimPrefix(strings.TrimPrefix(pool.PublicBaseURL, "https://"), "http://") }
+                                                    </a>
+                                                }
+                                                if pool.UploadAPIURL != "" {
+                                                    <span class="badge badge-ghost badge-xs" title="Upload API">{ strings.TrimPrefix(strings.TrimPrefix(pool.UploadAPIURL, "https://"), "http://") }</span>
+                                                }
+                                                if snap, ok := data.Snapshots[stats.ID]; ok {
+                                                    if snap.UploadAPIReachable {
+                                                        <span class="badge badge-success badge-xs">API OK</span>
+                                                    } else {
+                                                        <span class="badge badge-error badge-xs">API Fehler</span>
+                                                    }
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
 									<td>
 										<div class="flex items-center space-x-2">
 											if healthy, exists := data.HealthStatus[stats.ID]; exists && healthy {
