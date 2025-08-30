@@ -24,6 +24,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/upload"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/views"
@@ -91,48 +92,27 @@ func HandleUpload(c *fiber.Ctx) error {
 	}
 	file := files[0]
 
-	// Check if the file is an image
+	// Validate extension + MIME by sniffing first bytes
 	fileExt := strings.ToLower(filepath.Ext(file.Filename))
-	validImageExtensions := map[string]bool{
-		".jpg":  true,
-		".jpeg": true,
-		".png":  true,
-		".gif":  true,
-		".webp": true,
-		".avif": true,
-		".svg":  true,
-		".bmp":  true,
+	pre, err := file.Open()
+	if err != nil {
+		fiberlog.Error(fmt.Sprintf("Error opening uploaded file for sniff: %v", err))
+		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Verarbeiten der Datei")
 	}
-
-	// Check for unsupported but common image formats for better error messages
-	unsupportedButCommon := map[string]string{
-		".heic": "HEIC-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".heif": "HEIF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".tiff": "TIFF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".tif":  "TIF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".raw":  "RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".cr2":  "Canon RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".nef":  "Nikon RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".arw":  "Sony RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		".dng":  "DNG RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
+	head := make([]byte, 512)
+	n, _ := io.ReadFull(pre, head)
+	if n > 0 {
+		head = head[:n]
 	}
-
-	if !validImageExtensions[fileExt] {
-		var errorMessage string
-		if specificMessage, exists := unsupportedButCommon[fileExt]; exists {
-			errorMessage = specificMessage
-		} else {
-			errorMessage = "Nur folgende Bildformate werden unterstützt: JPG, JPEG, PNG, GIF, WEBP, AVIF, SVG, BMP"
-		}
-
+	pre.Close()
+	if _, verr := upload.ValidateImageBySniff(file.Filename, head); verr != nil {
 		fm := fiber.Map{
 			"type":    "error",
-			"message": errorMessage,
+			"message": verr.Error(),
 		}
 		flash.WithError(c, fm)
-
 		if c.Get("HX-Request") == "true" {
-			return c.Status(fiber.StatusUnsupportedMediaType).SendString(errorMessage)
+			return c.Status(fiber.StatusUnsupportedMediaType).SendString(verr.Error())
 		}
 		return c.Redirect("/")
 	}

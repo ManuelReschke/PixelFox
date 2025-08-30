@@ -120,6 +120,12 @@ func NewApplication() *fiber.App {
 	// recovery and logging
 	app.Use(recover.New(), logger.New())
 
+	// Security: prevent MIME sniffing on all responses
+	app.Use(func(c *fiber.Ctx) error {
+		c.Set("X-Content-Type-Options", "nosniff")
+		return c.Next()
+	})
+
 	// fiber metrics
 	metricsPW := env.GetEnv("PROTECTED_ROUTE_METRICS_PW", "")
 	app.Get("/metrics", basicauth.New(basicauth.Config{

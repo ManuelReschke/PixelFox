@@ -22,6 +22,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/security"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/upload"
 )
 
 func readToken(c *fiber.Ctx) string {
@@ -101,29 +102,23 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large for session"})
 	}
 
-	// Validate extension (align with App Upload)
+	// Validate filename extension and MIME by sniffing the first bytes
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if ext == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid file name"})
 	}
-	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".avif": true, ".svg": true, ".bmp": true}
-	if !allowed[ext] {
-		unsupported := map[string]string{
-			".heic": "HEIC-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".heif": "HEIF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".tiff": "TIFF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".tif":  "TIF-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".raw":  "RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".cr2":  "Canon RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".nef":  "Nikon RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".arw":  "Sony RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-			".dng":  "DNG RAW-Format wird derzeit nicht unterstützt. Bitte konvertiere das Bild zu JPG oder PNG.",
-		}
-		msg, ok := unsupported[ext]
-		if !ok {
-			msg = "Nur folgende Bildformate werden unterstützt: JPG, JPEG, PNG, GIF, WEBP, AVIF, SVG, BMP"
-		}
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(fiber.Map{"error": msg})
+	sniff, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
+	}
+	head := make([]byte, 512)
+	n, _ := io.ReadFull(sniff, head)
+	if n > 0 {
+		head = head[:n]
+	}
+	sniff.Close()
+	if _, verr := upload.ValidateImageBySniff(file.Filename, head); verr != nil {
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(fiber.Map{"error": verr.Error()})
 	}
 
 	// Open file to compute hash and then persist

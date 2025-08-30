@@ -41,3 +41,23 @@ func HandleFlashUploadError(c *fiber.Ctx) error {
 	flash.WithError(c, fm)
 	return c.Redirect("/", fiber.StatusSeeOther)
 }
+
+// HandleFlashUploadTooLarge shows a size error and redirects home
+func HandleFlashUploadTooLarge(c *fiber.Ctx) error {
+	fm := fiber.Map{
+		"type":    "error",
+		"message": "Die Datei ist zu groß. Bitte wähle ein kleineres Bild.",
+	}
+	flash.WithError(c, fm)
+	return c.Redirect("/", fiber.StatusSeeOther)
+}
+
+// HandleFlashUploadUnsupportedType shows an unsupported type error and redirects home
+func HandleFlashUploadUnsupportedType(c *fiber.Ctx) error {
+	fm := fiber.Map{
+		"type":    "error",
+		"message": "Dateityp nicht unterstützt. Erlaubt: JPG, JPEG, PNG, GIF, WEBP, AVIF, BMP",
+	}
+	flash.WithError(c, fm)
+	return c.Redirect("/", fiber.StatusSeeOther)
+}

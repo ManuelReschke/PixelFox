@@ -78,6 +78,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/flash/upload-rate-limit", loggedInMiddleware, controllers.HandleFlashUploadRateLimit)
 	app.Get("/flash/upload-duplicate", loggedInMiddleware, controllers.HandleFlashUploadDuplicate)
 	app.Get("/flash/upload-error", loggedInMiddleware, controllers.HandleFlashUploadError)
+	app.Get("/flash/upload-too-large", loggedInMiddleware, controllers.HandleFlashUploadTooLarge)
+	app.Get("/flash/upload-unsupported-type", loggedInMiddleware, controllers.HandleFlashUploadUnsupportedType)
 
 	// auth
 	app.Post("/logout", requireAuthMiddleware, controllers.HandleAuthLogout)

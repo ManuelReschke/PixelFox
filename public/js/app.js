@@ -125,7 +125,7 @@ function initUploadForm() {
             // Prüfe, ob es sich um ein Bild handelt
             if (!file.type.startsWith('image/')) {
                 errorMessage.classList.remove('hidden');
-                errorText.textContent = 'Nur Bildformate werden unterstützt (JPG, PNG, GIF, WEBP, SVG, BMP)';
+                errorText.textContent = 'Nur Bildformate werden unterstützt (JPG, JPEG, PNG, GIF, WEBP, AVIF, BMP)';
                 uploadResult.classList.remove('hidden');
                 fileInput.value = ''; // Dateiauswahl zurücksetzen
                 return;
@@ -309,6 +309,14 @@ function initUploadForm() {
             // Map rate-limit errors
             if (err && err.status === 429) {
                 window.location.href = '/flash/upload-rate-limit';
+                return;
+            }
+            if (err && err.status === 413) {
+                window.location.href = '/flash/upload-too-large';
+                return;
+            }
+            if (err && err.status === 415) {
+                window.location.href = '/flash/upload-unsupported-type';
                 return;
             }
             // Try to extract error message and show as flash
