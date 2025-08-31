@@ -38,7 +38,9 @@ type AppSettings struct {
 	S3BackupCheckInterval int `json:"s3_backup_check_interval" validate:"min=1,max=60"`   // How often to check for delayed backups (1-60 minutes)
 	S3RetryInterval       int `json:"s3_retry_interval" validate:"min=1,max=60"`          // How often to retry failed backups (1-60 minutes)
 	JobQueueWorkerCount   int `json:"job_queue_worker_count" validate:"min=1,max=20"`     // Number of job queue workers (1-20)
-	mu                    sync.RWMutex
+	// Replication/Storage settings
+	ReplicationRequireChecksum bool `json:"replication_require_checksum"`
+	mu                         sync.RWMutex
 }
 
 // Global settings instance
@@ -70,10 +72,11 @@ func LoadSettings(db *gorm.DB) error {
 		ThumbnailOriginalEnabled:     true,
 		ThumbnailWebPEnabled:         true,
 		ThumbnailAVIFEnabled:         true,
-		S3BackupDelayMinutes:         5, // Default: immediate backup (0 minutes delay)
-		S3BackupCheckInterval:        5, // Default: check every 5 minutes
-		S3RetryInterval:              2, // Default: retry every 2 minutes
-		JobQueueWorkerCount:          5, // Default: 5 workers
+		S3BackupDelayMinutes:         5,    // Default: immediate backup (0 minutes delay)
+		S3BackupCheckInterval:        5,    // Default: check every 5 minutes
+		S3RetryInterval:              2,    // Default: retry every 2 minutes
+		JobQueueWorkerCount:          5,    // Default: 5 workers
+		ReplicationRequireChecksum:   true, // Default: enforce checksum for replication
 	}
 
 	// Load settings from database
@@ -123,6 +126,8 @@ func LoadSettings(db *gorm.DB) error {
 			if count, err := strconv.Atoi(setting.Value); err == nil {
 				appSettings.JobQueueWorkerCount = count
 			}
+		case "replication_require_checksum":
+			appSettings.ReplicationRequireChecksum = setting.Value == "true"
 		}
 	}
 
@@ -154,6 +159,7 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 		"s3_backup_check_interval":          fmt.Sprintf("%d", settings.S3BackupCheckInterval),
 		"s3_retry_interval":                 fmt.Sprintf("%d", settings.S3RetryInterval),
 		"job_queue_worker_count":            fmt.Sprintf("%d", settings.JobQueueWorkerCount),
+		"replication_require_checksum":      fmt.Sprintf("%t", settings.ReplicationRequireChecksum),
 	}
 
 	// Save each setting
@@ -194,7 +200,7 @@ func getSettingType(key string) string {
 	switch key {
 	case "site_title", "site_description":
 		return "string"
-	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled":
+	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled", "replication_require_checksum":
 		return "boolean"
 	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count", "upload_rate_limit_per_minute", "upload_user_rate_limit_per_minute":
 		return "integer"
@@ -312,4 +318,11 @@ func (s *AppSettings) GetJobQueueWorkerCount() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.JobQueueWorkerCount
+}
+
+// IsReplicationChecksumRequired returns whether replication checksum validation is required
+func (s *AppSettings) IsReplicationChecksumRequired() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ReplicationRequireChecksum
 }

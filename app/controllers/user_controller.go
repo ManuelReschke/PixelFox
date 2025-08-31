@@ -48,7 +48,7 @@ func HandleUserProfile(c *fiber.Ctx) error {
 
 	// Calculate storage usage
 	var totalStorage int64
-	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Select("SUM(file_size)").Row().Scan(&totalStorage)
+	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Select("COALESCE(SUM(file_size), 0)").Row().Scan(&totalStorage)
 
 	csrfToken := c.Locals("csrf").(string)
 

@@ -604,10 +604,10 @@ func GetStoragePoolStats(db *gorm.DB, poolID uint) (*StoragePoolStats, error) {
 		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Count(&imageCount)
 		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&variantCount)
 
-		// Calculate used size from actual files
-		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Select("SUM(file_size)").Scan(&usedSize)
+		// Calculate used size from actual files (COALESCE to avoid NULL → scan errors)
+		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Select("COALESCE(SUM(file_size), 0)").Scan(&usedSize)
 		var variantUsedSize int64
-		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Select("SUM(file_size)").Scan(&variantUsedSize)
+		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Select("COALESCE(SUM(file_size), 0)").Scan(&variantUsedSize)
 		usedSize += variantUsedSize
 	}
 

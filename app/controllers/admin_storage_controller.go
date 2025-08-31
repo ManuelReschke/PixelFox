@@ -13,6 +13,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
 	"github.com/ManuelReschke/PixelFox/views/admin_views"
@@ -143,7 +144,12 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 // HandleAdminCreateStoragePool shows the create storage pool form using repository pattern
 func (asc *AdminStorageController) HandleAdminCreateStoragePool(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
-	csrfToken := c.Locals("csrf").(string)
+	var csrfToken string
+	if v := c.Locals("csrf"); v != nil {
+		if t, ok := v.(string); ok {
+			csrfToken = t
+		}
+	}
 
 	poolForm := admin_views.StoragePoolForm(models.StoragePool{}, false, csrfToken)
 	home := views.HomeCtx(c, " | Speicherpool erstellen", userCtx.IsLoggedIn, false, flash.Get(c), poolForm, userCtx.IsAdmin, nil)
@@ -681,6 +687,58 @@ func (asc *AdminStorageController) HandleAdminRecalculateStorageUsage(c *fiber.C
 		"image_count":   imageCount,
 		"variant_count": variantCount,
 	})
+}
+
+// HandleAdminMoveStoragePool shows a form to move all images from this pool to another
+func (asc *AdminStorageController) HandleAdminMoveStoragePool(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		fm := fiber.Map{"type": "error", "message": "Ungültige Pool-ID"}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+	src, err := asc.storagePoolRepo.GetByID(uint(poolID))
+	if err != nil {
+		fm := fiber.Map{"type": "error", "message": "Speicherpool nicht gefunden"}
+		flash.WithError(c, fm)
+		return c.Redirect("/admin/storage")
+	}
+	// Candidate targets: all active pools except src
+	pools, _ := asc.storagePoolRepo.GetActive()
+	csrfToken := c.Locals("csrf").(string)
+	view := admin_views.StoragePoolMoveForm(*src, pools, csrfToken)
+	home := views.HomeCtx(c, " | Pool verschieben", userCtx.IsLoggedIn, false, flash.Get(c), view, userCtx.IsAdmin, nil)
+	handler := adaptor.HTTPHandler(templ.Handler(home))
+	return handler(c)
+}
+
+// HandleAdminMoveStoragePoolPost starts enqueueing move jobs for all images in this pool
+func (asc *AdminStorageController) HandleAdminMoveStoragePoolPost(c *fiber.Ctx) error {
+	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		fm := fiber.Map{"type": "error", "message": "Ungültige Pool-ID"}
+		return flash.WithError(c, fm).Redirect("/admin/storage")
+	}
+	targetStr := strings.TrimSpace(c.FormValue("target_pool_id"))
+	if targetStr == "" {
+		fm := fiber.Map{"type": "error", "message": "Zielpool auswählen"}
+		return flash.WithError(c, fm).Redirect(fmt.Sprintf("/admin/storage/move/%d", poolID))
+	}
+	targetID64, err := strconv.ParseUint(targetStr, 10, 32)
+	if err != nil || uint(targetID64) == uint(poolID) {
+		fm := fiber.Map{"type": "error", "message": "Ungültiger Zielpool"}
+		return flash.WithError(c, fm).Redirect(fmt.Sprintf("/admin/storage/move/%d", poolID))
+	}
+	// Enqueue initial enqueuer job
+	q := jobqueue.GetManager().GetQueue()
+	payload := jobqueue.PoolMoveEnqueueJobPayload{SourcePoolID: uint(poolID), TargetPoolID: uint(targetID64), CursorID: 0}
+	if _, err := q.EnqueueJob(jobqueue.JobTypePoolMoveEnqueue, payload.ToMap()); err != nil {
+		fm := fiber.Map{"type": "error", "message": "Konnte Verschiebe-Jobs nicht starten: " + err.Error()}
+		return flash.WithError(c, fm).Redirect("/admin/storage")
+	}
+	fm := fiber.Map{"type": "success", "message": "Verschiebe-Jobs wurden gestartet. Fortschritt im Queue‑Monitor sichtbar."}
+	return flash.WithSuccess(c, fm).Redirect("/admin/storage")
 }
 
 // ============================================================================

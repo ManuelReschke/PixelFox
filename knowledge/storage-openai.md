@@ -1,6 +1,6 @@
 # PixelFox Storage Scaling – Hot Storage über mehrere VPS
 
-Stand: 2025-08-29
+Stand: 2025-08-31
 
 Ziel: Mehrere kleine VPS als Hot‑Storage-Knoten betreiben, App/DB/Redis separat. Uploads sollen horizontal skaliert werden, Downloads effizient vom richtigen Storage‑Knoten bedient werden – angelehnt an Sibsoft/XFileSharing (Upload‑Server Auswahl + Weiterleitung).
 
@@ -175,7 +175,7 @@ Notizen (Phase 1 Defaults)
 ## Phase 2 Roadmap – Nächste Schritte
 
 - Sicherheit/Validierung
-  - Einheitliche MIME/Extension‑Checks im Storage‑Upload (serverseitig) – Basis erledigt; optional echte MIME‑Sniffing.
+  - Einheitliche MIME/Extension‑Checks im Storage‑Upload (serverseitig) – implementiert inkl. MIME‑Sniffing; optional strengere Erkennung via Lib (z. B. mimetype) oder Image‑Decoding.
   - Rate‑Limit pro User zusätzlich zum IP‑Limit (Einstellung in Admin). Optional Burst/Leaky‑Bucket.
 - UX und Feedback
   - Dezente “Verarbeitung läuft …” Anzeige (Poll auf JSON‑Status) – umgesetzt; Feinschliff möglich.
@@ -187,3 +187,119 @@ Notizen (Phase 1 Defaults)
   - Optional: Resumable/Chunked Upload (große Dateien, Wiederaufnahme).
   - Optional: Signierte Download‑URLs (private/temporäre Links).
   - Optional: CDN‑Konfiguration/Auto‑Rewrite in Templates für statische Auslieferung.
+
+---
+
+## Phase 2 – Implementierungsstand (2025‑08‑31)
+
+Erreicht (fertig):
+- Direct‑to‑Storage Upload end‑to‑end
+  - `POST /api/v1/upload/sessions` (App) gibt `upload_url` + signiertes Token aus.
+  - `POST /api/internal/upload` (Storage) validiert Token und speichert Datei im gewählten Pool.
+  - Frontend: Direct‑Upload mit XHR‑Progress, Polling auf `/api/v1/image/status/:uuid` bis fertig.
+- Worker‑Routing pro Node (bereit)
+  - Jobs werden anhand von `NODE_ID`/`pool.node_id` gefiltert; bei Mismatch Requeue.
+- URL‑Generierung (Downloads) node‑bewusst
+  - `imageprocessor` prefixed URLs mit `pool.public_base_url`, Fallback `PUBLIC_DOMAIN`.
+- Health/Heartbeat
+  - Pools werden alle 60s in Redis gecached (Used/Max/Usage%, Healthy, Timestamp).
+  - Reachability‑Check für `upload_api_url` (OPTIONS/HEAD, 2s Timeout) wird als `upload_api_reachable` im Cache gespeichert.
+  - Dev‑Fallback: Für `node_id=local` wird zusätzlich `http://localhost:<APP_PORT>/api/internal/upload` geprüft (0.0.0.0 ist in Dev sonst nicht erreichbar).
+- Admin UI
+  - Storage‑Pools: Felder `public_base_url` / `upload_api_url` / `node_id` verwaltbar; Tabelle zeigt Node, Public/Upload‑URL und Badge “API OK/Fehler”.
+  - Hinweis auf fehlendes `UPLOAD_TOKEN_SECRET` in den Einstellungen.
+  - Rate‑Limits konfigurierbar (siehe unten).
+ - Rebalancing/Move to Pool (v0):
+   - Batch‑Enqueuer `pool_move_enqueue` plant je Bild einen `move_image` Job (200er Batches).
+   - Node‑Routing: Ausführung auf dem Quell‑Node; bei Mismatch Requeue.
+   - Pfad‑Normalisierung für Varianten (verhindert doppelte Prefixe, z. B. `/app/uploads/...`).
+   - Same‑Path‑Guard: Falls Quell‑ und Zielpfad identisch auflösen (z. B. lokaler Ein‑Ordner‑Test), wird IO übersprungen (kein Truncate/Copy/Delete).
+   - Fehlende Quelle: Non‑fatal Skip ohne Retries; Varianten einzeln skip‑bar.
+   - Stuck‑Job‑Recovery: Sweeper requeued Jobs, die >10 Min in `processing` hängen (Intervall 1 Min).
+ - Cross‑VPS Replikation (HTTP Push):
+   - Ziel‑Endpoint: `PUT /api/internal/replicate` (Secret‑geschützt via `REPLICATION_SECRET`).
+   - Move‑Job erkennt Remote‑Ziele (abweichende `node_id`) und streamt Dateien per Multipart an `…/replicate` (Basis: `upload_api_url`).
+   - Idempotenz: Ziel prüft Existenz+Größe; bei Match → Skip.
+   - Integrität: SHA‑256 wird vom Sender mitgeschickt und am Ziel gestreamt validiert; Mismatch → Datei löschen + 422.
+   - Checksum‑Pflicht ist über Admin‑Setting steuerbar (Default: EIN).
+   - Logging am Ziel: Unauthorized/Traversal/Capacity/Skip/Mismatch/Success mit Kontext (pool_id, path, size, IP).
+- Rate‑Limits
+  - IP‑basiert: bestand bereits, bleibt aktiv.
+  - Neu: Per‑User‑Limit (Redis‑Zähler `rate:upload:user:<user_id>`, 60s TTL) – konfigurierbar in Admin Settings.
+- Fehlermeldungen (Direct Upload)
+  - Flash‑Routen für Rate‑Limit (`/flash/upload-rate-limit`), zu große Dateien (`/flash/upload-too-large`), nicht unterstützte Typen (`/flash/upload-unsupported-type`) und generische Upload‑Fehler (`/flash/upload-error?msg=...`).
+  - Frontend mappt HTTP‑Fehler (429/413/415/sonstige) auf diese Routen, damit Benutzer sofort eine sichtbare Meldung sehen.
+- Sicherheit/Validierung (neu)
+  - MIME‑Sniffing serverseitig mit `http.DetectContentType` plus Extension‑Whitelist.
+  - SVG/XML werden blockiert (XSS‑Risiko) bis Sanitizer verfügbar ist.
+  - Global `X-Content-Type-Options: nosniff` gesetzt.
+- Stabilität/Regression Fix
+  - Der Stats‑Job aktualisiert nur noch `used_size` per `UpdateColumn`, überschreibt keine anderen Pool‑Felder (z. B. `is_active`) mehr.
+
+Offen (optional / Feinschliff):
+- Strengere MIME‑Erkennung (z. B. Lib mimetype, Image‑Decoding) und ggf. SVG‑Sanitizer falls SVG erlaubt werden soll.
+- Resumable/Chunked Uploads für sehr große Dateien und Wiederaufnahme.
+- Signierte Download‑URLs für private/temporäre Inhalte.
+- CDN‑Integration und ggf. automatisches URL‑Rewrite in Templates.
+
+Dev/ENV Hinweise (lokal):
+- Pflicht für Direct‑Upload: `UPLOAD_TOKEN_SECRET` (App/Storage verwenden denselben Secret). In `.env.dev` ist es gesetzt.
+- Replikation (HTTP Push): `REPLICATION_SECRET` muss auf allen Knoten identisch gesetzt sein (App + Storage‑Nodes).
+- `PUBLIC_DOMAIN` (Dev default: `http://0.0.0.0:8080`). Für korrekten Reachability‑Check alternativ `http://localhost:8080` setzen, oder den implementierten Dev‑Fallback nutzen.
+- Optional: `NODE_ID` (Single‑Node nicht nötig) und `DISABLE_JOB_WORKERS` (nur für reine Storage‑Nodes).
+- Admin Settings:
+  - `upload_rate_limit_per_minute` (pro IP, Default 60)
+  - `upload_user_rate_limit_per_minute` (pro Benutzer, Default 60)
+  - `replication_require_checksum` (Default TRUE) – SHA‑256 Validierung am Ziel verpflichtend
+
+Kurzanleitung – Direct‑to‑Storage Test (lokal):
+1. `.env.dev` → `UPLOAD_TOKEN_SECRET` gesetzt, `make start`.
+2. Admin → Einstellungen → “Direct‑to‑Storage Upload aktivieren”.
+3. Upload auf der Startseite testen; bei Fehlern erscheinen Flash‑Meldungen.
+
+---
+
+## Admin Pool Move (Rebalancing v0) – Stand
+
+Ziel: Einen Pool manuell leeren, indem alle Bilder (inkl. Varianten) in einen anderen Pool verschoben werden.
+
+UI/Bedienung
+- Button “Move to” in Admin → Speicherverwaltung pro Pool.
+- Formular: Quelle wird angezeigt, Zielpool auswählen (nur aktive, nicht identisch mit Quelle).
+- Empfehlung: Quell‑Pool vorher deaktivieren (keine neuen Uploads/Verarbeitungen), dann Move starten.
+
+Ablauf/Jobs
+- Start POST `/admin/storage/move/:id` enqueued einen Batch‑Enqueuer `pool_move_enqueue`.
+- `pool_move_enqueue`:
+  - Liest Bilder des Quell‑Pools in Batches (200), `id`‑aufsteigend, ab Cursor.
+  - Für jedes Bild enqueued ein `move_image`.
+  - Requeued sich selbst mit neuem Cursor, bis alle Bilder geplant sind.
+- `move_image` (je Bild):
+  - Node‑Routing: Job läuft auf dem Quell‑Node (`NODE_ID` vs. `sourcePool.NodeID`); bei Mismatch Requeue.
+  - Kopiert Original und alle Varianten:
+    - Lokal/NFS: via StorageManager (`SaveFile` → Zielpool, danach `DeleteFile` im Quellpool).
+    - Remote (anderer Node): HTTP‑Push an `PUT /api/internal/replicate` des Ziel‑Pools (Basis `upload_api_url`), bei Erfolg Löschen im Quell‑Pool.
+  - Same‑Path‑Guard: Identische Quell/Ziel‑Pfadauflösung → IO wird übersprungen.
+  - Fehlende Quelle/Varianten: Non‑fatal Skip ohne Retries.
+  - Aktualisiert DB‑Referenzen atomar: `images.storage_pool_id` und `image_variants.storage_pool_id` → Zielpool.
+  - Kapazität/`used_size` wird durch `SaveFile/DeleteFile` mitgepflegt.
+
+Pfad‑Normalisierung (Fix)
+- Varianten speicherten `FilePath` als absoluten Pfad (inkl. Storage‑Base). Beim Verschieben wird der Pfad vor dem Öffnen normalisiert:
+  - Primär ab `variants/...` extrahiert, sonst Storage‑Base‑Prefix entfernt → relativer Pfad für `SaveFile/DeleteFile`.
+- Damit wird ein doppeltes Präfix wie `/app/uploads/app/uploads/variants/...` vermieden (Fehler “no such file”).
+
+Health/Reachability (Ergänzung)
+- HEAD `/api/internal/upload` antwortet jetzt 204; der Healthcheck nutzt dies, sodass keine 405‑Logs mehr entstehen.
+- Storage‑Pool Formular: Hinweis, dass Replikation auf Basis von `upload_api_url` über `/api/internal/replicate` läuft (Secret‑geschützt).
+
+Monitoring/Operative Hinweise
+- Fortschritt: Admin → Queues zeigt anstehende/verarbeitete Jobs. (Eigene Fortschritts‑UI kann bei Bedarf ergänzt werden.)
+- Throttling/Last: Standard‑Queue‑Workeranzahl über Settings steuerbar.
+- Fehlerfälle: Jobs besitzen Retry‑Mechanismus; dauerhafte Fehler erscheinen im Queue‑Monitor.
+
+Nächste Schritte (Rebalancing v1)
+- Fortschritts‑UI mit Zähler (geplant/abgearbeitet/fehlerhaft) und Pause/Resume.
+- Pre‑Flight‑Checks (Ziel‑Kapazität, Reachability), optional Dry‑Run/Plan.
+- Datenintegrität: Checksums (SHA‑256) nach Copy auch für lokale Moves; optional Audit/Verifier.
+- Throttling/Rate‑Limit speziell für Move‑Jobs; Tageszeitfenster.

@@ -73,6 +73,10 @@ func (q *Queue) Start() {
 		q.wg.Add(1)
 		go q.worker(i)
 	}
+
+	// Start stuck-processing sweeper (recovers jobs stuck in processing due to crashes)
+	q.wg.Add(1)
+	go q.stuckSweeper(10*time.Minute, 1*time.Minute)
 }
 
 // Stop stops the job queue workers
@@ -89,6 +93,72 @@ func (q *Queue) Stop() {
 	q.running = false
 	q.wg.Wait()
 	log.Info("[JobQueue] All workers stopped")
+}
+
+// stuckSweeper periodically scans the processing list and requeues jobs stuck for longer than maxAge
+func (q *Queue) stuckSweeper(maxAge time.Duration, interval time.Duration) {
+	defer q.wg.Done()
+	log.Infof("[JobQueue] Stuck sweeper running (maxAge=%s, interval=%s)", maxAge, interval)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	ctx := context.Background()
+	for {
+		select {
+		case <-q.stopCh:
+			log.Info("[JobQueue] Stuck sweeper stopping")
+			return
+		case <-ticker.C:
+			ids, err := q.client.LRange(ctx, JobProcessingKey, 0, -1).Result()
+			if err != nil {
+				log.Errorf("[JobQueue] Sweeper LRange error: %v", err)
+				continue
+			}
+			now := time.Now()
+			for _, id := range ids {
+				jobKey := JobKeyPrefix + id
+				data, err := q.client.Get(ctx, jobKey).Result()
+				if err != nil {
+					// Job data missing; remove from processing list
+					if err != redis.Nil {
+						log.Errorf("[JobQueue] Sweeper Get error for %s: %v", id, err)
+					}
+					_ = q.client.LRem(ctx, JobProcessingKey, 1, id).Err()
+					continue
+				}
+				var job Job
+				if uerr := json.Unmarshal([]byte(data), &job); uerr != nil {
+					log.Errorf("[JobQueue] Sweeper unmarshal error for %s: %v", id, uerr)
+					_ = q.client.LRem(ctx, JobProcessingKey, 1, id).Err()
+					continue
+				}
+				if job.Status != JobStatusProcessing {
+					// Clean up stray entry
+					_ = q.client.LRem(ctx, JobProcessingKey, 1, id).Err()
+					continue
+				}
+				// Determine when processing started
+				started := job.ProcessedAt
+				if started == nil || started.IsZero() {
+					// Fallback to UpdatedAt/CreatedAt
+					tmp := job.UpdatedAt
+					if tmp.IsZero() {
+						tmp = job.CreatedAt
+					}
+					started = &tmp
+				}
+				if now.Sub(*started) > maxAge {
+					log.Warnf("[JobQueue] Recovering stuck job %s (type=%s), age=%s", job.ID, job.Type, now.Sub(*started))
+					job.Status = JobStatusPending
+					job.ErrorMsg = "recovered by sweeper"
+					job.UpdatedAt = now
+					q.updateJob(ctx, &job)
+					// Move from processing back to pending
+					_ = q.client.LRem(ctx, JobProcessingKey, 1, id).Err()
+					_ = q.client.RPush(ctx, JobQueueKey, id).Err()
+				}
+			}
+		}
+	}
 }
 
 // worker processes jobs from the queue
@@ -209,6 +279,10 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 		err = q.processS3BackupJob(ctx, job)
 	case JobTypeS3Delete:
 		err = q.processS3DeleteJob(ctx, job)
+	case JobTypePoolMoveEnqueue:
+		err = q.processPoolMoveEnqueueJob(job)
+	case JobTypeMoveImage:
+		err = q.processMoveImageJob(job)
 	default:
 		err = fmt.Errorf("unknown job type: %s", job.Type)
 	}

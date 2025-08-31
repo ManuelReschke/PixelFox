@@ -182,6 +182,16 @@ func HandleAdminRecalculateStorageUsage(c *fiber.Ctx) error {
 	return GetAdminStorageController().HandleAdminRecalculateStorageUsage(c)
 }
 
+// HandleAdminMoveStoragePool - Adapter for pool move form
+func HandleAdminMoveStoragePool(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminMoveStoragePool(c)
+}
+
+// HandleAdminMoveStoragePoolPost - Adapter for pool move start
+func HandleAdminMoveStoragePoolPost(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminMoveStoragePoolPost(c)
+}
+
 // Page Management - Repository Pattern Functions using dedicated AdminPageController
 
 // HandleAdminPages - Adapter for page management

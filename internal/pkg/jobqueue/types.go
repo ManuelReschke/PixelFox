@@ -14,6 +14,8 @@ const (
 	JobTypeImageProcessing JobType = "image_processing"
 	JobTypeS3Backup        JobType = "s3_backup"
 	JobTypeS3Delete        JobType = "s3_delete"
+	JobTypePoolMoveEnqueue JobType = "pool_move_enqueue"
+	JobTypeMoveImage       JobType = "move_image"
 )
 
 // JobStatus defines the status of a job
@@ -146,6 +148,56 @@ func S3DeleteJobPayloadFromMap(data map[string]interface{}) (*S3DeleteJobPayload
 	}
 
 	var payload S3DeleteJobPayload
+	err = json.Unmarshal(jsonData, &payload)
+	return &payload, err
+}
+
+// PoolMoveEnqueueJobPayload contains payload for scanning a source pool and enqueuing per-image move jobs
+type PoolMoveEnqueueJobPayload struct {
+	SourcePoolID uint `json:"source_pool_id"`
+	TargetPoolID uint `json:"target_pool_id"`
+	CursorID     uint `json:"cursor_id"` // last processed Image.ID; 0 = start
+}
+
+func (p PoolMoveEnqueueJobPayload) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"source_pool_id": p.SourcePoolID,
+		"target_pool_id": p.TargetPoolID,
+		"cursor_id":      p.CursorID,
+	}
+}
+
+func PoolMoveEnqueueJobPayloadFromMap(data map[string]interface{}) (*PoolMoveEnqueueJobPayload, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var payload PoolMoveEnqueueJobPayload
+	err = json.Unmarshal(jsonData, &payload)
+	return &payload, err
+}
+
+// MoveImageJobPayload contains payload for moving a single image+variants between pools
+type MoveImageJobPayload struct {
+	ImageID      uint `json:"image_id"`
+	SourcePoolID uint `json:"source_pool_id"`
+	TargetPoolID uint `json:"target_pool_id"`
+}
+
+func (p MoveImageJobPayload) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"image_id":       p.ImageID,
+		"source_pool_id": p.SourcePoolID,
+		"target_pool_id": p.TargetPoolID,
+	}
+}
+
+func MoveImageJobPayloadFromMap(data map[string]interface{}) (*MoveImageJobPayload, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var payload MoveImageJobPayload
 	err = json.Unmarshal(jsonData, &payload)
 	return &payload, err
 }

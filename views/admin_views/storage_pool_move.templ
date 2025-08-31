@@ -1,0 +1,54 @@
+package admin_views
+
+import (
+    "strconv"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/views/partials"
+)
+
+templ StoragePoolMoveForm(source models.StoragePool, pools []models.StoragePool, csrfToken string) {
+    <div class="container mx-auto px-4 py-4">
+        @partials.AdminNavbar()
+
+        <div class="p-4">
+            <h1 class="text-3xl font-bold mb-4">Pool verschieben</h1>
+            <div class="alert alert-warning mb-4">
+                <span>
+                    Verschiebt alle Bilder und Varianten aus
+                    <b>{ source.Name }</b> in einen anderen Pool. Bitte Pool vorher deaktivieren, um neue Uploads zu verhindern.
+                </span>
+            </div>
+            <div class="card bg-base-100 shadow-xl max-w-xl">
+                <div class="card-body">
+                    <form method="POST" action={ templ.SafeURL("/admin/storage/move/" + strconv.Itoa(int(source.ID))) }>
+                        <input type="hidden" name="_csrf" value={ csrfToken } />
+
+                        <div class="form-control">
+                            <label class="label"><span class="label-text">Quelle</span></label>
+                            <input type="text" class="input input-bordered" readonly value={ source.Name + " (ID=" + strconv.Itoa(int(source.ID)) + ")" } />
+                        </div>
+
+                        <div class="form-control mt-4">
+                            <label class="label"><span class="label-text">Zielpool auswählen</span></label>
+                            <select name="target_pool_id" class="select select-bordered" required>
+                                <option value="">-- Ziel auswählen --</option>
+                                for _, p := range pools {
+                                    if p.ID != source.ID {
+                                        <option value={ strconv.Itoa(int(p.ID)) }>{ p.Name }</option>
+                                    }
+                                }
+                            </select>
+                            <label class="label"><span class="label-text-alt">Nur aktive Pools sind auswählbar.</span></label>
+                        </div>
+
+                        <div class="card-actions justify-end mt-6">
+                            <a href="/admin/storage" class="btn btn-ghost">Abbrechen</a>
+                            <button type="submit" class="btn btn-primary">Verschieben starten</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+

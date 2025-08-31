@@ -136,6 +136,9 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) {
 							<label class="label">
 								<span class="label-text-alt">Interne Upload-API dieses Storage-Knotens (Direct-to-Storage)</span>
 							</label>
+							<label class="label">
+								<span class="label-text-alt">Hinweis: Für Replikation nutzt der Quell‑Node <code>/api/internal/replicate</code> auf dieser Basis. Geschützt via <code>REPLICATION_SECRET</code>.</span>
+							</label>
 						</div>
 
 						<div class="form-control">

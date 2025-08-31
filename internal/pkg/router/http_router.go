@@ -51,6 +51,10 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 		AllowMethods:     "POST, OPTIONS",
 		AllowCredentials: false,
 	}), controllers.HandleStorageDirectUpload)
+	// Lightweight reachability: HEAD returns 204 (used by health monitor)
+	app.Head("/api/internal/upload", controllers.HandleStorageUploadHead)
+	// Replication endpoint for server-to-server file copy (HTTP Push)
+	app.Put("/api/internal/replicate", controllers.HandleStorageReplicate)
 
 	// NO AUTH - GENERAL
 	//app.Get("/news", loggedInMiddleware, controllers.HandleNews)
@@ -173,6 +177,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Post("/admin/storage/create", RequireAdminMiddleware, controllers.HandleAdminCreateStoragePoolPost)
 	group.Get("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePool)
 	group.Post("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePoolPost)
+	group.Get("/admin/storage/move/:id", RequireAdminMiddleware, controllers.HandleAdminMoveStoragePool)
+	group.Post("/admin/storage/move/:id", RequireAdminMiddleware, controllers.HandleAdminMoveStoragePoolPost)
 }
 
 func NewHttpRouter() *HttpRouter {

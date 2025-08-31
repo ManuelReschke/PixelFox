@@ -47,7 +47,7 @@ func GetAdminImagesController() *AdminImagesController {
 func (aic *AdminImagesController) HandleAdminImages(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
 	page, _ := strconv.Atoi(c.Query("page", "1"))
-	perPage := 20
+	perPage := 50
 	offset := (page - 1) * perPage
 
 	// Get total image count

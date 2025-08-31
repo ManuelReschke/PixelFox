@@ -438,6 +438,8 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 	thumbnailOriginalEnabled := c.FormValue("thumbnail_original_enabled") == "on"
 	thumbnailWebPEnabled := c.FormValue("thumbnail_webp_enabled") == "on"
 	thumbnailAVIFEnabled := c.FormValue("thumbnail_avif_enabled") == "on"
+	// Replication settings
+	replicationRequireChecksum := c.FormValue("replication_require_checksum") == "on"
 
 	// Parse and validate numeric settings
 	s3BackupDelayMinutes, _ := strconv.Atoi(c.FormValue("s3_backup_delay_minutes"))
@@ -483,6 +485,7 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 		S3BackupCheckInterval:        s3BackupCheckInterval,
 		S3RetryInterval:              s3RetryInterval,
 		JobQueueWorkerCount:          jobQueueWorkerCount,
+		ReplicationRequireChecksum:   replicationRequireChecksum,
 	}
 
 	// Save settings using repository

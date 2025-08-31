@@ -21,5 +21,5 @@ VALUES (`value`), `updated_at` = NOW();
 -- Insert default storage pool if none exists
 -- Note: The additional URL/Node fields are optional and defaulted later by the app if absent
 INSERT INTO `storage_pools` (`name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `priority`, `storage_type`, `storage_tier`, `description`, `public_base_url`, `upload_api_url`, `node_id`, `created_at`, `updated_at`)
-SELECT 'Default Local Storage', '/app/uploads', 107374182400, 0, 1, 1, 1, 'local', 'hot', 'Default hot storage pool for images and variants', 'http://localhost:4000', 'http://localhost:4000/api/internal/upload', 'local', NOW(), NOW()
+SELECT 'Default Local Storage', '/app/uploads', 107374182400, 0, 1, 1, 1, 'local', 'hot', 'Default hot storage pool for images and variants', 'http://0.0.0.0:8080', 'http://0.0.0.0:8080/api/internal/upload', 'local', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM `storage_pools` WHERE `is_default` = 1);

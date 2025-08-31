@@ -6,7 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +27,12 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/upload"
 )
+
+// HandleStorageUploadHead is a lightweight reachability probe for the upload endpoint
+func HandleStorageUploadHead(c *fiber.Ctx) error {
+	// No body, just indicate endpoint is alive
+	return c.SendStatus(fiber.StatusNoContent)
+}
 
 func readToken(c *fiber.Ctx) string {
 	auth := c.Get("Authorization")
@@ -195,4 +204,170 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		"image_uuid": image.UUID,
 		"view_url":   "/i/" + image.ShareLink,
 	})
+}
+
+// HandleStorageReplicate accepts server-to-server replication of a single file into a target pool.
+// Auth: Authorization: Bearer <REPLICATION_SECRET> or X-Replicate-Secret: <secret>
+// Payload: multipart form with fields: pool_id (uint), stored_path (string: e.g. original/yyyy/mm/dd/uuid.ext), size (int64, optional), file (binary)
+func HandleStorageReplicate(c *fiber.Ctx) error {
+	secret := strings.TrimSpace(env.GetEnv("REPLICATION_SECRET", ""))
+	if secret == "" {
+		fiberlog.Warnf("[Replicate] Missing REPLICATION_SECRET; endpoint disabled")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "replication disabled"})
+	}
+	// Auth check
+	auth := c.Get("Authorization")
+	ok := false
+	if strings.HasPrefix(strings.ToLower(auth), "bearer ") {
+		tok := strings.TrimSpace(auth[7:])
+		ok = (tok == secret)
+	}
+	if !ok {
+		if x := c.Get("X-Replicate-Secret"); strings.TrimSpace(x) == secret {
+			ok = true
+		}
+	}
+	if !ok {
+		fiberlog.Warnf("[Replicate] Unauthorized attempt from %s", c.IP())
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid multipart form"})
+	}
+	defer form.RemoveAll()
+
+	// pool_id
+	var poolID uint64
+	if vals, ok := form.Value["pool_id"]; ok && len(vals) > 0 {
+		if pid, perr := strconv.ParseUint(strings.TrimSpace(vals[0]), 10, 64); perr == nil {
+			poolID = pid
+		} else {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid pool_id"})
+		}
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing pool_id"})
+	}
+
+	// stored_path (preferred) or relative_path + file_name
+	var storedPath string
+	if vals, ok := form.Value["stored_path"]; ok && len(vals) > 0 {
+		storedPath = strings.TrimLeft(strings.TrimSpace(vals[0]), "/")
+	} else {
+		rel := ""
+		if v, ok := form.Value["relative_path"]; ok && len(v) > 0 {
+			rel = strings.Trim(strings.TrimSpace(v[0]), "/")
+		}
+		name := ""
+		if v, ok := form.Value["file_name"]; ok && len(v) > 0 {
+			name = strings.Trim(strings.TrimSpace(v[0]), "/")
+		}
+		if rel == "" || name == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing stored_path"})
+		}
+		storedPath = path.Join(rel, name)
+	}
+
+	// Sanitize storedPath: must be a relative path within allowed prefixes
+	cleanStored := path.Clean("/" + storedPath) // ensure leading slash for clean, then strip
+	cleanStored = strings.TrimPrefix(cleanStored, "/")
+	if strings.HasPrefix(cleanStored, "../") || strings.Contains(cleanStored, "/../") || strings.HasPrefix(cleanStored, "..") {
+		fiberlog.Warnf("[Replicate] Rejected traversal path from %s: %s", c.IP(), storedPath)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid stored_path"})
+	}
+	// Optional: restrict to known roots
+	if !(strings.HasPrefix(cleanStored, "original/") || strings.HasPrefix(cleanStored, "variants/")) {
+		fiberlog.Warnf("[Replicate] Rejected invalid root from %s: %s", c.IP(), cleanStored)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid path root"})
+	}
+	storedPath = cleanStored
+
+	// expected size (optional)
+	var expectedSize int64 = -1
+	if vals, ok := form.Value["size"]; ok && len(vals) > 0 {
+		if s, perr := strconv.ParseInt(strings.TrimSpace(vals[0]), 10, 64); perr == nil {
+			expectedSize = s
+		}
+	}
+
+	files := form.File["file"]
+	if len(files) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file missing"})
+	}
+	fh := files[0]
+	// optional checksum
+	var wantSum string
+	if vals, ok := form.Value["sha256"]; ok && len(vals) > 0 {
+		wantSum = strings.TrimSpace(vals[0])
+		if wantSum != "" && len(wantSum) != 64 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid sha256"})
+		}
+	}
+
+	// Capacity/health precheck if size known
+	sm := storage.NewStorageManager()
+	if expectedSize >= 0 {
+		if pool, err := models.FindStoragePoolByID(database.GetDB(), uint(poolID)); err == nil && pool != nil {
+			if !pool.IsHealthy() {
+				fiberlog.Warnf("[Replicate] Target pool unhealthy (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
+				return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "target pool unhealthy"})
+			}
+			if !pool.CanAcceptFile(expectedSize) {
+				fiberlog.Warnf("[Replicate] Insufficient capacity (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, expectedSize, c.IP())
+				return c.Status(fiber.StatusInsufficientStorage).JSON(fiber.Map{"error": "insufficient capacity"})
+			}
+		}
+	}
+
+	// Idempotency: if file already exists at destination and size matches, skip
+	fullPath, err := sm.GetFilePath(storedPath, uint(poolID))
+	if err == nil {
+		if info, statErr := os.Stat(fullPath); statErr == nil {
+			// Compare size if provided else with uploaded header size
+			want := expectedSize
+			if want < 0 {
+				want = fh.Size
+			}
+			if want >= 0 && info.Size() == want {
+				fiberlog.Infof("[Replicate] Skip existing file (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, want, c.IP())
+				return c.JSON(fiber.Map{"status": "ok", "skipped": true, "reason": "exists"})
+			}
+		}
+	}
+
+	// Open uploaded file and store
+	src, err := fh.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
+	}
+	defer src.Close()
+
+	// Compute checksum while streaming to storage; delete on mismatch
+	hasher := sha256.New()
+	tee := io.TeeReader(src, hasher)
+	if _, err := sm.SaveFile(tee, storedPath, uint(poolID)); err != nil {
+		fiberlog.Errorf("Replicate SaveFile error: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to store file"})
+	}
+
+	// Enforce checksum by admin setting
+	requireChecksum := models.GetAppSettings().IsReplicationChecksumRequired()
+	if requireChecksum && wantSum == "" {
+		fiberlog.Warnf("[Replicate] Missing required checksum (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "checksum required"})
+	}
+
+	if wantSum != "" {
+		got := hex.EncodeToString(hasher.Sum(nil))
+		if !strings.EqualFold(got, wantSum) {
+			// Remove corrupted file and report error
+			_, _ = sm.DeleteFile(storedPath, uint(poolID))
+			fiberlog.Warnf("[Replicate] Checksum mismatch (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "checksum mismatch"})
+		}
+	}
+
+	fiberlog.Infof("[Replicate] Stored file (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, fh.Size, c.IP())
+	return c.JSON(fiber.Map{"status": "ok"})
 }

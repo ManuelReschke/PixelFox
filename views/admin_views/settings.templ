@@ -105,6 +105,28 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 					</label>
 				</div>
 
+				<!-- Replication/Storage Settings -->
+				<div class="divider">Replikation/Storage</div>
+				<div class="form-control">
+					<label class="label cursor-pointer">
+						<span class="label-text font-semibold">Checksum bei Replikation erzwingen</span>
+						<input 
+							type="checkbox" 
+							name="replication_require_checksum" 
+							class="checkbox"
+							if settings.ReplicationRequireChecksum {
+								checked
+							}
+						/>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Validiert jede Server‑zu‑Server Replikation per SHA‑256 und bricht bei Mismatch ab (empfohlen).</span>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Hinweis: Der interne „Move to Pool“-Job sendet die Checksumme immer mit. Externe Replikations‑Clients müssen das Feld <code>sha256</code> im Request setzen.</span>
+					</label>
+				</div>
+
 				<div class="form-control">
 					<label class="label">
 						<span class="label-text font-semibold">API Upload Rate Limit (Uploads/Minute)</span>

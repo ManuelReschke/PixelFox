@@ -223,14 +223,14 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" placeholder=\"https://s01.pixelfox.cc/api/internal/upload\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Interne Upload-API dieses Storage-Knotens (Direct-to-Storage)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Node ID</span></label> <input type=\"text\" name=\"node_id\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" placeholder=\"https://s01.pixelfox.cc/api/internal/upload\" class=\"input input-bordered\"> <label class=\"label\"><span class=\"label-text-alt\">Interne Upload-API dieses Storage-Knotens (Direct-to-Storage)</span></label> <label class=\"label\"><span class=\"label-text-alt\">Hinweis: Für Replikation nutzt der Quell‑Node <code>/api/internal/replicate</code> auf dieser Basis. Geschützt via <code>REPLICATION_SECRET</code>.</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Node ID</span></label> <input type=\"text\" name=\"node_id\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(pool.NodeID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 148, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 151, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -249,7 +249,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 169, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 172, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -268,7 +268,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 182, Col: 124}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 185, Col: 124}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -287,7 +287,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 195, Col: 106}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 198, Col: 106}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -306,7 +306,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 211, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 214, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -325,7 +325,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 224, Col: 116}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 227, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -344,7 +344,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			}
 		}())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 240, Col: 114}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 243, Col: 114}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -357,7 +357,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(maxSizeValue)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 258, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 261, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -370,7 +370,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(priorityValue)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 272, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 275, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -383,7 +383,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(pool.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 290, Col: 35}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 293, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -421,7 +421,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytesInForm(pool.UsedSize))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 323, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 326, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -434,7 +434,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.1f%%", pool.GetUsagePercentage()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 327, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_pool_form.templ`, Line: 330, Col: 90}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {

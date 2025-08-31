@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  # Second app instance acting as a separate Storage node (s01)
+  app_s01:
+    build:
+      context: .
+      dockerfile: docker/golang/${DOCKERFILE}
+    container_name: pxlfox-app-s01
+    env_file: ".env"
+    environment:
+      - NODE_ID=s01
+      - DISABLE_JOB_WORKERS=0
+      - APP_PORT=4000
+    ports:
+      - "8082:4000"   # host: 8082 -> container: 4000
+    volumes:
+      - .:/app
+      # ensure a distinct folder exists for s01 if you want to separate data
+      - ./uploads_s01:/app/uploads_s01
+    depends_on:
+      - db
+      - cache
+    networks:
+      - pxlfox-network
+
+networks:
+  pxlfox-network:
+    external: false
+
