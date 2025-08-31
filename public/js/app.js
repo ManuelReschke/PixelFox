@@ -28,6 +28,12 @@ function initializeAllFunctions() {
     
     // Counter-Animation für Profile-Seite initialisieren
     initCounters();
+
+    // Multi-Select im Album-Modal initialisieren
+    initAlbumMultiSelect();
+
+    // Copy-to-clipboard für statische Share-Links (falls vorhanden)
+    initCopyShareLinks();
 }
 
 // HTMX-Event-Listener für Seitenwechsel
@@ -498,6 +504,170 @@ function initCounters() {
             }
         }, 50);
     });
+}
+
+/**
+ * Initialisiert Mehrfachauswahl im "Bilder zum Album hinzufügen"-Modal
+ */
+function initAlbumMultiSelect() {
+    const modal = document.getElementById('add-images-modal');
+    if (!modal) return;
+
+    const box = document.getElementById('add-images-modal-box');
+    if (!box) return;
+
+    const addBtn = box.querySelector('#add-selected-btn');
+    const countEl = box.querySelector('#selected-count');
+    const tiles = box.querySelectorAll('.selectable-image');
+
+    if (!addBtn || !countEl || !tiles.length) return;
+
+    // Prevent double-initialization
+    if (box.getAttribute('data-multiselect-init') === '1') return;
+    box.setAttribute('data-multiselect-init', '1');
+
+    const albumId = box.getAttribute('data-album-id') || '';
+    const csrf = box.getAttribute('data-csrf') || '';
+    const selected = new Set();
+
+    const updateControls = () => {
+        countEl.textContent = String(selected.size);
+        addBtn.disabled = selected.size === 0;
+    };
+
+    const toggleTile = (tile) => {
+        const id = tile.getAttribute('data-image-id');
+        if (!id) return;
+        const ring = tile.querySelector('.selection-ring');
+        const badge = tile.querySelector('.selection-badge');
+        if (selected.has(id)) {
+            selected.delete(id);
+            if (ring) ring.classList.add('hidden');
+            if (badge) badge.classList.add('hidden');
+        } else {
+            selected.add(id);
+            if (ring) ring.classList.remove('hidden');
+            if (badge) badge.classList.remove('hidden');
+        }
+        updateControls();
+    };
+
+    tiles.forEach(tile => {
+        tile.addEventListener('click', (e) => {
+            // Ignore clicks on interactive elements inside
+            if (e.target.closest('a,button,input,label,textarea,select')) return;
+            toggleTile(tile);
+        });
+        // Also handle click on the visible "Auswählen" span
+        const selectBtn = tile.querySelector('.btn.btn-sm');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleTile(tile);
+            });
+        }
+    });
+
+    addBtn.addEventListener('click', async () => {
+        if (selected.size === 0) return;
+        addBtn.disabled = true;
+        const originalText = addBtn.innerHTML;
+        addBtn.innerHTML = '<span class="loading loading-spinner loading-xs mr-2"></span>Füge hinzu...';
+        try {
+            for (const id of selected) {
+                const fd = new FormData();
+                fd.append('_csrf', csrf);
+                fd.append('image_id', id);
+                const res = await fetch(`/user/albums/${albumId}/add-image`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: fd,
+                });
+                // Ignore individual failures; continue with next
+            }
+        } catch (_) {
+            // ignore
+        }
+        // Reload to reflect changes
+        window.location.reload();
+        // Restore text as fallback if reload blocked
+        addBtn.innerHTML = originalText;
+    });
+}
+
+// Initialisiert Copy-to-Clipboard Buttons für Album-Share
+function initCopyShareLinks() {
+    const buttons = document.querySelectorAll('.copy-link-btn');
+    if (!buttons.length) return;
+    buttons.forEach(btn => {
+        // prevent double
+        if (btn.getAttribute('data-copy-init') === '1') return;
+        btn.setAttribute('data-copy-init', '1');
+        btn.addEventListener('click', async () => {
+            const rel = btn.getAttribute('data-rel') || '';
+            const url = new URL(rel, window.location.origin).toString();
+            try {
+                await navigator.clipboard.writeText(url);
+                const old = btn.textContent;
+                btn.textContent = 'Kopiert!';
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.textContent = old || 'Kopieren';
+                    btn.classList.remove('btn-success');
+                }, 1200);
+            } catch (_) {
+                // Fallback: select sibling input
+                const input = btn.parentElement && btn.parentElement.querySelector('input');
+                if (input) {
+                    input.select();
+                    try { document.execCommand('copy'); } catch (_) {}
+                }
+            }
+        });
+    });
+}
+
+// Öffnet SweetAlert2 Modal zum Teilen eines Albums
+function openAlbumShare(relOrAbsUrl) {
+    const absUrl = new URL(relOrAbsUrl, window.location.origin).toString();
+    Swal.fire({
+        title: 'Album teilen',
+        html: `
+            <div class="text-sm text-base-content/70 mb-3">Teile den Link, um dein Album zu zeigen.</div>
+            <div class="join w-full">
+                <input id="album-share-input" type="text" readonly class="input input-bordered join-item w-full" value="${absUrl}" />
+                <button id="album-share-copy" class="btn btn-primary join-item" type="button">Kopieren</button>
+            </div>
+        `,
+        showConfirmButton: false,
+        showCloseButton: true,
+        width: '32rem'
+    }).then(() => {
+        // cleanup if needed
+    });
+
+    // Attach copy handler when modal is opened
+    setTimeout(() => {
+        const btn = document.getElementById('album-share-copy');
+        const input = document.getElementById('album-share-input');
+        if (!btn || !input) return;
+        btn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(absUrl);
+                const old = btn.textContent;
+                btn.textContent = 'Kopiert!';
+                btn.classList.add('btn-success');
+                setTimeout(() => { btn.textContent = old || 'Kopieren'; btn.classList.remove('btn-success'); }, 1200);
+            } catch(_) {
+                input.select();
+                try { document.execCommand('copy'); } catch(_) {}
+            }
+        });
+        // Auto-select input for convenience
+        input.focus();
+        input.select();
+    }, 50);
 }
 
 // SweetAlert2 confirm for deleting a storage pool (admin)

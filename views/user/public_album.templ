@@ -1,0 +1,103 @@
+package user_views
+
+import (
+    "fmt"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/views"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+    "github.com/gofiber/fiber/v2"
+)
+
+templ PublicAlbum(
+    page string,
+    fromProtected bool,
+    isError bool,
+    msg fiber.Map,
+    username string,
+    cmp templ.Component,
+    isAdmin bool,
+) {
+    @views.Layout(viewmodel.Layout{
+        Page:          page,
+        FromProtected: fromProtected,
+        IsError:       isError,
+        Msg:           msg,
+        Username:      username,
+        IsAdmin:       isAdmin,
+        OGViewModel:   nil,
+    }) {
+        @cmp
+    }
+}
+
+templ PublicAlbumIndex(album models.Album, albumImages []GalleryImage) {
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold">{ album.Title }</h1>
+                if album.Description != "" {
+                    <p class="text-gray-600">{ album.Description }</p>
+                }
+                <p class="text-sm text-gray-500">{ fmt.Sprintf("%d Bilder", len(albumImages)) }</p>
+            </div>
+            <button class="btn btn-outline" onclick={ templ.ComponentScript{ Call: "openAlbumShare('/a/" + album.ShareLink + "')" } }>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                </svg>
+                Album teilen
+            </button>
+        </div>
+
+        if len(albumImages) > 0 {
+            <div class="masonry-container">
+                for _, image := range albumImages {
+                    <div class="masonry-item">
+                        <div class="img-container relative">
+                            <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="block">
+                                <img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
+                            </a>
+                            <div class="overlay">
+                                <div class="image-title-overlay">{ image.Title }</div>
+                                <div class="overlay-content flex flex-row gap-2">
+                                    <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="view-btn" title="Teilen">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        } else {
+            <div class="flex flex-col items-center justify-center py-12">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-4 text-gray-400">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                <h3 class="text-xl font-semibold mb-2">Keine Bilder gefunden</h3>
+                <p class="text-gray-500">Dieses Album enthält derzeit keine Bilder.</p>
+            </div>
+        }
+    </div>
+
+    <style>
+        .masonry-container { column-count: 5; column-gap: 15px; width: 100%; }
+        .masonry-item { break-inside: avoid; margin-bottom: 15px; display: block; }
+        .img-container { position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .gallery-img { width: 100%; display: block; transition: transform 0.3s ease; }
+        .img-container:hover .gallery-img { transform: scale(1.03); }
+        .overlay { position: absolute; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,0); transition: background 0.3s ease; display:flex; flex-direction:column; justify-content:space-between; padding:12px; }
+        .img-container:hover .overlay { background: rgba(0,0,0,0.3); }
+        .image-title-overlay { color:white; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,0.8); opacity:0; transition:opacity 0.3s ease; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:5px; border-radius:4px; background:rgba(0,0,0,0.3); }
+        .img-container:hover .image-title-overlay { opacity:1; }
+        .overlay-content { display:flex; justify-content:center; opacity:0; transition:opacity 0.3s ease; }
+        .img-container:hover .overlay-content { opacity:1; }
+        .view-btn { background:white; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:#333; border:none; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2); }
+        .view-btn:hover { background:#f0f0f0; }
+        @media (max-width: 1400px) { .masonry-container { column-count:4; } }
+        @media (max-width: 1100px) { .masonry-container { column-count:3; } }
+        @media (max-width: 768px) { .masonry-container { column-count:2; } }
+        @media (max-width: 500px) { .masonry-container { column-count:1; } }
+    </style>
+}

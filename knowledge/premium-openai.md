@@ -123,3 +123,10 @@ Phase 4 – Payment
 
 Diese Roadmap fügt sich sauber in die bestehende Architektur ein, nutzt vorhandene Infrastruktur (Queue, Direct‑to‑Storage) und minimiert Risiko durch klare Phasen und robuste Enforcement‑Punkte.
 
+
+Nächste sinnvolle Schritte (wenn gewünscht)
+
+- Migrationen für subscriptions (und optional user_storage_stats) erstellen.
+- Premium-Service-Skelett anlegen und Upload-Session-API anpassen (claims.MaxBytes pro User).
+- einfachen Ads-Partial + Layout-Hook ergänzen.
+- Buttons in views/pricing.templ auf /subscribe/:plan verlinken (Phase 0 Dummy-Flow).

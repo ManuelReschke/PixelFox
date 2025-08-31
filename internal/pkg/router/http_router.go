@@ -74,6 +74,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// short url for sharing
 	app.Get("/i/:sharelink", loggedInMiddleware, controllers.HandleShareLink)
+	app.Get("/a/:sharelink", loggedInMiddleware, controllers.HandleAlbumShareLink)
 
 	// public page display
 	app.Get("/page/:slug", loggedInMiddleware, controllers.HandlePageDisplay)
@@ -161,6 +162,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Post("/user/albums/edit/:id", requireAuthMiddleware, controllers.HandleUserAlbumEdit)
 	group.Get("/user/albums/delete/:id", requireAuthMiddleware, controllers.HandleUserAlbumDelete)
 	group.Post("/user/albums/:id/add-image", requireAuthMiddleware, controllers.HandleUserAlbumAddImage)
+	group.Post("/user/albums/:id/set-cover", requireAuthMiddleware, controllers.HandleUserAlbumSetCover)
 	group.Get("/user/albums/:id/remove-image/:image_id", requireAuthMiddleware, controllers.HandleUserAlbumRemoveImage)
 	// Admin Page Management Routes (CSRF protected)
 	group.Get("/admin/pages", RequireAdminMiddleware, controllers.HandleAdminPages)

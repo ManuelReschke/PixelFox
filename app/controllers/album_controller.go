@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"path/filepath"
+	"fmt"
 	"strconv"
 
 	"github.com/a-h/templ"
@@ -33,35 +33,33 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 		} else if variantInfo.HasWebP {
 			previewPath = imageprocessor.GetImageURL(&img, "webp", "medium")
 		} else {
-			// Fallback to original format thumbnail
-			originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "medium")
-			if originalThumbnailPath != "" {
+			// Fallback to original format medium thumbnail if present
+			if originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "medium"); originalThumbnailPath != "" {
 				previewPath = originalThumbnailPath
-			} else {
-				previewPath = filepath.Join("/", img.FilePath, img.FileName)
 			}
 		}
-	} else {
-		previewPath = filepath.Join("/", img.FilePath, img.FileName)
+	}
+	// Final fallback to original image if no medium thumbnail available
+	if previewPath == "" {
+		previewPath = imageprocessor.GetImageURL(&img, "original", "")
 	}
 
-	// Small preview path for album covers
+	// Small preview path for album covers / selection modal
 	if variantInfo.HasThumbnailSmall {
 		if variantInfo.HasAVIF {
 			smallPreviewPath = imageprocessor.GetImageURL(&img, "avif", "small")
 		} else if variantInfo.HasWebP {
 			smallPreviewPath = imageprocessor.GetImageURL(&img, "webp", "small")
 		} else {
-			// Fallback to original format thumbnail
-			originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "small")
-			if originalThumbnailPath != "" {
+			// Fallback to original format small thumbnail if present
+			if originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "small"); originalThumbnailPath != "" {
 				smallPreviewPath = originalThumbnailPath
-			} else {
-				smallPreviewPath = filepath.Join("/", img.FilePath, img.FileName)
 			}
 		}
-	} else {
-		smallPreviewPath = filepath.Join("/", img.FilePath, img.FileName)
+	}
+	// Final fallback to original image if no small thumbnail available
+	if smallPreviewPath == "" {
+		smallPreviewPath = imageprocessor.GetImageURL(&img, "original", "")
 	}
 
 	title := img.FileName
@@ -77,7 +75,7 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 	if smallPreviewPath != "" {
 		smallPreviewPath = imageprocessor.MakeAbsoluteURL(base, smallPreviewPath)
 	}
-	originalPath := imageprocessor.MakeAbsoluteURL(base, filepath.Join("/", img.FilePath, img.FileName))
+	originalPath := imageprocessor.MakeAbsoluteURL(base, imageprocessor.GetImageURL(&img, "original", ""))
 	return user_views.GalleryImage{
 		ID:               img.ID,
 		UUID:             img.UUID,
@@ -189,6 +187,7 @@ func HandleUserAlbumEdit(c *fiber.Ctx) error {
 		title := c.FormValue("title")
 		description := c.FormValue("description")
 		coverImageIDStr := c.FormValue("cover_image_id")
+		isPublic := c.FormValue("is_public") == "on"
 
 		if title == "" {
 			flash.WithError(c, fiber.Map{"message": "Titel ist erforderlich"})
@@ -197,6 +196,7 @@ func HandleUserAlbumEdit(c *fiber.Ctx) error {
 
 		album.Title = title
 		album.Description = description
+		album.IsPublic = isPublic
 
 		if coverImageIDStr != "" {
 			coverImageID, err := strconv.ParseUint(coverImageIDStr, 10, 32)
@@ -386,4 +386,80 @@ func HandleUserAlbumRemoveImage(c *fiber.Ctx) error {
 
 	flash.WithSuccess(c, fiber.Map{"message": "Bild erfolgreich entfernt"})
 	return c.Redirect("/user/albums/" + albumIDStr)
+}
+
+// HandleUserAlbumSetCover sets the cover image for an album
+func HandleUserAlbumSetCover(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
+	userID := userCtx.UserID
+
+	albumIDStr := c.Params("id")
+	albumID, err := strconv.ParseUint(albumIDStr, 10, 32)
+	if err != nil {
+		flash.WithError(c, fiber.Map{"message": "Ungültige Album-ID"})
+		return c.Redirect("/user/albums")
+	}
+
+	// Verify album ownership
+	var album models.Album
+	if err := database.DB.Where("id = ? AND user_id = ?", albumID, userID).First(&album).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Album nicht gefunden"})
+		return c.Redirect("/user/albums")
+	}
+
+	// Parse image id
+	imageIDStr := c.FormValue("image_id")
+	imageID, err := strconv.ParseUint(imageIDStr, 10, 32)
+	if err != nil || imageID == 0 {
+		flash.WithError(c, fiber.Map{"message": "Ungültige Bild-ID"})
+		return c.Redirect("/user/albums/" + albumIDStr)
+	}
+
+	// Ensure the image belongs to the user
+	var image models.Image
+	if err := database.DB.Where("id = ? AND user_id = ?", imageID, userID).First(&image).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Bild nicht gefunden"})
+		return c.Redirect("/user/albums/" + albumIDStr)
+	}
+
+	// Ensure the image is part of the album
+	var rel models.AlbumImage
+	if err := database.DB.Where("album_id = ? AND image_id = ?", albumID, imageID).First(&rel).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Bild ist nicht in diesem Album"})
+		return c.Redirect("/user/albums/" + albumIDStr)
+	}
+
+	album.CoverImageID = uint(imageID)
+	if err := database.DB.Save(&album).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Fehler beim Setzen des Cover-Bildes"})
+		return c.Redirect("/user/albums/" + albumIDStr)
+	}
+
+	flash.WithSuccess(c, fiber.Map{"message": "Cover-Bild aktualisiert"})
+	return c.Redirect("/user/albums/" + albumIDStr)
+}
+
+// HandleAlbumShareLink renders a public view for an album using its share link
+func HandleAlbumShareLink(c *fiber.Ctx) error {
+	sharelink := c.Params("sharelink")
+	if sharelink == "" {
+		return c.Redirect("/")
+	}
+
+	var album models.Album
+	// Load album by share link with images and storage pool for proper URLs
+	if err := database.DB.Preload("Images.StoragePool").Where("share_link = ?", sharelink).First(&album).Error; err != nil {
+		return c.Redirect("/")
+	}
+
+	// Build gallery images
+	var galleryAlbumImages []user_views.GalleryImage
+	for _, img := range album.Images {
+		galleryAlbumImages = append(galleryAlbumImages, imageToGalleryImage(img))
+	}
+
+	pageTitle := fmt.Sprintf(" | %s", album.Title)
+	cmp := user_views.PublicAlbumIndex(album, galleryAlbumImages)
+	page := user_views.PublicAlbum(pageTitle, false, false, nil, "", cmp, false)
+	return adaptor.HTTPHandler(templ.Handler(page))(c)
 }

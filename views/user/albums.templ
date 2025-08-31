@@ -94,22 +94,25 @@ templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIm
 								<span>{ fmt.Sprintf("%d Bilder", len(albumData.Images)) }</span>
 								<span>{ albumData.Album.CreatedAt.Format("02.01.2006") }</span>
 							</div>
-							<div class="card-actions justify-center gap-2">
-								<a href={ templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)) } class="btn btn-primary btn-xs">
-									Ansehen
-								</a>
-								<a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="btn btn-outline btn-xs">
-									Bearbeiten
-								</a>
-								<a href={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } 
-								   class="btn btn-error btn-outline btn-xs"
-								   onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
-									Löschen
-								</a>
-							</div>
-						</div>
-					</div>
-				}
+                        <div class="card-actions justify-center gap-2">
+                            <a href={ templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)) } class="btn btn-primary btn-xs">
+                                Ansehen
+                            </a>
+                            <button class="btn btn-outline btn-xs" onclick={ templ.ComponentScript{ Call: fmt.Sprintf("openAlbumShare('/a/%s')", albumData.Album.ShareLink) } }>
+                                Teilen
+                            </button>
+                            <a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="btn btn-outline btn-xs">
+                                Bearbeiten
+                            </a>
+                            <a href={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } 
+                               class="btn btn-error btn-outline btn-xs"
+                               onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
+                                Löschen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
 			</div>
 		} else {
 			<div class="flex flex-col items-center justify-center py-16">
