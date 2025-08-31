@@ -25,6 +25,9 @@ function initializeAllFunctions() {
     
     // Theme-Funktionalität initialisieren
     initThemeToggle();
+    
+    // Counter-Animation für Profile-Seite initialisieren
+    initCounters();
 }
 
 // HTMX-Event-Listener für Seitenwechsel
@@ -462,6 +465,38 @@ function initThemeToggle() {
         const newTheme = this.checked ? 'dark' : 'emerald';
         htmlElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+    });
+}
+
+/**
+ * Initialisiert die Counter-Animation für die Profil-Seite
+ */
+function initCounters() {
+    const counters = document.querySelectorAll('.counter');
+    if (!counters.length) return;
+    
+    counters.forEach(counter => {
+        // Skip if already animated
+        if (counter.getAttribute('data-animated') === 'true') {
+            return;
+        }
+        
+        const target = parseInt(counter.getAttribute('data-target'));
+        const increment = target / 50;
+        let current = 0;
+        
+        // Mark as animated to prevent duplicate animations
+        counter.setAttribute('data-animated', 'true');
+        
+        const timer = setInterval(() => {
+            current += increment;
+            counter.textContent = Math.floor(current);
+            
+            if (current >= target) {
+                counter.textContent = target;
+                clearInterval(timer);
+            }
+        }, 50);
     });
 }
 

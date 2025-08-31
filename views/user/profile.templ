@@ -233,28 +233,6 @@ templ ProfileIndex(username string, csrfToken string, user models.User, imageCou
 		}
 	</style>
 
-	<script>
-		// Counter animation
-		document.addEventListener('DOMContentLoaded', function() {
-			const counters = document.querySelectorAll('.counter');
-			
-			counters.forEach(counter => {
-				const target = parseInt(counter.getAttribute('data-target'));
-				const increment = target / 50;
-				let current = 0;
-				
-				const timer = setInterval(() => {
-					current += increment;
-					counter.textContent = Math.floor(current);
-					
-					if (current >= target) {
-						counter.textContent = target;
-						clearInterval(timer);
-					}
-				}, 50);
-			});
-		});
-	</script>
 }
 
 templ Profile(
