@@ -60,4 +60,17 @@ type Image struct {
 	Aperture     string
 	ISO          string
 	FocalLength  string
+
+	// Human-readable sizes for each format and size category
+	OptimizedOriginalSize string
+	OptimizedWebPSize     string
+	OptimizedAVIFSize     string
+
+	MediumOriginalSize string
+	MediumWebPSize     string
+	MediumAVIFSize     string
+
+	SmallOriginalSize string
+	SmallWebPSize     string
+	SmallAVIFSize     string
 }

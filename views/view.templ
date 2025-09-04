@@ -97,23 +97,24 @@ templ ImageOptions(model viewmodel.Image) {
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text font-semibold">Format:</span>
 						</label>
-						<div role="tablist" class="tabs tabs-bordered tabs-sm">
+						<div role="tablist" class="tabs tabs-bordered tabs-sm gap-2 overflow-x-auto">
 							if model.PreviewOriginalPath != "" {
-								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-original" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath}>Original</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-original" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath} data-filesize={model.MediumOriginalSize}>Original</a>
 							} else if model.PreviewWebPPath != "" {
-								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath} data-filesize={model.MediumWebPSize}>WebP</a>
 							} else if model.PreviewAVIFPath != "" {
-								<a role="tab" class="tab tab-sm tab-active" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath} data-filesize={model.MediumAVIFSize}>AVIF</a>
 							}
 							if model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
-								<a role="tab" class="tab tab-sm" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath}>WebP</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath} data-filesize={model.MediumWebPSize}>WebP</a>
 							}
 							if model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || model.PreviewWebPPath != "") {
-								<a role="tab" class="tab tab-sm" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath}>AVIF</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath} data-filesize={model.MediumAVIFSize}>AVIF</a>
 							}
+							</div>
 						</div>
+						<p id="sizeinfo-medium" class="mt-2 text-xs text-base-content/70"></p>
 					</div>
-				</div>
 
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
@@ -220,23 +221,24 @@ templ ImageOptions(model viewmodel.Image) {
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text font-semibold">Format:</span>
 						</label>
-						<div role="tablist" class="tabs tabs-bordered tabs-sm">
+						<div role="tablist" class="tabs tabs-bordered tabs-sm gap-2 overflow-x-auto">
 							if model.SmallOriginalPath != "" {
-								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-original" data-format="original" data-size="small" data-path={model.SmallOriginalPath}>Original</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-original" data-format="original" data-size="small" data-path={model.SmallOriginalPath} data-filesize={model.SmallOriginalSize}>Original</a>
 							} else if model.SmallWebPPath != "" {
-								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath} data-filesize={model.SmallWebPSize}>WebP</a>
 							} else if model.SmallAVIFPath != "" {
-								<a role="tab" class="tab tab-sm tab-active" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath} data-filesize={model.SmallAVIFSize}>AVIF</a>
 							}
 							if model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
-								<a role="tab" class="tab tab-sm" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath}>WebP</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath} data-filesize={model.SmallWebPSize}>WebP</a>
 							}
 							if model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || model.SmallWebPPath != "") {
-								<a role="tab" class="tab tab-sm" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath}>AVIF</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath} data-filesize={model.SmallAVIFSize}>AVIF</a>
 							}
+							</div>
 						</div>
+						<p id="sizeinfo-small" class="mt-2 text-xs text-base-content/70"></p>
 					</div>
-				</div>
 
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
@@ -343,17 +345,18 @@ templ ImageOptions(model viewmodel.Image) {
 						<label class="label w-24 justify-start p-0">
 							<span class="label-text font-semibold">Format:</span>
 						</label>
-						<div role="tablist" class="tabs tabs-bordered tabs-sm">
-							<a role="tab" class="tab tab-sm tab-active" id="format-tab-optimized-original" data-format="original" data-size="optimized" data-path={model.OriginalPath}>Original</a>
+						<div role="tablist" class="tabs tabs-bordered tabs-sm gap-2 overflow-x-auto">
+							<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-optimized-original" data-format="original" data-size="optimized" data-path={model.OriginalPath} data-filesize={model.OptimizedOriginalSize}>Original</a>
 							if model.OptimizedWebPPath != "" {
-								<a role="tab" class="tab tab-sm" id="format-tab-optimized-webp" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath}>WebP</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-optimized-webp" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath} data-filesize={model.OptimizedWebPSize}>WebP</a>
 							}
 							if model.OptimizedAVIFPath != "" {
-								<a role="tab" class="tab tab-sm" id="format-tab-optimized-avif" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath}>AVIF</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-optimized-avif" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath} data-filesize={model.OptimizedAVIFSize}>AVIF</a>
 							}
+							</div>
 						</div>
+						<p id="sizeinfo-optimized" class="mt-2 text-xs text-base-content/70"></p>
 					</div>
-				</div>
 
 				<div class="form-control mt-3">
 					<div class="flex items-center gap-2">
@@ -624,6 +627,17 @@ templ ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerI
 	<!-- Load external JavaScript files -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
 	<script src="/js/image-viewer.js"></script>
+
+	<!-- Style: farbige Tab-Unterstreichung für WebP/AVIF -->
+	<style>
+		/* Färbt den aktiven Tab-Strich je nach Format */
+		.tabs.tabs-bordered [role="tab"].tab-active[data-format="webp"] {
+			border-bottom-color: rgb(74 222 128) !important; /* tailwind green-400 */
+		}
+		.tabs.tabs-bordered [role="tab"].tab-active[data-format="avif"] {
+			border-bottom-color: rgb(22 163 74) !important;  /* tailwind green-600 */
+		}
+	</style>
 	
 	<!-- Data container for JavaScript to read from -->
 	<div id="image-data" 

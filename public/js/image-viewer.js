@@ -150,6 +150,15 @@ function initializeTabs() {
 		// Zeige den ausgewählten Inhalt
 		contents[tabName].classList.remove('hidden');
 		contents[tabName].style.display = 'block';
+
+		// Aktualisiere Size-Info anhand des aktiven Format-Tabs in diesem Bereich
+		const activeFormatTab = contents[tabName].querySelector(`[id^="format-tab-${tabName}-"].tab-active`);
+		if (activeFormatTab) {
+			const format = activeFormatTab.getAttribute('data-format');
+			const path = activeFormatTab.getAttribute('data-path');
+			const humanSize = activeFormatTab.getAttribute('data-filesize') || '';
+			updateInputFields(tabName, format, path, humanSize);
+		}
 	}
 	
 	// Event-Listener für Tabs
@@ -165,13 +174,14 @@ function initializeTabs() {
 function initializeFormatTabs() {
 	// Handle format tab selection for all sizes
 	const formatTabs = document.querySelectorAll('[id^="format-tab-"]');
-	formatTabs.forEach(tab => {
-		tab.addEventListener('click', function(e) {
-			e.preventDefault();
-			
-			const format = this.getAttribute('data-format');
-			const size = this.getAttribute('data-size');
-			const path = this.getAttribute('data-path');
+    formatTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const format = this.getAttribute('data-format');
+            const size = this.getAttribute('data-size');
+            const path = this.getAttribute('data-path');
+            const humanSize = this.getAttribute('data-filesize') || '';
 			
 			// Remove active class from all format tabs for this size
 			const siblingTabs = document.querySelectorAll(`[id^="format-tab-${size}-"]`);
@@ -180,26 +190,27 @@ function initializeFormatTabs() {
 			// Add active class to clicked tab
 			this.classList.add('tab-active');
 			
-			// Update all input fields for this size
-			updateInputFields(size, format, path);
-		});
-	});
+            // Update all input fields and size info for this size
+            updateInputFields(size, format, path, humanSize);
+        });
+    });
 
-	// Initialize input fields for all active tabs on page load
-	const activeTabs = document.querySelectorAll('[id^="format-tab-"].tab-active');
-	activeTabs.forEach(tab => {
-		const format = tab.getAttribute('data-format');
-		const size = tab.getAttribute('data-size');
-		const path = tab.getAttribute('data-path');
-		updateInputFields(size, format, path);
-	});
+    // Initialize input fields for all active tabs on page load
+    const activeTabs = document.querySelectorAll('[id^="format-tab-"].tab-active');
+    activeTabs.forEach(tab => {
+        const format = tab.getAttribute('data-format');
+        const size = tab.getAttribute('data-size');
+        const path = tab.getAttribute('data-path');
+        const humanSize = tab.getAttribute('data-filesize') || '';
+        updateInputFields(size, format, path, humanSize);
+    });
 }
 
 // Function to update input fields when format changes
-function updateInputFields(size, format, path) {
-	const data = getImageData();
-	const domain = data.domain;
-	const displayName = data.displayName;
+function updateInputFields(size, format, path, humanSize) {
+    const data = getImageData();
+    const domain = data.domain;
+    const displayName = data.displayName;
 	
 	// Escape any quotes in displayName to prevent XSS
 	const safeDisplayName = displayName.replace(/"/g, '&quot;');
@@ -224,9 +235,31 @@ function updateInputFields(size, format, path) {
 	
 	// Update Direktlink input
 	const direktlinkInput = document.getElementById(`direktlink-${size}`);
-	if (direktlinkInput) {
-		direktlinkInput.value = `${domain}${path}`;
-	}
+    if (direktlinkInput) {
+        direktlinkInput.value = `${domain}${path}`;
+    }
+
+    // Update size info line
+    const sizeInfo = document.getElementById(`sizeinfo-${size}`);
+    if (sizeInfo) {
+        // Fallback to active tab's stored size if not provided
+        if (!humanSize || humanSize.trim() === '') {
+            const active = document.querySelector(`#tab-content-${size} [id^="format-tab-${size}-"].tab-active`);
+            if (active) {
+                humanSize = active.getAttribute('data-filesize') || '';
+            }
+        }
+
+        const formatLabelMap = { original: 'Original', webp: 'WebP', avif: 'AVIF' };
+        const sizeLabelMap = { medium: 'Mittel', small: 'Klein', optimized: 'Original' };
+        const formatLabel = formatLabelMap[format] || format;
+        const sizeLabel = sizeLabelMap[size] || size;
+        if (humanSize && humanSize.trim() !== '') {
+            sizeInfo.textContent = `Beim "${sizeLabel}" → "${formatLabel}"-Format ist dein Bild ${humanSize} groß.`;
+        } else {
+            sizeInfo.textContent = '';
+        }
+    }
 }
 
 // Toggle Meta-Info initialization

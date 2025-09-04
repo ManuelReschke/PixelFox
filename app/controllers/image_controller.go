@@ -39,6 +39,20 @@ func calculateFileHash(file io.Reader) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+// formatBytes formats a byte size into a human-readable string like "900 KB" or "1.2 MB"
+func formatBytes(size int64) string {
+	const unit = 1024
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "KMGTPE"[exp])
+}
+
 func HandleUpload(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
 	if !userCtx.IsLoggedIn {
@@ -431,6 +445,15 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 	}
 
+	// Build a map of variant type -> formatted size for quick lookup
+	sizeMap := make(map[string]string)
+	// Original size comes from images table
+	sizeMap[models.VariantTypeOriginal] = formatBytes(image.FileSize)
+	for _, v := range variantInfo.AvailableVariants {
+		// store human-readable size per variant type
+		sizeMap[v.VariantType] = formatBytes(v.FileSize)
+	}
+
 	// Build all image paths using the new variant system
 	imagePaths := imageprocessor.BuildImagePaths(image)
 
@@ -617,6 +640,16 @@ func HandleImageViewer(c *fiber.Ctx) error {
 			}
 			return ""
 		}(),
+		// Sizes for tabs
+		OptimizedOriginalSize: sizeMap[models.VariantTypeOriginal],
+		OptimizedWebPSize:     sizeMap[models.VariantTypeWebP],
+		OptimizedAVIFSize:     sizeMap[models.VariantTypeAVIF],
+		MediumOriginalSize:    sizeMap[models.VariantTypeThumbnailMediumOrig],
+		MediumWebPSize:        sizeMap[models.VariantTypeThumbnailMediumWebP],
+		MediumAVIFSize:        sizeMap[models.VariantTypeThumbnailMediumAVIF],
+		SmallOriginalSize:     sizeMap[models.VariantTypeThumbnailSmallOrig],
+		SmallWebPSize:         sizeMap[models.VariantTypeThumbnailSmallWebP],
+		SmallAVIFSize:         sizeMap[models.VariantTypeThumbnailSmallAVIF],
 	}
 
 	imageViewer := views.ImageViewerWithUser(imageModel, currentUserID, image.UserID)
@@ -666,6 +699,14 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		variantInfoAjax = &imageprocessor.VariantInfo{} // fallback to empty
 	}
 	hasOptimizedVersions := variantInfoAjax.HasWebP || variantInfoAjax.HasAVIF || variantInfoAjax.HasThumbnailSmall || variantInfoAjax.HasThumbnailMedium
+
+	// Build a map of variant type -> formatted size
+	sizeMap := make(map[string]string)
+	// Original size comes from images table
+	sizeMap[models.VariantTypeOriginal] = formatBytes(image.FileSize)
+	for _, v := range variantInfoAjax.AvailableVariants {
+		sizeMap[v.VariantType] = formatBytes(v.FileSize)
+	}
 
 	// Use the original file name (title) for display, if available
 	displayName := image.FileName
@@ -902,6 +943,16 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 			}
 			return ""
 		}(),
+		// Sizes for tabs
+		OptimizedOriginalSize: sizeMap[models.VariantTypeOriginal],
+		OptimizedWebPSize:     sizeMap[models.VariantTypeWebP],
+		OptimizedAVIFSize:     sizeMap[models.VariantTypeAVIF],
+		MediumOriginalSize:    sizeMap[models.VariantTypeThumbnailMediumOrig],
+		MediumWebPSize:        sizeMap[models.VariantTypeThumbnailMediumWebP],
+		MediumAVIFSize:        sizeMap[models.VariantTypeThumbnailMediumAVIF],
+		SmallOriginalSize:     sizeMap[models.VariantTypeThumbnailSmallOrig],
+		SmallWebPSize:         sizeMap[models.VariantTypeThumbnailSmallWebP],
+		SmallAVIFSize:         sizeMap[models.VariantTypeThumbnailSmallAVIF],
 	}
 
 	// Render the entire card with the ImageViewer
