@@ -244,9 +244,24 @@ function updateInputFields(size, format, path, humanSize) {
     if (sizeInfo) {
         // Fallback to active tab's stored size if not provided
         if (!humanSize || humanSize.trim() === '') {
-            const active = document.querySelector(`#tab-content-${size} [id^="format-tab-${size}-"].tab-active`);
-            if (active) {
-                humanSize = active.getAttribute('data-filesize') || '';
+            const active0 = document.querySelector(`#tab-content-${size} [id^="format-tab-${size}-"].tab-active`);
+            if (active0) {
+                humanSize = active0.getAttribute('data-filesize') || '';
+            }
+        }
+
+        // Compute saving percentage vs. Original of the same size tab group
+        let savingPercent = null;
+        const active = document.querySelector(`#tab-content-${size} [id^="format-tab-${size}-"].tab-active`);
+        if (active) {
+            const currentBytesStr = active.getAttribute('data-bytes') || '';
+            const currentBytes = parseInt(currentBytesStr, 10);
+            const originalTab = document.querySelector(`#tab-content-${size} #format-tab-${size}-original`);
+            const originalBytes = originalTab ? parseInt(originalTab.getAttribute('data-bytes') || '', 10) : NaN;
+            if (format !== 'original' && Number.isFinite(currentBytes) && Number.isFinite(originalBytes) && originalBytes > 0) {
+                const ratio = 1 - (currentBytes / originalBytes);
+                const percent = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+                savingPercent = percent;
             }
         }
 
@@ -254,10 +269,12 @@ function updateInputFields(size, format, path, humanSize) {
         const sizeLabelMap = { medium: 'Mittel', small: 'Klein', optimized: 'Original' };
         const formatLabel = formatLabelMap[format] || format;
         const sizeLabel = sizeLabelMap[size] || size;
+        const formatWithDash = `${formatLabel}-Format`;
         if (humanSize && humanSize.trim() !== '') {
-            sizeInfo.textContent = `Beim "${sizeLabel}" → "${formatLabel}"-Format ist dein Bild ${humanSize} groß.`;
+            const savingHTML = (savingPercent !== null) ? ` und spart <strong>${savingPercent}%</strong> gegenüber Original` : '';
+            sizeInfo.innerHTML = `Bei "${sizeLabel}" ${formatWithDash} ist dein Bild <strong>${humanSize}</strong> groß${savingHTML}.`;
         } else {
-            sizeInfo.textContent = '';
+            sizeInfo.innerHTML = '';
         }
     }
 }

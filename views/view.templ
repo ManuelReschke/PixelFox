@@ -99,17 +99,17 @@ templ ImageOptions(model viewmodel.Image) {
 						</label>
 						<div role="tablist" class="tabs tabs-bordered tabs-sm gap-2 overflow-x-auto">
 							if model.PreviewOriginalPath != "" {
-								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-original" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath} data-filesize={model.MediumOriginalSize}>Original</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-original" data-format="original" data-size="medium" data-path={model.PreviewOriginalPath} data-filesize={model.MediumOriginalSize} data-bytes={model.MediumOriginalBytes}>Original</a>
 							} else if model.PreviewWebPPath != "" {
-								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath} data-filesize={model.MediumWebPSize}>WebP</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath} data-filesize={model.MediumWebPSize} data-bytes={model.MediumWebPBytes}>WebP</a>
 							} else if model.PreviewAVIFPath != "" {
-								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath} data-filesize={model.MediumAVIFSize}>AVIF</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath} data-filesize={model.MediumAVIFSize} data-bytes={model.MediumAVIFBytes}>AVIF</a>
 							}
 							if model.PreviewWebPPath != "" && model.PreviewOriginalPath != "" {
-								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath} data-filesize={model.MediumWebPSize}>WebP</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-medium-webp" data-format="webp" data-size="medium" data-path={model.PreviewWebPPath} data-filesize={model.MediumWebPSize} data-bytes={model.MediumWebPBytes}>WebP</a>
 							}
 							if model.PreviewAVIFPath != "" && (model.PreviewOriginalPath != "" || model.PreviewWebPPath != "") {
-								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath} data-filesize={model.MediumAVIFSize}>AVIF</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-medium-avif" data-format="avif" data-size="medium" data-path={model.PreviewAVIFPath} data-filesize={model.MediumAVIFSize} data-bytes={model.MediumAVIFBytes}>AVIF</a>
 							}
 							</div>
 						</div>
@@ -223,17 +223,17 @@ templ ImageOptions(model viewmodel.Image) {
 						</label>
 						<div role="tablist" class="tabs tabs-bordered tabs-sm gap-2 overflow-x-auto">
 							if model.SmallOriginalPath != "" {
-								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-original" data-format="original" data-size="small" data-path={model.SmallOriginalPath} data-filesize={model.SmallOriginalSize}>Original</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-original" data-format="original" data-size="small" data-path={model.SmallOriginalPath} data-filesize={model.SmallOriginalSize} data-bytes={model.SmallOriginalBytes}>Original</a>
 							} else if model.SmallWebPPath != "" {
-								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath} data-filesize={model.SmallWebPSize}>WebP</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath} data-filesize={model.SmallWebPSize} data-bytes={model.SmallWebPBytes}>WebP</a>
 							} else if model.SmallAVIFPath != "" {
-								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath} data-filesize={model.SmallAVIFSize}>AVIF</a>
+								<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath} data-filesize={model.SmallAVIFSize} data-bytes={model.SmallAVIFBytes}>AVIF</a>
 							}
 							if model.SmallWebPPath != "" && model.SmallOriginalPath != "" {
-								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath} data-filesize={model.SmallWebPSize}>WebP</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-small-webp" data-format="webp" data-size="small" data-path={model.SmallWebPPath} data-filesize={model.SmallWebPSize} data-bytes={model.SmallWebPBytes}>WebP</a>
 							}
 							if model.SmallAVIFPath != "" && (model.SmallOriginalPath != "" || model.SmallWebPPath != "") {
-								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath} data-filesize={model.SmallAVIFSize}>AVIF</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-small-avif" data-format="avif" data-size="small" data-path={model.SmallAVIFPath} data-filesize={model.SmallAVIFSize} data-bytes={model.SmallAVIFBytes}>AVIF</a>
 							}
 							</div>
 						</div>
@@ -346,12 +346,12 @@ templ ImageOptions(model viewmodel.Image) {
 							<span class="label-text font-semibold">Format:</span>
 						</label>
 						<div role="tablist" class="tabs tabs-bordered tabs-sm gap-2 overflow-x-auto">
-							<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-optimized-original" data-format="original" data-size="optimized" data-path={model.OriginalPath} data-filesize={model.OptimizedOriginalSize}>Original</a>
+							<a role="tab" class="tab tab-sm tab-active whitespace-nowrap" id="format-tab-optimized-original" data-format="original" data-size="optimized" data-path={model.OriginalPath} data-filesize={model.OptimizedOriginalSize} data-bytes={model.OptimizedOriginalBytes}>Original</a>
 							if model.OptimizedWebPPath != "" {
-								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-optimized-webp" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath} data-filesize={model.OptimizedWebPSize}>WebP</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-optimized-webp" data-format="webp" data-size="optimized" data-path={model.OptimizedWebPPath} data-filesize={model.OptimizedWebPSize} data-bytes={model.OptimizedWebPBytes}>WebP</a>
 							}
 							if model.OptimizedAVIFPath != "" {
-								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-optimized-avif" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath} data-filesize={model.OptimizedAVIFSize}>AVIF</a>
+								<a role="tab" class="tab tab-sm whitespace-nowrap" id="format-tab-optimized-avif" data-format="avif" data-size="optimized" data-path={model.OptimizedAVIFPath} data-filesize={model.OptimizedAVIFSize} data-bytes={model.OptimizedAVIFBytes}>AVIF</a>
 							}
 							</div>
 						</div>

@@ -73,4 +73,17 @@ type Image struct {
 	SmallOriginalSize string
 	SmallWebPSize     string
 	SmallAVIFSize     string
+
+	// Raw byte sizes for calculations
+	OptimizedOriginalBytes int64
+	OptimizedWebPBytes     int64
+	OptimizedAVIFBytes     int64
+
+	MediumOriginalBytes int64
+	MediumWebPBytes     int64
+	MediumAVIFBytes     int64
+
+	SmallOriginalBytes int64
+	SmallWebPBytes     int64
+	SmallAVIFBytes     int64
 }

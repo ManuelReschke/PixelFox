@@ -445,13 +445,15 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
 	}
 
-	// Build a map of variant type -> formatted size for quick lookup
+	// Build maps of variant type -> size (human + bytes)
 	sizeMap := make(map[string]string)
+	bytesMap := make(map[string]int64)
 	// Original size comes from images table
 	sizeMap[models.VariantTypeOriginal] = formatBytes(image.FileSize)
+	bytesMap[models.VariantTypeOriginal] = image.FileSize
 	for _, v := range variantInfo.AvailableVariants {
-		// store human-readable size per variant type
 		sizeMap[v.VariantType] = formatBytes(v.FileSize)
+		bytesMap[v.VariantType] = v.FileSize
 	}
 
 	// Build all image paths using the new variant system
@@ -650,6 +652,16 @@ func HandleImageViewer(c *fiber.Ctx) error {
 		SmallOriginalSize:     sizeMap[models.VariantTypeThumbnailSmallOrig],
 		SmallWebPSize:         sizeMap[models.VariantTypeThumbnailSmallWebP],
 		SmallAVIFSize:         sizeMap[models.VariantTypeThumbnailSmallAVIF],
+		// Byte sizes for calculations
+		OptimizedOriginalBytes: bytesMap[models.VariantTypeOriginal],
+		OptimizedWebPBytes:     bytesMap[models.VariantTypeWebP],
+		OptimizedAVIFBytes:     bytesMap[models.VariantTypeAVIF],
+		MediumOriginalBytes:    bytesMap[models.VariantTypeThumbnailMediumOrig],
+		MediumWebPBytes:        bytesMap[models.VariantTypeThumbnailMediumWebP],
+		MediumAVIFBytes:        bytesMap[models.VariantTypeThumbnailMediumAVIF],
+		SmallOriginalBytes:     bytesMap[models.VariantTypeThumbnailSmallOrig],
+		SmallWebPBytes:         bytesMap[models.VariantTypeThumbnailSmallWebP],
+		SmallAVIFBytes:         bytesMap[models.VariantTypeThumbnailSmallAVIF],
 	}
 
 	imageViewer := views.ImageViewerWithUser(imageModel, currentUserID, image.UserID)
@@ -700,12 +712,15 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	}
 	hasOptimizedVersions := variantInfoAjax.HasWebP || variantInfoAjax.HasAVIF || variantInfoAjax.HasThumbnailSmall || variantInfoAjax.HasThumbnailMedium
 
-	// Build a map of variant type -> formatted size
+	// Build maps of variant type -> size (human + bytes)
 	sizeMap := make(map[string]string)
+	bytesMap := make(map[string]int64)
 	// Original size comes from images table
 	sizeMap[models.VariantTypeOriginal] = formatBytes(image.FileSize)
+	bytesMap[models.VariantTypeOriginal] = image.FileSize
 	for _, v := range variantInfoAjax.AvailableVariants {
 		sizeMap[v.VariantType] = formatBytes(v.FileSize)
+		bytesMap[v.VariantType] = v.FileSize
 	}
 
 	// Use the original file name (title) for display, if available
@@ -953,6 +968,16 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 		SmallOriginalSize:     sizeMap[models.VariantTypeThumbnailSmallOrig],
 		SmallWebPSize:         sizeMap[models.VariantTypeThumbnailSmallWebP],
 		SmallAVIFSize:         sizeMap[models.VariantTypeThumbnailSmallAVIF],
+		// Byte sizes for calculations
+		OptimizedOriginalBytes: bytesMap[models.VariantTypeOriginal],
+		OptimizedWebPBytes:     bytesMap[models.VariantTypeWebP],
+		OptimizedAVIFBytes:     bytesMap[models.VariantTypeAVIF],
+		MediumOriginalBytes:    bytesMap[models.VariantTypeThumbnailMediumOrig],
+		MediumWebPBytes:        bytesMap[models.VariantTypeThumbnailMediumWebP],
+		MediumAVIFBytes:        bytesMap[models.VariantTypeThumbnailMediumAVIF],
+		SmallOriginalBytes:     bytesMap[models.VariantTypeThumbnailSmallOrig],
+		SmallWebPBytes:         bytesMap[models.VariantTypeThumbnailSmallWebP],
+		SmallAVIFBytes:         bytesMap[models.VariantTypeThumbnailSmallAVIF],
 	}
 
 	// Render the entire card with the ImageViewer
