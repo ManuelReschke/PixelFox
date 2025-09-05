@@ -18,7 +18,6 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
@@ -328,15 +327,10 @@ func HandleUserImageDelete(c *fiber.Ctx) error {
 
 // enqueueUserS3DeleteJobsIfEnabled creates S3 delete jobs for completed backups if S3 backup is enabled
 func enqueueUserS3DeleteJobsIfEnabled(image *models.Image) {
-	// Check if S3 backup is enabled
-	config, err := s3backup.LoadConfig()
-	if err != nil {
-		fmt.Printf("[S3Delete] Failed to load S3 config: %v\n", err)
-		return
-	}
-
-	if !config.IsEnabled() {
-		fmt.Printf("[S3Delete] S3 backup disabled, skipping delete for image %s\n", image.UUID)
+	// Check admin setting for S3 backup enablement
+	settings := models.GetAppSettings()
+	if settings == nil || !settings.IsS3BackupEnabled() {
+		fmt.Printf("[S3Delete] S3 backup disabled by settings, skipping delete for image %s\n", image.UUID)
 		return
 	}
 

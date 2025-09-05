@@ -7,10 +7,16 @@ function initStoragePoolForm() {
     const basePathInput = document.querySelector('input[name="base_path"]');
     
     if (!storageTypeSelect || !s3Config || !basePathInput) {
-        console.log('Storage pool form elements not found, skipping initialization');
         return;
     }
     
+    // Avoid duplicate listeners on repeated HTMX swaps
+    if (storageTypeSelect.getAttribute('data-pxf-storage-init') === '1') {
+        // Still ensure the UI reflects the current state
+        toggleS3Config();
+        return;
+    }
+
     function toggleS3Config() {
         const isS3 = storageTypeSelect.value === 's3';
         s3Config.style.display = isS3 ? 'block' : 'none';
@@ -45,15 +51,20 @@ function initStoragePoolForm() {
     
     // Listen for changes
     storageTypeSelect.addEventListener('change', toggleS3Config);
+    storageTypeSelect.setAttribute('data-pxf-storage-init', '1');
     
-    console.log('Storage pool form initialized');
+    // initialized
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initStoragePoolForm);
-
-// Initialize after HTMX swaps (for dynamic content)
-document.body.addEventListener('htmx:afterSwap', function(event) {
-    // Small delay to ensure DOM is fully updated
-    setTimeout(initStoragePoolForm, 100);
+// Initialize on full load
+document.addEventListener('DOMContentLoaded', () => {
+    requestAnimationFrame(initStoragePoolForm);
 });
+
+// Robust HTMX hooks
+function reinitStoragePoolForm() {
+    requestAnimationFrame(() => setTimeout(initStoragePoolForm, 30));
+}
+document.addEventListener('htmx:load', reinitStoragePoolForm);
+document.addEventListener('htmx:afterSwap', reinitStoragePoolForm);
+document.addEventListener('htmx:afterSettle', reinitStoragePoolForm);

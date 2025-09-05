@@ -460,62 +460,7 @@ func StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) tem
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</button></div></form></div></div></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templ.Raw(`<script>
-			// Storage Pool Form JavaScript - HTMX Compatible
-			function initStoragePoolForm() {
-				const storageTypeSelect = document.querySelector('select[name="storage_type"]');
-				const s3Config = document.getElementById('s3-config');
-				const basePathInput = document.querySelector('input[name="base_path"]');
-				
-				if (!storageTypeSelect || !s3Config || !basePathInput) {
-					return;
-				}
-				
-				function toggleS3Config() {
-					const isS3 = storageTypeSelect.value === 's3';
-					s3Config.style.display = isS3 ? 'block' : 'none';
-					
-					// Update base path placeholder for S3
-					if (isS3) {
-						basePathInput.placeholder = 'S3 Bucket Name (wird automatisch gesetzt)';
-						basePathInput.readOnly = true;
-						basePathInput.value = 's3://bucket-name';
-					} else {
-						basePathInput.placeholder = '/mnt/storage/images';
-						basePathInput.readOnly = false;
-						if (basePathInput.value.startsWith('s3://')) {
-							basePathInput.value = '';
-						}
-					}
-					
-					// Set required attributes for S3 fields
-					const s3RequiredFields = ['s3_access_key_id', 's3_secret_access_key', 's3_region', 's3_bucket_name'];
-					s3RequiredFields.forEach(fieldName => {
-						const field = document.querySelector('input[name="${fieldName}"]');
-						if (field) {
-							field.required = isS3;
-						}
-					});
-				}
-				
-				// Initialize on page load
-				toggleS3Config();
-				
-				// Listen for changes
-				storageTypeSelect.addEventListener('change', toggleS3Config);
-			}
-			
-			// Initialize immediately when this script runs
-			initStoragePoolForm();
-		</script>`).Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</button></div></form></div></div></div><!-- Storage pool form initialization handled by /js/storage-pool-form.js (HTMX-safe) --></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -103,6 +103,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/images/edit/:uuid", controllers.HandleAdminImageEdit)
 	adminGroup.Post("/images/update/:uuid", controllers.HandleAdminImageUpdate)
 	adminGroup.Get("/images/delete/:uuid", controllers.HandleAdminImageDelete)
+	adminGroup.Post("/images/delete/:uuid", controllers.HandleAdminImageDelete)
+	adminGroup.Post("/images/backup/:uuid", controllers.HandleAdminImageStartBackup)
+	adminGroup.Post("/images/backup-delete/:uuid", controllers.HandleAdminImageDeleteBackup)
 	// Admin News Management Routes
 	adminGroup.Get("/news", controllers.HandleAdminNews)
 	adminGroup.Get("/news/create", controllers.HandleAdminNewsCreate)

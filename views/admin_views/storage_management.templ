@@ -122,10 +122,17 @@ templ StorageManagement(data struct {
                                                     <span class="badge badge-ghost badge-xs" title="Upload API">{ strings.TrimPrefix(strings.TrimPrefix(pool.UploadAPIURL, "https://"), "http://") }</span>
                                                 }
                                                 if snap, ok := data.Snapshots[stats.ID]; ok {
-                                                    if snap.UploadAPIReachable {
-                                                        <span class="badge badge-success badge-xs">API OK</span>
-                                                    } else {
-                                                        <span class="badge badge-error badge-xs">API Fehler</span>
+                                                    if pool := findPoolByID(data.Pools, stats.ID); pool != nil {
+                                                        // Für reine Backup-/Archiv‑Pools keine Upload‑API bewerten
+                                                        if pool.StorageTier == "archive" || (pool.StorageType == "s3" && pool.UploadAPIURL == "") {
+                                                            <span class="badge badge-neutral badge-xs">API N/A</span>
+                                                        } else {
+                                                            if snap.UploadAPIReachable {
+                                                                <span class="badge badge-success badge-xs">API OK</span>
+                                                            } else {
+                                                                <span class="badge badge-error badge-xs">API Fehler</span>
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             </div>

@@ -624,9 +624,7 @@ templ ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerI
 		</div>
 	</dialog>
 
-	<!-- Load external JavaScript files -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
-	<script src="/js/image-viewer.js"></script>
+	<!-- Scripts loaded globally in layout to avoid HTMX duplicate loads -->
 
 	<!-- Style: farbige Tab-Unterstreichung für WebP/AVIF -->
 	<style>

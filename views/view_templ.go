@@ -2099,14 +2099,14 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "</div></div></section><!-- Modal für Bildanzeige mit lazy loading --><dialog id=\"image-modal\" class=\"modal\"><div class=\"modal-box max-w-5xl\"><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost absolute right-2 top-2\">×</button></form><div class=\"py-4 flex justify-center\"><!-- Loading spinner that shows initially --><div id=\"loading-spinner\" class=\"flex flex-col items-center justify-center\"><span class=\"loading loading-spinner loading-lg text-primary\"></span><p class=\"mt-2\">Loading optimized image...</p></div><!-- Picture element that will be populated via JavaScript --><picture id=\"modal-picture\" class=\"hidden\"><!-- Sources will be added dynamically --><img id=\"modal-image\" class=\"max-h-[80vh] object-contain\" alt=\"\"></picture></div></div></dialog><!-- Load external JavaScript files --><script src=\"https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js\"></script><script src=\"/js/image-viewer.js\"></script><!-- Style: farbige Tab-Unterstreichung für WebP/AVIF --><style>\n\t\t/* Färbt den aktiven Tab-Strich je nach Format */\n\t\t.tabs.tabs-bordered [role=\"tab\"].tab-active[data-format=\"webp\"] {\n\t\t\tborder-bottom-color: rgb(74 222 128) !important; /* tailwind green-400 */\n\t\t}\n\t\t.tabs.tabs-bordered [role=\"tab\"].tab-active[data-format=\"avif\"] {\n\t\t\tborder-bottom-color: rgb(22 163 74) !important;  /* tailwind green-600 */\n\t\t}\n\t</style><!-- Data container for JavaScript to read from --><div id=\"image-data\" data-domain=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 212, "</div></div></section><!-- Modal für Bildanzeige mit lazy loading --><dialog id=\"image-modal\" class=\"modal\"><div class=\"modal-box max-w-5xl\"><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost absolute right-2 top-2\">×</button></form><div class=\"py-4 flex justify-center\"><!-- Loading spinner that shows initially --><div id=\"loading-spinner\" class=\"flex flex-col items-center justify-center\"><span class=\"loading loading-spinner loading-lg text-primary\"></span><p class=\"mt-2\">Loading optimized image...</p></div><!-- Picture element that will be populated via JavaScript --><picture id=\"modal-picture\" class=\"hidden\"><!-- Sources will be added dynamically --><img id=\"modal-image\" class=\"max-h-[80vh] object-contain\" alt=\"\"></picture></div></div></dialog><!-- Scripts loaded globally in layout to avoid HTMX duplicate loads --><!-- Style: farbige Tab-Unterstreichung für WebP/AVIF --><style>\n\t\t/* Färbt den aktiven Tab-Strich je nach Format */\n\t\t.tabs.tabs-bordered [role=\"tab\"].tab-active[data-format=\"webp\"] {\n\t\t\tborder-bottom-color: rgb(74 222 128) !important; /* tailwind green-400 */\n\t\t}\n\t\t.tabs.tabs-bordered [role=\"tab\"].tab-active[data-format=\"avif\"] {\n\t\t\tborder-bottom-color: rgb(22 163 74) !important;  /* tailwind green-600 */\n\t\t}\n\t</style><!-- Data container for JavaScript to read from --><div id=\"image-data\" data-domain=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var116 string
 		templ_7745c5c3_Var116, templ_7745c5c3_Err = templ.JoinStringErrs(model.Domain)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 644, Col: 27}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 642, Col: 27}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var116))
 		if templ_7745c5c3_Err != nil {
@@ -2119,7 +2119,7 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		var templ_7745c5c3_Var117 string
 		templ_7745c5c3_Var117, templ_7745c5c3_Err = templ.JoinStringErrs(model.DisplayName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 645, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 643, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var117))
 		if templ_7745c5c3_Err != nil {
@@ -2132,7 +2132,7 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		var templ_7745c5c3_Var118 string
 		templ_7745c5c3_Var118, templ_7745c5c3_Err = templ.JoinStringErrs(model.OptimizedAVIFPath)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 646, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 644, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var118))
 		if templ_7745c5c3_Err != nil {
@@ -2145,7 +2145,7 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		var templ_7745c5c3_Var119 string
 		templ_7745c5c3_Var119, templ_7745c5c3_Err = templ.JoinStringErrs(model.OptimizedWebPPath)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 647, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 645, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var119))
 		if templ_7745c5c3_Err != nil {
@@ -2158,7 +2158,7 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		var templ_7745c5c3_Var120 string
 		templ_7745c5c3_Var120, templ_7745c5c3_Err = templ.JoinStringErrs(model.OriginalPath)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 648, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 646, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var120))
 		if templ_7745c5c3_Err != nil {
@@ -2171,7 +2171,7 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		var templ_7745c5c3_Var121 string
 		templ_7745c5c3_Var121, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%t", model.HasAVIF))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 649, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 647, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var121))
 		if templ_7745c5c3_Err != nil {
@@ -2184,7 +2184,7 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 		var templ_7745c5c3_Var122 string
 		templ_7745c5c3_Var122, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%t", model.HasWebP))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 650, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 648, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var122))
 		if templ_7745c5c3_Err != nil {

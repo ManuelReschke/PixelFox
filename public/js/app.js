@@ -34,6 +34,9 @@ function initializeAllFunctions() {
 
     // Copy-to-clipboard für statische Share-Links (falls vorhanden)
     initCopyShareLinks();
+
+    // Live-Validierung für Passwort-Änderung (Profiledit)
+    initProfilePasswordValidation();
 }
 
 // HTMX-Event-Listener für Seitenwechsel
@@ -110,21 +113,28 @@ function initUploadForm() {
     if (!uploadForm) return;
     const directUploadEnabled = (uploadForm.dataset.directUpload || '').toLowerCase() === 'true';
     
-    const fileInput = document.getElementById('file-input');
-    const dropArea = document.getElementById('drop-area');
-    const fileName = document.getElementById('file-name');
-    const uploadButton = document.getElementById('upload-button');
-    const uploadIcon = document.getElementById('upload-icon');
-    const inlineImagePreview = document.getElementById('inline-image-preview');
-    const progressContainer = document.getElementById('progress-container');
-    const progressBar = document.getElementById('progress-bar');
-    const uploadPercentage = document.getElementById('upload-percentage');
-    const uploadStatus = document.getElementById('upload-status');
+    // Scope queries to the upload form to avoid conflicts after HTMX swaps
+    const fileInput = uploadForm.querySelector('#file-input');
+    const dropArea = uploadForm.querySelector('#drop-area');
+    const fileName = uploadForm.querySelector('#file-name');
+    const uploadButton = uploadForm.querySelector('#upload-button');
+    const uploadIcon = uploadForm.querySelector('#upload-icon');
+    const inlineImagePreview = uploadForm.querySelector('#inline-image-preview');
+    const progressContainer = uploadForm.querySelector('#progress-container');
+    const progressBar = uploadForm.querySelector('#progress-bar');
+    const uploadPercentage = uploadForm.querySelector('#upload-percentage');
+    const uploadStatus = uploadForm.querySelector('#upload-status');
+    // These live outside the form in the DOM
     const uploadResult = document.getElementById('upload-result');
     const successMessage = document.getElementById('success-message');
     const errorMessage = document.getElementById('error-message');
     const successText = document.getElementById('success-text');
     const errorText = document.getElementById('error-text');
+
+    // If essential elements are missing (e.g., after duplicate-upload response), skip init
+    if (!fileInput || !dropArea || !uploadButton) {
+        return;
+    }
 
     // Datei-Input-Event-Listener
     fileInput.addEventListener('change', function() {
@@ -207,9 +217,9 @@ function initUploadForm() {
         dropArea.classList.add('border-primary/50');
         dropArea.classList.remove('border-primary');
         progressContainer.classList.add('hidden');
-        uploadResult.classList.add('hidden');
-        successMessage.classList.add('hidden');
-        errorMessage.classList.add('hidden');
+        if (uploadResult) uploadResult.classList.add('hidden');
+        if (successMessage) successMessage.classList.add('hidden');
+        if (errorMessage) errorMessage.classList.add('hidden');
         progressBar.style.width = '0%';
         uploadPercentage.textContent = '0%';
         uploadIcon.classList.remove('hidden');
@@ -402,9 +412,9 @@ function initUploadForm() {
         uploadStatus.textContent = '';
         
         // Fehlermeldung anzeigen
-        errorMessage.classList.remove('hidden');
-        errorText.textContent = evt.detail.xhr.responseText || 'Fehler beim Hochladen: Unbekannter Fehler';
-        uploadResult.classList.remove('hidden');
+        if (errorMessage) errorMessage.classList.remove('hidden');
+        if (errorText) errorText.textContent = evt.detail.xhr.responseText || 'Fehler beim Hochladen: Unbekannter Fehler';
+        if (uploadResult) uploadResult.classList.remove('hidden');
         
         // Upload-Button wieder aktivieren
         uploadButton.disabled = false;
@@ -419,9 +429,9 @@ function initUploadForm() {
         uploadStatus.textContent = '';
         
         // Fehlermeldung anzeigen
-        errorMessage.classList.remove('hidden');
-        errorText.textContent = 'Netzwerkfehler beim Hochladen. Bitte versuche es später erneut.';
-        uploadResult.classList.add('hidden');
+        if (errorMessage) errorMessage.classList.remove('hidden');
+        if (errorText) errorText.textContent = 'Netzwerkfehler beim Hochladen. Bitte versuche es später erneut.';
+        if (uploadResult) uploadResult.classList.add('hidden');
         
         // Upload-Button wieder aktivieren
         uploadButton.disabled = false;
@@ -626,6 +636,33 @@ function initCopyShareLinks() {
             }
         });
     });
+}
+
+// Live-Validierung: Profiledit Passwort-Felder (HTMX-safe, idempotent)
+function initProfilePasswordValidation() {
+    const newPasswordInput = document.querySelector('input[name="new_password"]');
+    const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
+    if (!newPasswordInput || !confirmPasswordInput) return;
+
+    // Prevent duplicate listeners
+    if (!confirmPasswordInput.__pxf_pwd_listener_attached) {
+        const validatePasswordMatch = () => {
+            if (confirmPasswordInput.value && newPasswordInput.value !== confirmPasswordInput.value) {
+                confirmPasswordInput.setCustomValidity('Passwörter stimmen nicht überein');
+                confirmPasswordInput.classList.add('input-error');
+                confirmPasswordInput.classList.remove('input-success');
+            } else {
+                confirmPasswordInput.setCustomValidity('');
+                confirmPasswordInput.classList.remove('input-error');
+                if (confirmPasswordInput.value) {
+                    confirmPasswordInput.classList.add('input-success');
+                }
+            }
+        };
+        confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+        newPasswordInput.addEventListener('input', validatePasswordMatch);
+        confirmPasswordInput.__pxf_pwd_listener_attached = true;
+    }
 }
 
 // Öffnet SweetAlert2 Modal zum Teilen eines Albums

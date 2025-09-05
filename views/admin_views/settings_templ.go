@@ -163,76 +163,86 @@ func settingsContent(settings models.AppSettings, csrfToken string) templ.Compon
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"20\" required> <label class=\"label\"><span class=\"label-text-alt\">Anzahl der gleichzeitigen Background-Prozesse (1-20). Bei 5 Workern werden 5 Jobs parallel abgearbeitet - nicht nacheinander</span></label></div><!-- S3 Backup Settings --><div class=\"divider\">S3 Backup Einstellungen</div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Verzögerung (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_delay_minutes\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"20\" required> <label class=\"label\"><span class=\"label-text-alt\">Anzahl der gleichzeitigen Background-Prozesse (1-20). Bei 5 Workern werden 5 Jobs parallel abgearbeitet - nicht nacheinander</span></label></div><!-- S3 Backup Settings --><div class=\"divider\">S3 Backup Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">S3 Backup aktivieren</span> <input type=\"checkbox\" name=\"s3_backup_enabled\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if settings.S3BackupEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "></label> <label class=\"label\"><span class=\"label-text-alt\">Steuert global, ob S3 Backups erstellt werden (vorausgesetzt, es existiert ein aktiver S3‑Speicherpool).</span> <span class=\"label-text-alt\">Wenn deaktiviert, werden keine neuen S3‑Backups mehr eingeplant. Bereits vorhandene Backups bleiben im Bucket bestehen; ggf. bereits ausstehende (verzögerte) Backups können weiterhin verarbeitet werden. S3‑Löschjobs beim Bildlöschen sind in diesem Modus ebenfalls deaktiviert.</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Verzögerung (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_delay_minutes\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3BackupDelayMinutes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 197, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 215, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"input input-bordered w-full\" placeholder=\"0\" min=\"0\" max=\"43200\" required> <label class=\"label\"><span class=\"label-text-alt\">Nach wie vielen Minuten nach dem Upload soll das S3 Backup erfolgen? 0 = sofort, 1440 = nach 24 Stunden</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Check Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_check_interval\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"input input-bordered w-full\" placeholder=\"0\" min=\"0\" max=\"43200\" required> <label class=\"label\"><span class=\"label-text-alt\">Nach wie vielen Minuten nach dem Upload soll das S3 Backup erfolgen? 0 = sofort, 1440 = nach 24 Stunden</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Backup Check Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_backup_check_interval\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3BackupCheckInterval))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 216, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 234, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wie oft soll nach ausstehenden S3 Backups gesucht werden? (1-60 Minuten)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Retry Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_retry_interval\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" class=\"input input-bordered w-full\" placeholder=\"5\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wie oft soll nach ausstehenden S3 Backups gesucht werden? (1-60 Minuten)</span></label></div><div class=\"form-control\"><label class=\"label\"><span class=\"label-text font-semibold\">S3 Retry Intervall (Minuten)</span></label> <input type=\"number\" name=\"s3_retry_interval\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", settings.S3RetryInterval))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 235, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/settings.templ`, Line: 253, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"input input-bordered w-full\" placeholder=\"2\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wartezeit zwischen Wiederholungsversuchen für fehlgeschlagene S3 Backups (1-60 Minuten)</span></label></div><!-- Thumbnail Format Settings --><div class=\"divider\">Thumbnail-Format Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Original-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_original_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\" class=\"input input-bordered w-full\" placeholder=\"2\" min=\"1\" max=\"60\" required> <label class=\"label\"><span class=\"label-text-alt\">Wartezeit zwischen Wiederholungsversuchen für fehlgeschlagene S3 Backups (1-60 Minuten)</span></label></div><!-- Thumbnail Format Settings --><div class=\"divider\">Thumbnail-Format Einstellungen</div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">Original-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_original_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if settings.ThumbnailOriginalEnabled {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " checked")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert Thumbnails im ursprünglichen Dateiformat (JPG, PNG, etc.).</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">WebP-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_webp_enabled\" class=\"checkbox\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if settings.ThumbnailWebPEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert optimierte Thumbnails im WebP-Format für bessere Kompression.</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">AVIF-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_avif_enabled\" class=\"checkbox\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert Thumbnails im ursprünglichen Dateiformat (JPG, PNG, etc.).</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">WebP-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_webp_enabled\" class=\"checkbox\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if settings.ThumbnailAVIFEnabled {
+		if settings.ThumbnailWebPEnabled {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert hochoptimierte Thumbnails im AVIF-Format (erfordert FFmpeg).</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert optimierte Thumbnails im WebP-Format für bessere Kompression.</span></label></div><div class=\"form-control\"><label class=\"label cursor-pointer\"><span class=\"label-text font-semibold\">AVIF-Format Thumbnails</span> <input type=\"checkbox\" name=\"thumbnail_avif_enabled\" class=\"checkbox\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if settings.ThumbnailAVIFEnabled {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, " checked")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "></label> <label class=\"label\"><span class=\"label-text-alt\">Generiert hochoptimierte Thumbnails im AVIF-Format (erfordert FFmpeg).</span></label></div><!-- Actions --><div class=\"flex justify-end space-x-4 pt-6\"><a href=\"/admin\" class=\"btn btn-ghost\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Einstellungen speichern</button></div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

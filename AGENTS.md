@@ -21,7 +21,18 @@
 ## Live Reload (Air + Templ)
 - Dev container runs `air` and `templ generate --watch` via `supervisord`.
 - On code changes, `air` rebuilds automatically; no manual build needed.
+- files with ending .fiber.gz are auto generated, and you don't need to touch them.
 - Check build status via logs: `docker-compose logs -f app` or `docker logs -f pxlfox-app` (use `--tail 200` for recent output).
+
+## Frameworks
+- we use a-h/templ as template engine.
+- we use fiber as web framework.
+- we use gorm.io/gorm as ORM.
+- we use getkin/kin-openapi for our openapi spec.
+- we use stretchr/testify for testing.
+- we use DaisyUI v4 not v5 for styling!
+- we use tailwindcss 3.4 for styling.
+- we use sweetalert2 for alerts.
 
 ## Coding Style & Naming Conventions
 - Go: format with `gofmt` (tabs, standard imports), vet with `go vet`; run `staticcheck` if available.
@@ -41,4 +52,3 @@
 ## Security & Configuration Tips
 - Never commit secrets; use `.env.dev` → `.env` for local (`make prepare-env-dev`).
 - Persistent data lives in Docker volumes; `uploads/` and `tmp/` are runtime dirs.
-- For S3/third‑party services, read configuration from environment variables.

@@ -34,10 +34,11 @@ type AppSettings struct {
 	ThumbnailWebPEnabled     bool `json:"thumbnail_webp_enabled"`
 	ThumbnailAVIFEnabled     bool `json:"thumbnail_avif_enabled"`
 	// S3 Backup settings
-	S3BackupDelayMinutes  int `json:"s3_backup_delay_minutes" validate:"min=0,max=43200"` // Max 30 days (43200 minutes)
-	S3BackupCheckInterval int `json:"s3_backup_check_interval" validate:"min=1,max=60"`   // How often to check for delayed backups (1-60 minutes)
-	S3RetryInterval       int `json:"s3_retry_interval" validate:"min=1,max=60"`          // How often to retry failed backups (1-60 minutes)
-	JobQueueWorkerCount   int `json:"job_queue_worker_count" validate:"min=1,max=20"`     // Number of job queue workers (1-20)
+	S3BackupEnabled       bool `json:"s3_backup_enabled"`
+	S3BackupDelayMinutes  int  `json:"s3_backup_delay_minutes" validate:"min=0,max=43200"` // Max 30 days (43200 minutes)
+	S3BackupCheckInterval int  `json:"s3_backup_check_interval" validate:"min=1,max=60"`   // How often to check for delayed backups (1-60 minutes)
+	S3RetryInterval       int  `json:"s3_retry_interval" validate:"min=1,max=60"`          // How often to retry failed backups (1-60 minutes)
+	JobQueueWorkerCount   int  `json:"job_queue_worker_count" validate:"min=1,max=20"`     // Number of job queue workers (1-20)
 	// Replication/Storage settings
 	ReplicationRequireChecksum bool `json:"replication_require_checksum"`
 	mu                         sync.RWMutex
@@ -72,6 +73,7 @@ func LoadSettings(db *gorm.DB) error {
 		ThumbnailOriginalEnabled:     true,
 		ThumbnailWebPEnabled:         true,
 		ThumbnailAVIFEnabled:         true,
+		S3BackupEnabled:              true,
 		S3BackupDelayMinutes:         5,    // Default: immediate backup (0 minutes delay)
 		S3BackupCheckInterval:        5,    // Default: check every 5 minutes
 		S3RetryInterval:              2,    // Default: retry every 2 minutes
@@ -110,6 +112,8 @@ func LoadSettings(db *gorm.DB) error {
 			appSettings.ThumbnailWebPEnabled = setting.Value == "true"
 		case "thumbnail_avif_enabled":
 			appSettings.ThumbnailAVIFEnabled = setting.Value == "true"
+		case "s3_backup_enabled":
+			appSettings.S3BackupEnabled = setting.Value == "true"
 		case "s3_backup_delay_minutes":
 			if minutes, err := strconv.Atoi(setting.Value); err == nil {
 				appSettings.S3BackupDelayMinutes = minutes
@@ -155,6 +159,7 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 		"thumbnail_original_enabled":        fmt.Sprintf("%t", settings.ThumbnailOriginalEnabled),
 		"thumbnail_webp_enabled":            fmt.Sprintf("%t", settings.ThumbnailWebPEnabled),
 		"thumbnail_avif_enabled":            fmt.Sprintf("%t", settings.ThumbnailAVIFEnabled),
+		"s3_backup_enabled":                 fmt.Sprintf("%t", settings.S3BackupEnabled),
 		"s3_backup_delay_minutes":           fmt.Sprintf("%d", settings.S3BackupDelayMinutes),
 		"s3_backup_check_interval":          fmt.Sprintf("%d", settings.S3BackupCheckInterval),
 		"s3_retry_interval":                 fmt.Sprintf("%d", settings.S3RetryInterval),
@@ -200,7 +205,7 @@ func getSettingType(key string) string {
 	switch key {
 	case "site_title", "site_description":
 		return "string"
-	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled", "replication_require_checksum":
+	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled", "replication_require_checksum", "s3_backup_enabled":
 		return "boolean"
 	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count", "upload_rate_limit_per_minute", "upload_user_rate_limit_per_minute":
 		return "integer"
@@ -325,4 +330,11 @@ func (s *AppSettings) IsReplicationChecksumRequired() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.ReplicationRequireChecksum
+}
+
+// IsS3BackupEnabled returns whether S3 backups are enabled via admin settings
+func (s *AppSettings) IsS3BackupEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.S3BackupEnabled
 }

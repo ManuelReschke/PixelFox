@@ -84,7 +84,9 @@ func ProcessImageUnified(image *models.Image) error {
 		return EnqueueImageProcessing(image, false)
 	}
 
-	enableBackup := s3Pool != nil
-	log.Infof("[UnifiedQueue] Processing image %s with S3 backup enabled: %t", image.UUID, enableBackup)
+	// Also respect admin setting toggle
+	settings := models.GetAppSettings()
+	enableBackup := s3Pool != nil && settings != nil && settings.IsS3BackupEnabled()
+	log.Infof("[UnifiedQueue] Processing image %s with S3 backup enabled (pool:%t setting:%t): %t", image.UUID, s3Pool != nil, settings != nil && settings.IsS3BackupEnabled(), enableBackup)
 	return EnqueueImageProcessing(image, enableBackup)
 }

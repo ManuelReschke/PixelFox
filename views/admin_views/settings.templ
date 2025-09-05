@@ -186,6 +186,24 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 
 				<!-- S3 Backup Settings -->
 				<div class="divider">S3 Backup Einstellungen</div>
+
+				<div class="form-control">
+					<label class="label cursor-pointer">
+						<span class="label-text font-semibold">S3 Backup aktivieren</span>
+						<input 
+							type="checkbox" 
+							name="s3_backup_enabled" 
+							class="checkbox"
+							if settings.S3BackupEnabled {
+								checked
+							}
+						/>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Steuert global, ob S3 Backups erstellt werden (vorausgesetzt, es existiert ein aktiver S3‑Speicherpool).</span>
+						<span class="label-text-alt">Wenn deaktiviert, werden keine neuen S3‑Backups mehr eingeplant. Bereits vorhandene Backups bleiben im Bucket bestehen; ggf. bereits ausstehende (verzögerte) Backups können weiterhin verarbeitet werden. S3‑Löschjobs beim Bildlöschen sind in diesem Modus ebenfalls deaktiviert.</span>
+					</label>
+				</div>
 				
 				<div class="form-control">
 					<label class="label">

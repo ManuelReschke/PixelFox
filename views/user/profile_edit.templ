@@ -291,32 +291,7 @@ templ ProfileEditIndex(username string, csrfToken string, user models.User) {
 		}
 	</style>
 
-	<script>
-		// Password confirmation validation
-		document.addEventListener('DOMContentLoaded', function() {
-			const newPasswordInput = document.querySelector('input[name="new_password"]');
-			const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
-			
-			if (newPasswordInput && confirmPasswordInput) {
-				function validatePasswordMatch() {
-					if (confirmPasswordInput.value && newPasswordInput.value !== confirmPasswordInput.value) {
-						confirmPasswordInput.setCustomValidity('Passwörter stimmen nicht überein');
-						confirmPasswordInput.classList.add('input-error');
-						confirmPasswordInput.classList.remove('input-success');
-					} else {
-						confirmPasswordInput.setCustomValidity('');
-						confirmPasswordInput.classList.remove('input-error');
-						if (confirmPasswordInput.value) {
-							confirmPasswordInput.classList.add('input-success');
-						}
-					}
-				}
-				
-				confirmPasswordInput.addEventListener('input', validatePasswordMatch);
-				newPasswordInput.addEventListener('input', validatePasswordMatch);
-			}
-		});
-	</script>
+    <!-- Password validation moved to public/js/app.js (HTMX-safe) -->
 }
 
 templ ProfileEdit(

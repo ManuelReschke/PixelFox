@@ -190,7 +190,7 @@ func Layout(layout viewmodel.Layout) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<!-- Lokal kompilierte CSS und JavaScript Dateien --><link rel=\"stylesheet\" href=\"/css/styles.css\"><script src=\"/js/htmx.min.js\"></script><script src=\"/js/_hyperscript.min.js\"></script><script src=\"/js/response-targets.js\"></script><script src=\"/js/sweetalert2.all.min.js\"></script><!-- Lightweight loader; only initializes CKEditor when #content present --><script src=\"/js/editor.js\"></script><script src=\"/js/app.js\"></script></head><body class=\"sample-transition flex flex-col min-h-screen\" hx-boost=\"true\"><header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<!-- Lokal kompilierte CSS und JavaScript Dateien --><link rel=\"stylesheet\" href=\"/css/styles.css\"><script src=\"/js/htmx.min.js\"></script><script src=\"/js/_hyperscript.min.js\"></script><script src=\"/js/response-targets.js\"></script><script src=\"/js/sweetalert2.all.min.js\"></script><!-- External libs loaded once for all pages to avoid HTMX boost duplicates --><script src=\"/js/clipboard.min.js\"></script><!-- Lightweight loader; only initializes CKEditor when #content present --><script src=\"/js/editor.js\"></script><script src=\"/js/storage-pool-form.js\"></script><script src=\"/js/admin-dashboard.js\"></script><!-- Image viewer logic used on image pages; safe to load globally --><script src=\"/js/image-viewer.js\"></script><script src=\"/js/app.js\"></script></head><body class=\"sample-transition flex flex-col min-h-screen\" hx-boost=\"true\"><header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

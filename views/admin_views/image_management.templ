@@ -1,10 +1,11 @@
 package admin_views
 
 import (
-	"fmt"
-	"path/filepath"
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+    "fmt"
+    "path/filepath"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/database"
 )
 
 // Format file size to human-readable format
@@ -47,7 +48,20 @@ func getThumbnailPath(image models.Image) string {
 	return "/" + filepath.Join(image.FilePath, image.FileName)
 }
 
-templ imageContent(images []models.Image, currentPage int, totalPages int) {
+// hasS3Backup checks if the image has at least one completed S3 backup
+func hasS3Backup(image models.Image) bool {
+    db := database.GetDB()
+    if db == nil {
+        return false
+    }
+    backups, err := models.FindCompletedBackupsByImageID(db, image.ID)
+    if err != nil {
+        return false
+    }
+    return len(backups) > 0
+}
+
+templ imageContent(images []models.Image, currentPage int, totalPages int, csrfToken string) {
 	<div class="mb-6">
 		<h1 class="text-2xl font-bold">Bilderverwaltung</h1>
 	</div>
@@ -62,7 +76,7 @@ templ imageContent(images []models.Image, currentPage int, totalPages int) {
 		<!-- Image Grid -->
 		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4">
 			for _, image := range images {
-				<div class="group relative bg-base-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden">
+				<div class="group relative bg-base-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-200">
 					<!-- Image Container with Fixed Aspect Ratio -->
 					<div class="aspect-square relative overflow-hidden bg-base-300">
 						<img 
@@ -93,20 +107,37 @@ templ imageContent(images []models.Image, currentPage int, totalPages int) {
 									</svg>
 								</div>
 							}
-							if image.ViewCount > 0 {
-								<div class="badge badge-info badge-xs flex items-center gap-1">
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-									</svg>
-									{ fmt.Sprintf("%d", image.ViewCount) }
-								</div>
-							}
+                        if image.ViewCount > 0 {
+                            <div class="badge badge-info badge-xs flex items-center gap-1" title="Views">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                { fmt.Sprintf("%d", image.ViewCount) }
+                            </div>
+                        }
+                        if hasS3Backup(image) {
+                            <div class="badge badge-success badge-xs flex items-center justify-center" title="S3 Backup vorhanden">
+                                <!-- Cloud with check -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 001-7.874A5.5 5.5 0 0012 6a5.5 5.5 0 00-5.112 3.26A4 4 0 003 15z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
+                                </svg>
+                            </div>
+                        } else {
+                            <div class="badge badge-ghost badge-xs flex items-center justify-center" title="Kein S3 Backup">
+                                <!-- Cloud with X -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 001-7.874A5.5 5.5 0 0012 6a5.5 5.5 0 00-5.112 3.26A4 4 0 003 15z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.5 11.5l7 7m0-7l-7 7" />
+                                </svg>
+                            </div>
+                        }
 						</div>
 					</div>
 
 					<!-- Action Icons -->
-					<div class="p-3 bg-base-100">
-						<div class="flex justify-center gap-2">
+                        <div class="p-3 bg-base-100">
+                            <div class="flex justify-center items-center gap-2">
 							<!-- View -->
 							<div class="tooltip" data-tip="Ansehen">
 								<a 
@@ -134,45 +165,69 @@ templ imageContent(images []models.Image, currentPage int, totalPages int) {
 							</div>
 
 							<!-- Delete -->
-							<div class="tooltip" data-tip="Löschen">
-								<a 
-									href={ templ.SafeURL("/admin/images/delete/" + image.UUID) } 
-									class="btn btn-ghost btn-sm btn-circle text-red-600 hover:bg-red-100 hover:text-red-800"
-									onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');"
-								>
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-									</svg>
-								</a>
-							</div>
+                        <div class="tooltip" data-tip="Löschen">
+                            <form method="POST" action={ templ.SafeURL("/admin/images/delete/" + image.UUID) } onsubmit="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
+                                <input type="hidden" name="_csrf" value={ csrfToken } />
+                                <button type="submit" class="btn btn-ghost btn-sm btn-circle text-red-600 hover:bg-red-100 hover:text-red-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
 
-							<!-- More Info Dropdown -->
-							<div class="dropdown dropdown-end">
-								<div class="tooltip" data-tip="Details">
-									<label tabindex="0" class="btn btn-ghost btn-sm btn-circle text-gray-600 hover:bg-gray-100">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-										</svg>
-									</label>
-								</div>
-								<div tabindex="0" class="dropdown-content card card-compact w-80 p-4 shadow-lg bg-base-100 text-base-content">
-									<div class="card-body p-0">
-										<h3 class="font-bold text-sm mb-2 truncate">{ image.Title }</h3>
-										<div class="text-xs space-y-1">
-											<div><span class="font-medium">UUID:</span> <span class="font-mono text-xs break-all">{ image.UUID }</span></div>
-											<div><span class="font-medium">Typ:</span> { image.FileType }</div>
-											<div><span class="font-medium">Größe:</span> { formatFileSize(image.FileSize) }</div>
-											<div><span class="font-medium">Abmessungen:</span> { fmt.Sprintf("%dx%d", image.Width, image.Height) }</div>
-											<div><span class="font-medium">Benutzer:</span> { image.User.Name } ({ image.User.Email })</div>
-											<div><span class="font-medium">Aufrufe:</span> { fmt.Sprintf("%d", image.ViewCount) }</div>
-											<div><span class="font-medium">Downloads:</span> { fmt.Sprintf("%d", image.DownloadCount) }</div>
-											<div><span class="font-medium">Erstellt:</span> { image.CreatedAt.Format("02.01.2006 15:04") }</div>
-											<div><span class="font-medium">Share-Link:</span> 
-												<a href={ templ.SafeURL("/i/" + image.ShareLink) } target="_blank" class="text-blue-600 hover:underline font-mono text-xs break-all">{ image.ShareLink }</a>
-											</div>
-										</div>
-									</div>
-								</div>
+                        <!-- More Info Dropdown -->
+                        <div class="dropdown dropdown-end">
+                            <label tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle text-gray-600 hover:bg-gray-100 tooltip" data-tip="Details">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                </svg>
+                            </label>
+                            <div tabindex="0" class="dropdown-content z-[1] card card-compact w-80 p-2 shadow-lg bg-base-100 text-base-content">
+                                <div class="card-body p-0">
+                                    if !hasS3Backup(image) {
+                                        <button 
+                                            class="btn btn-ghost btn-xs w-full justify-start gap-2"
+                                            hx-post={ templ.SafeURL("/admin/images/backup/" + image.UUID) }
+                                            hx-swap="none"
+                                            title="S3 Backup starten">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 001-7.874A5.5 5.5 0 0012 6a5.5 5.5 0 00-5.112 3.26A4 4 0 003 15z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v6m0 0l-2-2m2 2l2-2" />
+                                            </svg>
+                                            S3 Backup starten
+                                        </button>
+                                        <div class="divider my-1"></div>
+                                    } else {
+                                        <button 
+                                            class="btn btn-ghost btn-xs w-full justify-start gap-2 text-red-500 hover:text-red-600"
+                                            hx-post={ templ.SafeURL("/admin/images/backup-delete/" + image.UUID) }
+                                            hx-swap="none"
+                                            hx-confirm="S3 Backup wirklich löschen?"
+                                            title="S3 Backup löschen">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            S3 Backup löschen
+                                        </button>
+                                        <div class="divider my-1"></div>
+                                    }
+                                <h3 class="font-bold text-sm mb-2 truncate px-2">{ image.Title }</h3>
+                                <div class="text-xs space-y-1 px-2 pb-2">
+                                    <div><span class="font-medium">UUID:</span> <span class="font-mono text-xs break-all">{ image.UUID }</span></div>
+                                    <div><span class="font-medium">Typ:</span> { image.FileType }</div>
+                                    <div><span class="font-medium">Größe:</span> { formatFileSize(image.FileSize) }</div>
+                                    <div><span class="font-medium">Abmessungen:</span> { fmt.Sprintf("%dx%d", image.Width, image.Height) }</div>
+                                    <div><span class="font-medium">Benutzer:</span> { image.User.Name } ({ image.User.Email })</div>
+                                    <div><span class="font-medium">Aufrufe:</span> { fmt.Sprintf("%d", image.ViewCount) }</div>
+                                    <div><span class="font-medium">Downloads:</span> { fmt.Sprintf("%d", image.DownloadCount) }</div>
+                                    <div><span class="font-medium">Erstellt:</span> { image.CreatedAt.Format("02.01.2006 15:04") }</div>
+                                    <div><span class="font-medium">Share-Link:</span> 
+                                        <a href={ templ.SafeURL("/i/" + image.ShareLink) } target="_blank" class="text-blue-600 hover:underline font-mono text-xs break-all">{ image.ShareLink }</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 							</div>
 						</div>
 					</div>
@@ -236,6 +291,6 @@ templ imageContent(images []models.Image, currentPage int, totalPages int) {
 	}
 }
 
-templ ImageManagement(images []models.Image, currentPage int, totalPages int) {
-	@AdminLayout(imageContent(images, currentPage, totalPages))
+templ ImageManagement(images []models.Image, currentPage int, totalPages int, csrfToken string) {
+    @AdminLayout(imageContent(images, currentPage, totalPages, csrfToken))
 }

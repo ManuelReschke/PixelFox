@@ -326,52 +326,87 @@ function initializeEventListeners() {
 	setTimeout(initializeFormatTabs, 50);
 }
 
-// Initialize clipboard functionality
+// Initialize clipboard functionality (waits for ClipboardJS to be available)
 function initializeClipboard() {
-	// Initialize clipboard
-	var clipboard = new ClipboardJS('.copy-btn');
-	
-	clipboard.on('success', function(e) {
-		const button = e.trigger;
-		const originalHTML = button.innerHTML;
-		
-		button.innerHTML = `
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-			</svg>
-		`;
-		
-		setTimeout(function() {
-			button.innerHTML = originalHTML;
-		}, 1500);
-		
-		e.clearSelection();
-	});
-	
-	clipboard.on('error', function(e) {
-		console.error('Error copying: ', e.action);
-	});
+    if (!window.ClipboardJS) {
+        return false;
+    }
+
+    // Prevent multiple instances across HTMX swaps
+    if (window.__pxf_clipboardInstance) {
+        try {
+            window.__pxf_clipboardInstance.destroy();
+        } catch (e) {}
+        window.__pxf_clipboardInstance = null;
+    }
+
+    var clipboard = new window.ClipboardJS('.copy-btn');
+    window.__pxf_clipboardInstance = clipboard;
+
+    clipboard.on('success', function(e) {
+        const button = e.trigger;
+        const originalHTML = button.innerHTML;
+
+        button.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+        `;
+
+        setTimeout(function() {
+            button.innerHTML = originalHTML;
+        }, 1500);
+
+        e.clearSelection();
+    });
+
+    clipboard.on('error', function(e) {
+        console.error('Error copying: ', e.action);
+    });
+
+    return true;
+}
+
+// Retry until ClipboardJS is present, then init once
+function ensureClipboardInitialized(maxAttempts = 50, intervalMs = 100) {
+    let attempts = 0;
+    function tryInit() {
+        if (initializeClipboard()) return; // success
+        attempts++;
+        if (attempts < maxAttempts) {
+            setTimeout(tryInit, intervalMs);
+        }
+    }
+    tryInit();
 }
 
 // Main initialization function
 function initImageViewer() {
-	initializeImagePaths();
-	initializeEventListeners();
-	initToggleMeta();
-	initializeClipboard();
-	initializeTabs();
+    initializeImagePaths();
+    initializeEventListeners();
+    initToggleMeta();
+    ensureClipboardInitialized();
+    initializeTabs();
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initImageViewer);
 
-// Initialize after HTMX swaps (for dynamic content updates)
-document.body.addEventListener('htmx:afterSwap', function(event) {
-	// Small delay to ensure DOM is fully updated after HTMX swap
-	setTimeout(function() {
-		initializeImagePaths();
-		initializeEventListeners();
-		initToggleMeta();
-		initializeTabs();
-	}, 100);
-});
+// Helper to (re)initialize after HTMX updates
+function reinitAfterHtmx() {
+    // Small delay to ensure DOM is fully updated after HTMX swap/settle
+    requestAnimationFrame(() => {
+        setTimeout(function() {
+            initializeImagePaths();
+            initializeEventListeners();
+            initToggleMeta();
+            ensureClipboardInitialized();
+            initializeTabs();
+        }, 50);
+    });
+}
+
+// Initialize after HTMX lifecycle events (more robust across transitions)
+document.addEventListener('htmx:load', reinitAfterHtmx);
+document.addEventListener('htmx:afterSwap', reinitAfterHtmx);
+document.addEventListener('htmx:afterSettle', reinitAfterHtmx);
