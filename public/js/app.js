@@ -68,7 +68,7 @@ function initChangingWords() {
     if (!wordElement) return;
     
     // Array mit den Wörtern, die angezeigt werden sollen
-    const words = ["schnelles", "sicheres", "anonymes", "Made in Germany", "kostenloses", "einfaches", "zuverlässiges"];
+    const words = ["schnelles", "ultra schnelles", "sicheres", "anonymes", "next gen", "kostenloses", "einfaches", "zuverlässiges"];
     let currentIndex = 0;
     
     // CSS für den Übergangseffekt - verbesserte Animation
