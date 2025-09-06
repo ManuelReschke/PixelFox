@@ -171,8 +171,19 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/register")
 		}
 
+		// Validate matching password confirmation
+		password := c.FormValue("password")
+		passwordConfirm := c.FormValue("password_confirm")
+		if password != passwordConfirm {
+			fm := fiber.Map{
+				"type":    "error",
+				"message": "Die Passwörter stimmen nicht überein.",
+			}
+			return flash.WithError(c, fm).Redirect("/register")
+		}
+
 		// Create user after successful captcha validation
-		user, err := models.CreateUser(c.FormValue("username"), c.FormValue("email"), c.FormValue("password"))
+		user, err := models.CreateUser(c.FormValue("username"), c.FormValue("email"), password)
 		if err != nil {
 			fm := fiber.Map{
 				"type":    "error",

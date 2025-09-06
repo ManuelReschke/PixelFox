@@ -25,7 +25,7 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 				<label class="flex flex-col justify-start gap-2">
 					Benutzername:
 					<input
-						class="input input-bordered input-primary-content bg-gray-200"
+						class="input input-bordered bg-base-200 dark:bg-base-300"
 						type="text"
 						name="username"
 						required
@@ -40,7 +40,7 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 				<label class="flex flex-col justify-start gap-2">
 					Email:
 					<input
-						class="input input-bordered input-primary-content bg-gray-200"
+						class="input input-bordered bg-base-200 dark:bg-base-300"
 						type="email"
 						name="email"
 						required
@@ -54,9 +54,10 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 				<label class="flex flex-col justify-start gap-2 relative">
 					Passwort:
 					<input
-						class="input input-bordered input-primary-content bg-gray-200"
+						class="input input-bordered bg-base-200 dark:bg-base-300"
 						type="password"
 						name="password"
+						id="password"
 						required
 						minlength="6"
 						disabled?={ fromProtected }
@@ -81,14 +82,46 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 						</svg>
 					</button>
 				</label>
-				
+				<label class="flex flex-col justify-start gap-2 relative">
+					Passwort bestätigen:
+					<input
+						class="input input-bordered bg-base-200 dark:bg-base-300"
+						type="password"
+						name="password_confirm"
+						id="password_confirm"
+						required
+						minlength="6"
+						disabled?={ fromProtected }
+						if fromProtected {
+							value="disabled "
+						}
+					/>
+					<button
+						title="View password"
+						type="button"
+						disabled?={ fromProtected }
+						class="absolute top-12 right-3"
+						_="on click if [type of previous <input/>] == 'password' then remove [@type=password] from previous <input/> then hide #eye2 then remove .hidden from #eye-slash2 else show #eye2 then add .hidden to #eye-slash2 then tell previous <input/> toggle [@type=password] end"
+					>
+						<svg id="eye2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+							<path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"></path>
+							<path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"></path>
+						</svg>
+						<svg id="eye-slash2" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+							<path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"></path>
+							<path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"></path>
+						</svg>
+					</button>
+					<p id="pw-match-msg" class="mt-1 text-sm hidden">&nbsp;</p>
+				</label>
+
 				<!-- hCaptcha Widget (immer hell) -->
 				<div class="mt-2 flex justify-center">
 					<div id="hcaptcha-container" class="h-captcha" data-sitekey={hcaptchaSitekey} data-theme="light"></div>
 				</div>
 				
 				<footer class="card-actions justify-end">
-					<button class="badge badge-secondary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
+					<button id="register-submit" class="badge badge-secondary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
 						Kostenlos Registrieren
 					</button>
 				</footer>
@@ -98,6 +131,59 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 	
 	<!-- hCaptcha Script mit HTMX-Kompatibilität -->
 	<script>
+		function setupPasswordMatchUI() {
+			var pw = document.getElementById('password');
+			var pwc = document.getElementById('password_confirm');
+			var msg = document.getElementById('pw-match-msg');
+			var submit = document.getElementById('register-submit');
+
+			if (!pw || !pwc || !msg) return;
+
+			if (pwc.dataset.enhanced === '1') return; // avoid double-binding on HTMX swaps
+			pwc.dataset.enhanced = '1';
+
+			function clsReset(el) {
+				el.classList.remove('input-error');
+				el.classList.remove('input-success');
+			}
+
+			function updateState() {
+				var v1 = pw.value || '';
+				var v2 = pwc.value || '';
+				var minOk = v1.length >= 6 && v2.length >= 6;
+				// default: no state
+				clsReset(pw); clsReset(pwc);
+				msg.classList.add('hidden');
+				if (submit) submit.disabled = false;
+
+				if (!v1 && !v2) {
+					return;
+				}
+
+				if (v1 && v2 && v1 === v2 && minOk) {
+					pw.classList.add('input-success');
+					pwc.classList.add('input-success');
+					msg.textContent = 'Passwörter stimmen überein';
+					msg.classList.remove('hidden');
+					msg.classList.remove('text-error');
+					msg.classList.add('text-success');
+					return;
+				}
+
+				// mismatch or too short
+				pwc.classList.add('input-error');
+				msg.textContent = v1 && v2 ? 'Passwörter stimmen nicht überein' : 'Bitte beide Passwörter eingeben (min. 6 Zeichen)';
+				msg.classList.remove('hidden');
+				msg.classList.remove('text-success');
+				msg.classList.add('text-error');
+				if (submit) submit.disabled = true;
+			}
+
+			pw.addEventListener('input', updateState);
+			pwc.addEventListener('input', updateState);
+			updateState();
+		}
+
 		function loadHCaptcha() {
 			if (window.hcaptcha) {
 				// Zuerst zurücksetzen, falls es bereits existiert
@@ -115,7 +201,7 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 			}
 		}
 		
-		// Lade hCaptcha beim ersten Laden der Seite
+		// Lade hCaptcha und setup Passwort-Check beim ersten Laden der Seite
 		document.addEventListener('DOMContentLoaded', function() {
 			// Lade das hCaptcha-Skript, falls es noch nicht geladen ist
 			if (!window.hcaptcha) {
@@ -132,9 +218,10 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 			} else {
 				loadHCaptcha();
 			}
+			setupPasswordMatchUI();
 		});
 		
-		// Lade hCaptcha neu, wenn die Seite über HTMX geladen wird
+		// Lade hCaptcha neu und setup Passwort-Check, wenn die Seite über HTMX geladen wird
 		document.body.addEventListener('htmx:afterSwap', function(event) {
 			if (document.getElementById('hcaptcha-container')) {
 				if (window.hcaptcha) {
@@ -147,6 +234,7 @@ templ RegisterIndex(fromProtected bool, csrfToken string, hcaptchaSitekey string
 					document.head.appendChild(script);
 				}
 			}
+			setupPasswordMatchUI();
 		});
 	</script>
 }
