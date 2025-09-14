@@ -13,6 +13,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
@@ -31,6 +32,13 @@ func NewAdminController(repos *repository.Repositories) *AdminController {
 	}
 }
 
+// countOpenReports returns the number of open image reports
+func countOpenReports() (int64, error) {
+	var cnt int64
+	err := database.GetDB().Model(&models.ImageReport{}).Where("status = ?", models.ReportStatusOpen).Count(&cnt).Error
+	return cnt, err
+}
+
 // HandleDashboard renders the admin dashboard with clean repository usage
 func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
@@ -45,6 +53,15 @@ func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
 		return ac.handleError(c, "Failed to get image count", err)
 	}
 
+	// Get total albums count
+	albumCount, err := ac.repos.Album.Count()
+	if err != nil {
+		return ac.handleError(c, "Failed to get album count", err)
+	}
+
+	// Get open reports count (no repository exists for reports)
+	var openReports int64
+
 	// Get recent users with pagination
 	recentUsers, err := ac.repos.User.List(0, 5)
 	if err != nil {
@@ -55,8 +72,13 @@ func (ac *AdminController) HandleDashboard(c *fiber.Ctx) error {
 	imageStats := ac.getLastSevenDaysStats("images")
 	userStats := ac.getLastSevenDaysStats("users")
 
-	// Render dashboard
-	dashboard := admin_views.Dashboard(int(totalUsers), int(totalImages), recentUsers, imageStats, userStats)
+	// Render dashboard: compute open reports count
+	if cnt, err := countOpenReports(); err == nil {
+		openReports = cnt
+	} else {
+		log.Printf("Failed to count open reports: %v", err)
+	}
+	dashboard := admin_views.Dashboard(int(totalUsers), int(totalImages), int(albumCount), int(openReports), recentUsers, imageStats, userStats)
 	home := views.HomeCtx(c, " | Admin Dashboard", userCtx.IsLoggedIn, false, flash.Get(c), dashboard, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))

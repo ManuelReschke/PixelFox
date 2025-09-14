@@ -167,6 +167,9 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Post("/user/albums/:id/add-image", requireAuthMiddleware, controllers.HandleUserAlbumAddImage)
 	group.Post("/user/albums/:id/set-cover", requireAuthMiddleware, controllers.HandleUserAlbumSetCover)
 	group.Get("/user/albums/:id/remove-image/:image_id", requireAuthMiddleware, controllers.HandleUserAlbumRemoveImage)
+	// Image Reports (CSRF protected, guests allowed)
+	group.Get("/image/:uuid/report", loggedInMiddleware, controllers.HandleImageReportForm)
+	group.Post("/image/:uuid/report", loggedInMiddleware, controllers.HandleImageReportSubmit)
 	// Admin Page Management Routes (CSRF protected)
 	group.Get("/admin/pages", RequireAdminMiddleware, controllers.HandleAdminPages)
 	group.Get("/admin/pages/create", RequireAdminMiddleware, controllers.HandleAdminPageCreate)
@@ -184,6 +187,11 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Post("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePoolPost)
 	group.Get("/admin/storage/move/:id", RequireAdminMiddleware, controllers.HandleAdminMoveStoragePool)
 	group.Post("/admin/storage/move/:id", RequireAdminMiddleware, controllers.HandleAdminMoveStoragePoolPost)
+	// Admin Reports (CSRF protected)
+	group.Get("/admin/reports", RequireAdminMiddleware, controllers.HandleAdminReports)
+	group.Get("/admin/reports/:id", RequireAdminMiddleware, controllers.HandleAdminReportShow)
+	group.Post("/admin/reports/:id/resolve", RequireAdminMiddleware, controllers.HandleAdminReportResolve)
+	group.Post("/admin/reports/:id/dismiss", RequireAdminMiddleware, controllers.HandleAdminReportDismiss)
 }
 
 func NewHttpRouter() *HttpRouter {

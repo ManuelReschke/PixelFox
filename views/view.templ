@@ -505,6 +505,11 @@ templ ImageOptions(model viewmodel.Image) {
 					}
 				</div>
 			</div>
+
+			<!-- Report button at the very bottom below 'Mehr Infos' -->
+			<div class="card-actions justify-end mt-3">
+				<a href={ templ.SafeURL("/image/" + model.UUID + "/report") } class="btn btn-outline btn-error btn-sm">Bild melden</a>
+			</div>
 			
 		</div>
 	} else {
@@ -595,6 +600,7 @@ templ ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerI
 						</div>
 					}
 				</div>
+
 				
 				<!-- Link-Optionen und Buttons in der Card-Body -->
 				@ImageOptions(model)

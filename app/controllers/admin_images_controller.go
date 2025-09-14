@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
@@ -216,10 +217,32 @@ func (aic *AdminImagesController) HandleAdminImageDelete(c *fiber.Ctx) error {
 		return flash.WithError(c, fm).Redirect("/admin/images")
 	}
 
+	// If deletion originated from a report, mark that report as resolved
+	if reportIDStr := c.Query("resolved_report_id", ""); reportIDStr != "" {
+		if rid, err := strconv.ParseUint(reportIDStr, 10, 64); err == nil {
+			db := database.GetDB()
+			userCtx := usercontext.GetUserContext(c)
+			resolvedBy := userCtx.UserID
+			now := time.Now()
+			_ = db.Model(&models.ImageReport{}).
+				Where("id = ?", uint(rid)).
+				Updates(map[string]interface{}{
+					"status":         models.ReportStatusResolved,
+					"resolved_by_id": resolvedBy,
+					"resolved_at":    now,
+				}).Error
+		}
+	}
+
 	// Success message
 	fm := fiber.Map{
 		"type":    "success",
 		"message": "Bild erfolgreich gelöscht",
+	}
+
+	// Redirect: if deletion came from a report, go back to reports; else images list
+	if c.Query("resolved_report_id", "") != "" {
+		return flash.WithSuccess(c, fm).Redirect("/admin/reports")
 	}
 
 	return flash.WithSuccess(c, fm).Redirect("/admin/images")

@@ -82,7 +82,22 @@ func (r *imageRepository) Update(image *models.Image) error {
 
 // Delete soft deletes an image by its ID
 func (r *imageRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Image{}, id).Error
+	// Soft-delete image and related records in a transaction
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Soft delete variants
+		if err := tx.Where("image_id = ?", id).Delete(&models.ImageVariant{}).Error; err != nil {
+			return err
+		}
+		// Soft delete metadata
+		if err := tx.Where("image_id = ?", id).Delete(&models.ImageMetadata{}).Error; err != nil {
+			return err
+		}
+		// Soft delete the image itself
+		if err := tx.Delete(&models.Image{}, id).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // List retrieves a paginated list of images

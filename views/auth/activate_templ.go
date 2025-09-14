@@ -50,7 +50,7 @@ func ActivateIndex(fromProtected bool, csrfToken string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <label class=\"flex flex-col justify-start gap-2\">Activation Token: <input class=\"input input-bordered bg-gray-200\" type=\"text\" name=\"token\" required></label><footer class=\"card-actions justify-end\"><button class=\"btn badge-primary px-6 py-4 hover:scale-[1.05]\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"> <label class=\"flex flex-col justify-start gap-2\">Activation Token: <input class=\"input input-bordered bg-base-200 dark:bg-base-300\" type=\"text\" name=\"token\" required></label><footer class=\"card-actions justify-end\"><button class=\"btn badge-primary px-6 py-4 hover:scale-[1.05]\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

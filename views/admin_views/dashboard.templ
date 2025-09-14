@@ -1,19 +1,19 @@
 package admin_views
 
 import (
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"strconv"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "strconv"
 )
 
-templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
+templ dashboardContent(totalUsers int, totalImages int, totalAlbums int, openReports int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
 	<div class="mb-8">
 		<h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
 		<p class="opacity-75">Verwalte deine PixelFox-Anwendung</p>
 	</div>
 
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-		<!-- Stats Card: Total Users -->
-		<div class="bg-base-200 rounded-lg shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Stats Card: Total Users -->
+        <a href="/admin/users" class="block bg-base-200 rounded-lg shadow p-6 hover:bg-base-300 transition-colors">
 			<div class="flex items-center">
 				<div class="p-3 rounded-full bg-blue-100 text-blue-600">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,10 +25,10 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 					<p class="text-2xl font-semibold">{ strconv.Itoa(totalUsers) }</p>
 				</div>
 			</div>
-		</div>
+        </a>
 
-		<!-- Stats Card: Total Images -->
-		<div class="bg-base-200 rounded-lg shadow p-6">
+        <!-- Stats Card: Total Images -->
+        <a href="/admin/images" class="block bg-base-200 rounded-lg shadow p-6 hover:bg-base-300 transition-colors">
 			<div class="flex items-center">
 				<div class="p-3 rounded-full bg-green-100 text-green-600">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -40,27 +40,38 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 					<p class="text-2xl font-semibold">{ strconv.Itoa(totalImages) }</p>
 				</div>
 			</div>
-		</div>
+        </a>
 
-		<!-- Quick Actions -->
-		<div class="bg-base-200 rounded-lg shadow p-6">
-			<h2 class="text-sm font-medium opacity-75 mb-4">Schnellzugriff</h2>
-			<div class="space-y-2">
-				<a href="/admin/users" class="flex items-center text-blue-600 hover:text-blue-800">
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-					</svg>
-					Benutzer
-				</a>
-				<a href="/admin/images" class="flex items-center text-green-600 hover:text-green-800">
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-					</svg>
-					Bilder
-				</a>
-			</div>
-		</div>
-	</div>
+        <!-- Stats Card: Total Albums -->
+        <div class="bg-base-200 rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h9l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium opacity-75">Fotoalben gesamt</h2>
+                    <p class="text-2xl font-semibold">{ strconv.Itoa(totalAlbums) }</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Card: Open Reports -->
+        <a href="/admin/reports" class="block bg-base-200 rounded-lg shadow p-6 hover:bg-base-300 transition-colors">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M4.93 4.93a10 10 0 1014.14 14.14A10 10 0 004.93 4.93z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium opacity-75">Offene Meldungen</h2>
+                    <p class="text-2xl font-semibold">{ strconv.Itoa(openReports) }</p>
+                </div>
+            </div>
+        </a>
+    </div>
 
 	<!-- Charts -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -121,6 +132,6 @@ templ dashboardContent(totalUsers int, totalImages int, recentUsers []models.Use
 	<!-- Charts initialized by /js/admin-dashboard.js (HTMX-safe) -->
 }
 
-templ Dashboard(totalUsers int, totalImages int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
-	@AdminLayout(dashboardContent(totalUsers, totalImages, recentUsers, imageStats, userStats))
+templ Dashboard(totalUsers int, totalImages int, totalAlbums int, openReports int, recentUsers []models.User, imageStats []models.DailyStats, userStats []models.DailyStats) {
+    @AdminLayout(dashboardContent(totalUsers, totalImages, totalAlbums, openReports, recentUsers, imageStats, userStats))
 }

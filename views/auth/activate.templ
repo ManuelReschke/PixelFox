@@ -22,7 +22,7 @@ templ ActivateIndex(fromProtected bool, csrfToken string) {
                 <input type="hidden" name="_csrf" value={csrfToken}>
                 <label class="flex flex-col justify-start gap-2">
                     Activation Token:
-                    <input class="input input-bordered bg-gray-200" type="text" name="token" required />
+                    <input class="input input-bordered bg-base-200 dark:bg-base-300" type="text" name="token" required />
                 </label>
                 <footer class="card-actions justify-end">
                     <button class="btn badge-primary px-6 py-4 hover:scale-[1.05]" disabled?={fromProtected}>
