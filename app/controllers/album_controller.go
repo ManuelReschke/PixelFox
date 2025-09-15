@@ -85,6 +85,9 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 		PreviewPath:      previewPath,
 		SmallPreviewPath: smallPreviewPath,
 		OriginalPath:     originalPath,
+		Width:            img.Width,
+		Height:           img.Height,
+		FileSize:         img.FileSize,
 		CreatedAt:        img.CreatedAt.Format("02.01.2006 15:04"),
 	}
 }

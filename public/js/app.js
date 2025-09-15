@@ -733,16 +733,31 @@ document.addEventListener('click', (e) => {
     // Collect all view buttons to build an ordered image list
     const buttons = Array.from(document.querySelectorAll('.image-view-btn'));
     const images = buttons.map(b => b.dataset.imageSrc);
+    const metas = buttons.map(b => ({
+        name: (b.dataset.title || b.dataset.filename || ''),
+        width: parseInt(b.dataset.width || '0', 10) || 0,
+        height: parseInt(b.dataset.height || '0', 10) || 0,
+        size: parseInt(b.dataset.size || '0', 10) || 0,
+    }));
     let currentIndex = buttons.indexOf(btn);
 
     // Helper to open the modal with navigation arrows
     const openImageModal = () => {
         Swal.fire({
             html: `
-                <div class="relative flex justify-center items-center">
-                    <button type="button" class="nav-btn prev-btn left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10">&#10094;</button>
-                    <img src="${images[currentIndex]}" alt="Bild" class="modal-image object-contain max-h-[90vh] max-w-[90vw] w-auto h-auto mx-auto"/>
-                    <button type="button" class="nav-btn next-btn right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10">&#10095;</button>
+                <div class="relative flex flex-col justify-center items-center">
+                    <div class="relative w-full flex justify-center items-center">
+                        <button type="button" class="nav-btn prev-btn left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10 absolute">&#10094;</button>
+                        <img src="${images[currentIndex]}" alt="Bild" class="modal-image object-contain max-h-[90vh] max-w-[90vw] w-auto h-auto mx-auto"/>
+                        <button type="button" class="nav-btn next-btn right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10 absolute">&#10095;</button>
+                    </div>
+                    <div class="image-caption mt-2 text-xs text-gray-300/80 select-text max-w-[90vw] text-center">
+                        <span id="cap-name" class="font-mono"></span>
+                        <span id="cap-sep1" class="mx-1 hidden">•</span>
+                        <span id="cap-res" class=""></span>
+                        <span id="cap-sep2" class="mx-1 hidden">•</span>
+                        <span id="cap-size" class=""></span>
+                    </div>
                 </div>`,
             showConfirmButton: false,
             showCloseButton: true,
@@ -757,11 +772,39 @@ document.addEventListener('click', (e) => {
                 const prevBtn = popup.querySelector('.prev-btn');
                 const nextBtn = popup.querySelector('.next-btn');
 
+                const formatBytes = (bytes) => {
+                  if (!bytes || bytes <= 0) return '';
+                  const units = ['B','KB','MB','GB','TB'];
+                  let i = 0; let val = bytes;
+                  while (val >= 1024 && i < units.length-1) { val /= 1024; i++; }
+                  return `${val.toFixed(val < 10 && i>0 ? 1 : 0)} ${units[i]}`;
+                };
+
+                const updateCaption = () => {
+                  const meta = metas[currentIndex] || {};
+                  const nameEl = popup.querySelector('#cap-name');
+                  const resEl = popup.querySelector('#cap-res');
+                  const sizeEl = popup.querySelector('#cap-size');
+                  const sep1 = popup.querySelector('#cap-sep1');
+                  const sep2 = popup.querySelector('#cap-sep2');
+                  if (nameEl) nameEl.textContent = meta.name || '';
+                  const resTxt = (meta.width>0 && meta.height>0) ? `${meta.width}×${meta.height}` : '';
+                  const sizeTxt = meta.size>0 ? formatBytes(meta.size) : '';
+                  if (resEl) resEl.textContent = resTxt;
+                  if (sizeEl) sizeEl.textContent = sizeTxt;
+                  if (sep1) sep1.classList.toggle('hidden', !resTxt);
+                  if (sep2) sep2.classList.toggle('hidden', !sizeTxt);
+                };
+
                 const updateImage = () => {
                     const newSrc = images[currentIndex];
                     console.log('Update image to', newSrc);
                     imgEl.src = newSrc;
+                    updateCaption();
                 };
+
+                // Initialize caption
+                updateCaption();
 
                 if(prevBtn){
                   prevBtn.addEventListener('click', (ev) => {

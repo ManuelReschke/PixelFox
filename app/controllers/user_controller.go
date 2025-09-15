@@ -152,6 +152,10 @@ func HandleUserImages(c *fiber.Ctx) error {
 			OriginalPath: originalPath,
 			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
 			IsPublic:     img.IsPublic,
+			FileName:     img.FileName,
+			Width:        img.Width,
+			Height:       img.Height,
+			FileSize:     img.FileSize,
 		})
 	}
 
@@ -242,6 +246,10 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			OriginalPath: originalPath,
 			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
 			IsPublic:     img.IsPublic,
+			FileName:     img.FileName,
+			Width:        img.Width,
+			Height:       img.Height,
+			FileSize:     img.FileSize,
 		})
 	}
 

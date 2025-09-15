@@ -8,15 +8,19 @@ import (
 )
 
 type GalleryImage struct {
-	ID               uint
-	UUID             string
-	Title            string
-	ShareLink        string
-	PreviewPath      string
-	SmallPreviewPath string
-	OriginalPath     string
-	CreatedAt        string
-	IsPublic         bool
+    ID               uint
+    UUID             string
+    Title            string
+    ShareLink        string
+    PreviewPath      string
+    SmallPreviewPath string
+    OriginalPath     string
+    CreatedAt        string
+    IsPublic         bool
+    FileName         string
+    Width            int
+    Height           int
+    FileSize         int64
 }
 
 templ Images(
@@ -222,7 +226,7 @@ templ GalleryItems(images []GalleryImage, page int) {
 	for _, image := range images {
         <div class="masonry-item">
             <div class="img-container relative">
-                <a href="#" class="block image-view-btn" data-image-src={ image.OriginalPath }>
+                <a href="#" class="block image-view-btn" data-image-src={ image.OriginalPath } data-title={ image.Title } data-width={ fmt.Sprintf("%d", image.Width) } data-height={ fmt.Sprintf("%d", image.Height) } data-size={ fmt.Sprintf("%d", image.FileSize) }>
                     <img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
                 </a>
 				

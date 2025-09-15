@@ -202,74 +202,126 @@ func PublicAlbumIndex(album models.Album, albumImages []GalleryImage) templ.Comp
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><img src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" data-title=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
-				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(image.PreviewPath)
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 65, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 64, Col: 131}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" alt=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" data-width=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var11 string
-				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
+				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.Width))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 65, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 64, Col: 177}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" class=\"gallery-img\" loading=\"lazy\"></a><div class=\"overlay\"><div class=\"image-title-overlay\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" data-height=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
-				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.Height))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 68, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 64, Col: 225}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div><div class=\"overlay-content flex flex-row gap-2\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" data-size=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var13 templ.SafeURL
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
+				var templ_7745c5c3_Var13 string
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.FileSize))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 70, Col: 94}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 64, Col: 273}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" class=\"view-btn\" title=\"Teilen\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z\"></path></svg></a></div></div></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\"><img src=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var14 string
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(image.PreviewPath)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 65, Col: 60}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" alt=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var15 string
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 65, Col: 80}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"gallery-img\" loading=\"lazy\"></a><div class=\"overlay\"><div class=\"image-title-overlay\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var16 string
+				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 68, Col: 78}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><div class=\"overlay-content flex flex-row gap-2\"><a href=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var17 templ.SafeURL
+				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 70, Col: 94}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"view-btn\" title=\"Teilen\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z\"></path></svg></a></div></div></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"flex flex-col items-center justify-center py-12\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-16 h-16 mb-4 text-gray-400\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg><h3 class=\"text-xl font-semibold mb-2\">Keine Bilder gefunden</h3><p class=\"text-gray-500\">Dieses Album enthält derzeit keine Bilder.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"flex flex-col items-center justify-center py-12\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-16 h-16 mb-4 text-gray-400\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg><h3 class=\"text-xl font-semibold mb-2\">Keine Bilder gefunden</h3><p class=\"text-gray-500\">Dieses Album enthält derzeit keine Bilder.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><style>\n        .masonry-container { column-count: 5; column-gap: 15px; width: 100%; }\n        .masonry-item { break-inside: avoid; margin-bottom: 15px; display: block; }\n        .img-container { position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .gallery-img { width: 100%; display: block; transition: transform 0.3s ease; }\n        .img-container:hover .gallery-img { transform: scale(1.03); }\n        .overlay { position: absolute; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,0); transition: background 0.3s ease; display:flex; flex-direction:column; justify-content:space-between; padding:12px; pointer-events:none; }\n        .img-container:hover .overlay { background: rgba(0,0,0,0.3); }\n        .image-title-overlay { color:white; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,0.8); opacity:0; transition:opacity 0.3s ease; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:5px; border-radius:4px; background:rgba(0,0,0,0.3); }\n        .img-container:hover .image-title-overlay { opacity:1; }\n        .overlay-content { display:flex; justify-content:center; opacity:0; transition:opacity 0.3s ease; }\n        .img-container:hover .overlay-content { opacity:1; }\n        .view-btn { background:white; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:#333; border:none; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2); pointer-events:auto; }\n        .view-btn:hover { background:#f0f0f0; }\n        @media (max-width: 1400px) { .masonry-container { column-count:4; } }\n        @media (max-width: 1100px) { .masonry-container { column-count:3; } }\n        @media (max-width: 768px) { .masonry-container { column-count:2; } }\n        @media (max-width: 500px) { .masonry-container { column-count:1; } }\n    </style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div><style>\n        .masonry-container { column-count: 5; column-gap: 15px; width: 100%; }\n        .masonry-item { break-inside: avoid; margin-bottom: 15px; display: block; }\n        .img-container { position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .gallery-img { width: 100%; display: block; transition: transform 0.3s ease; }\n        .img-container:hover .gallery-img { transform: scale(1.03); }\n        .overlay { position: absolute; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,0); transition: background 0.3s ease; display:flex; flex-direction:column; justify-content:space-between; padding:12px; pointer-events:none; }\n        .img-container:hover .overlay { background: rgba(0,0,0,0.3); }\n        .image-title-overlay { color:white; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,0.8); opacity:0; transition:opacity 0.3s ease; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:5px; border-radius:4px; background:rgba(0,0,0,0.3); }\n        .img-container:hover .image-title-overlay { opacity:1; }\n        .overlay-content { display:flex; justify-content:center; opacity:0; transition:opacity 0.3s ease; }\n        .img-container:hover .overlay-content { opacity:1; }\n        .view-btn { background:white; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:#333; border:none; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2); pointer-events:auto; }\n        .view-btn:hover { background:#f0f0f0; }\n        @media (max-width: 1400px) { .masonry-container { column-count:4; } }\n        @media (max-width: 1100px) { .masonry-container { column-count:3; } }\n        @media (max-width: 768px) { .masonry-container { column-count:2; } }\n        @media (max-width: 500px) { .masonry-container { column-count:1; } }\n    </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
