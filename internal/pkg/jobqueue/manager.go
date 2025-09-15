@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
+	metrics "github.com/ManuelReschke/PixelFox/internal/pkg/metrics/counter"
 	"github.com/gofiber/fiber/v2/log"
 )
 
@@ -13,6 +14,7 @@ type Manager struct {
 	queue               *Queue
 	retryTicker         *time.Ticker
 	delayedBackupTicker *time.Ticker
+	counterFlushTicker  *time.Ticker
 	stopCh              chan struct{}
 	wg                  sync.WaitGroup
 	mu                  sync.Mutex
@@ -79,6 +81,11 @@ func (m *Manager) Start() {
 	m.wg.Add(1)
 	go m.delayedBackupWorker()
 
+	// Start counter flush worker (Redis -> DB) every 5 seconds
+	m.counterFlushTicker = time.NewTicker(5 * time.Second)
+	m.wg.Add(1)
+	go m.counterFlushWorker()
+
 	log.Info("[JobQueue Manager] Started successfully")
 }
 
@@ -101,6 +108,10 @@ func (m *Manager) Stop() {
 	// Stop delayed backup ticker
 	if m.delayedBackupTicker != nil {
 		m.delayedBackupTicker.Stop()
+	}
+
+	if m.counterFlushTicker != nil {
+		m.counterFlushTicker.Stop()
 	}
 
 	// Signal workers to stop
@@ -160,6 +171,27 @@ func (m *Manager) delayedBackupWorker() {
 			}
 		}
 	}
+}
+
+// counterFlushWorker periodically flushes in-memory counters from Redis to DB
+func (m *Manager) counterFlushWorker() {
+	defer m.wg.Done()
+	for {
+		select {
+		case <-m.stopCh:
+			log.Info("[JobQueue Manager] Counter flush worker stopping")
+			return
+		case <-m.counterFlushTicker.C:
+			if err := m.flushCountersOnce(); err != nil {
+				log.Errorf("[JobQueue Manager] Counter flush error: %v", err)
+			}
+		}
+	}
+}
+
+func (m *Manager) flushCountersOnce() error {
+	// Flush Redis -> DB (batched CASE update)
+	return metrics.FlushAll()
 }
 
 // IsRunning returns whether the manager is currently running

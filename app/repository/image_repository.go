@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
+	metrics "github.com/ManuelReschke/PixelFox/internal/pkg/metrics/counter"
 	"gorm.io/gorm"
 )
 
@@ -151,14 +152,14 @@ func (r *imageRepository) GetRecentImages(limit int) ([]models.Image, error) {
 
 // UpdateViewCount increments the view count for an image
 func (r *imageRepository) UpdateViewCount(id uint) error {
-	return r.db.Model(&models.Image{}).Where("id = ?", id).
-		UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
+	// Use Redis counter to avoid DB hot row updates per request
+	return metrics.AddImageView(id)
 }
 
 // UpdateDownloadCount increments the download count for an image
 func (r *imageRepository) UpdateDownloadCount(id uint) error {
-	return r.db.Model(&models.Image{}).Where("id = ?", id).
-		UpdateColumn("download_count", gorm.Expr("download_count + ?", 1)).Error
+	// Use Redis counter to avoid DB hot row updates per request
+	return metrics.AddImageDownload(id)
 }
 
 // GetVariants retrieves all variants for a specific image

@@ -12,6 +12,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+	metrics "github.com/ManuelReschke/PixelFox/internal/pkg/metrics/counter"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
 )
@@ -182,6 +183,9 @@ func HandleUserAlbumEdit(c *fiber.Ctx) error {
 		flash.WithError(c, fiber.Map{"message": "Album nicht gefunden"})
 		return c.Redirect("/user/albums")
 	}
+
+	// Increment album view counter (buffered in Redis)
+	_ = metrics.AddAlbumView(album.ID)
 
 	if c.Method() == "POST" {
 		title := c.FormValue("title")
@@ -461,5 +465,7 @@ func HandleAlbumShareLink(c *fiber.Ctx) error {
 	pageTitle := fmt.Sprintf(" | %s", album.Title)
 	cmp := user_views.PublicAlbumIndex(album, galleryAlbumImages)
 	page := user_views.PublicAlbum(pageTitle, false, false, nil, "", cmp, false)
+	// Increment album view counter for public views as well
+	_ = metrics.AddAlbumView(album.ID)
 	return adaptor.HTTPHandler(templ.Handler(page))(c)
 }

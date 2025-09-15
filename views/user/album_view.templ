@@ -53,7 +53,15 @@ templ AlbumViewIndex(username string, csrfToken string, album models.Album, albu
 					if album.Description != "" {
 						<p class="text-gray-600">{ album.Description }</p>
 					}
-					<p class="text-sm text-gray-500">{ fmt.Sprintf("%d Bilder", len(albumImages)) }</p>
+                    <p class="text-sm text-gray-500 flex items-center gap-3">
+                        <span>{ fmt.Sprintf("%d Bilder", len(albumImages)) }</span>
+                        <span class="inline-flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                                <path d="M12 4.5c-7.5 0-10.5 7.5-10.5 7.5S4.5 19.5 12 19.5 22.5 12 22.5 12 19.5 4.5 12 4.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-7.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                            </svg>
+                            <span>{ fmt.Sprintf("%d Aufrufe", album.ViewCount) }</span>
+                        </span>
+                    </p>
 				</div>
 			</div>
                 <div class="flex gap-2">
