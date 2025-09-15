@@ -741,14 +741,16 @@ document.addEventListener('click', (e) => {
             html: `
                 <div class="relative flex justify-center items-center">
                     <button type="button" class="nav-btn prev-btn left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10">&#10094;</button>
-                    <img src="${images[currentIndex]}" alt="Bild" class="modal-image max-h-[80vh] w-auto mx-auto"/>
+                    <img src="${images[currentIndex]}" alt="Bild" class="modal-image object-contain max-h-[90vh] max-w-[90vw] w-auto h-auto mx-auto"/>
                     <button type="button" class="nav-btn next-btn right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black text-white rounded-full w-10 h-10 grid place-items-center cursor-pointer z-10">&#10095;</button>
                 </div>`,
             showConfirmButton: false,
             showCloseButton: true,
-            background: 'rgba(0,0,0,0.9)',
-            width: '90%',
-            padding: '1rem',
+            backdrop: 'rgba(0,0,0,0.9)',
+            background: 'transparent',
+            width: '100%',
+            padding: '0.5rem',
+            heightAuto: false,
             didOpen: (popup) => {
                 console.log('Image modal opened', { currentIndex, src: images[currentIndex] });
                 const imgEl = popup.querySelector('.modal-image');
@@ -778,6 +780,35 @@ document.addEventListener('click', (e) => {
                     updateImage();
                   });
                 }
+
+                // Keyboard navigation
+                const onKey = (ev) => {
+                  // Only react when the modal is visible
+                  if (!Swal.isVisible()) return;
+                  const code = ev.key || ev.code;
+                  const keyCode = ev.keyCode || ev.which;
+                  if (code === 'ArrowLeft' || code === 'Left' || keyCode === 37) {
+                    ev.preventDefault();
+                    currentIndex = (currentIndex - 1 + images.length) % images.length;
+                    updateImage();
+                  } else if (code === 'ArrowRight' || code === 'Right' || keyCode === 39) {
+                    ev.preventDefault();
+                    currentIndex = (currentIndex + 1) % images.length;
+                    updateImage();
+                  }
+                };
+                // Capture key events early to avoid being swallowed by other listeners
+                window.addEventListener('keydown', onKey, { capture: true });
+
+                // Clean up listener when modal closes
+                Swal.getPopup().addEventListener('swal:cleanup-listener', () => {
+                  window.removeEventListener('keydown', onKey, { capture: true });
+                }, { once: true });
+            }
+            ,willClose: () => {
+                // Dispatch a custom event to cleanup listeners
+                const popup = Swal.getPopup();
+                if (popup) popup.dispatchEvent(new Event('swal:cleanup-listener'));
             }
         });
     };
@@ -788,11 +819,13 @@ document.addEventListener('click', (e) => {
 // Kept for potential external usage (opens single image without arrows)
 function viewImage(src) {
     Swal.fire({
-        html: `<img src="${src}" alt="Bild" class="max-h-[80vh] w-auto mx-auto"/>`,
+        html: `<img src="${src}" alt="Bild" class="object-contain max-h-[90vh] max-w-[90vw] w-auto h-auto mx-auto"/>`,
         showConfirmButton: false,
         showCloseButton: true,
-        background: 'rgba(0,0,0,0.9)',
-        width: '90%',
-        padding: '1rem',
+        backdrop: 'rgba(0,0,0,0.9)',
+        background: 'transparent',
+        width: '100%',
+        padding: '0.5rem',
+        heightAuto: false,
     });
 }
