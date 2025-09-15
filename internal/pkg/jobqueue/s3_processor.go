@@ -218,6 +218,20 @@ func (q *Queue) processS3DeleteJob(ctx context.Context, job *Job) error {
 	log.Infof("[S3Delete] Successfully deleted image %s from s3://%s/%s",
 		payload.ImageUUID, payload.BucketName, payload.ObjectKey)
 
+	// If no completed backups remain for this image, hard-delete DB records to avoid bloat
+	var remaining int64
+	if err := db.Model(&models.ImageBackup{}).
+		Where("image_id = ? AND status = ?", payload.ImageID, models.BackupStatusCompleted).
+		Count(&remaining).Error; err == nil {
+		if remaining == 0 {
+			// Hard delete variants/metadata/image (idempotent if already removed)
+			_ = db.Unscoped().Where("image_id = ?", payload.ImageID).Delete(&models.ImageVariant{}).Error
+			_ = db.Unscoped().Where("image_id = ?", payload.ImageID).Delete(&models.ImageMetadata{}).Error
+			_ = db.Unscoped().Delete(&models.Image{}, payload.ImageID).Error
+			log.Infof("[S3Delete] Hard-deleted DB records for image %s (no backups remain)", payload.ImageUUID)
+		}
+	}
+
 	return nil
 }
 

@@ -16,6 +16,7 @@ const (
 	JobTypeS3Delete        JobType = "s3_delete"
 	JobTypePoolMoveEnqueue JobType = "pool_move_enqueue"
 	JobTypeMoveImage       JobType = "move_image"
+	JobTypeDeleteImage     JobType = "delete_image"
 )
 
 // JobStatus defines the status of a job
@@ -198,6 +199,38 @@ func MoveImageJobPayloadFromMap(data map[string]interface{}) (*MoveImageJobPaylo
 		return nil, err
 	}
 	var payload MoveImageJobPayload
+	err = json.Unmarshal(jsonData, &payload)
+	return &payload, err
+}
+
+// DeleteImageJobPayload contains payload for deleting an image and its variants/files asynchronously
+type DeleteImageJobPayload struct {
+	ImageID       uint   `json:"image_id"`
+	ImageUUID     string `json:"image_uuid"`
+	FromReportID  *uint  `json:"from_report_id,omitempty"`
+	InitiatedByID *uint  `json:"initiated_by_id,omitempty"`
+}
+
+func (p DeleteImageJobPayload) ToMap() map[string]interface{} {
+	m := map[string]interface{}{
+		"image_id":   p.ImageID,
+		"image_uuid": p.ImageUUID,
+	}
+	if p.FromReportID != nil {
+		m["from_report_id"] = *p.FromReportID
+	}
+	if p.InitiatedByID != nil {
+		m["initiated_by_id"] = *p.InitiatedByID
+	}
+	return m
+}
+
+func DeleteImageJobPayloadFromMap(data map[string]interface{}) (*DeleteImageJobPayload, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var payload DeleteImageJobPayload
 	err = json.Unmarshal(jsonData, &payload)
 	return &payload, err
 }

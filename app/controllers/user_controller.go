@@ -13,6 +13,7 @@ import (
 	"github.com/sujit-baniya/flash"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
@@ -310,18 +311,22 @@ func HandleUserImageDelete(c *fiber.Ctx) error {
 		return c.Redirect("/user/images")
 	}
 
-	// Enqueue S3 delete jobs for completed backups before deleting the image
-	go func() {
-		enqueueUserS3DeleteJobsIfEnabled(image)
-	}()
-
-	// Use the new function to delete image and all variants (files and database records)
-	if err := imageprocessor.DeleteImageAndVariants(image); err != nil {
-		flash.WithError(c, fiber.Map{"type": "error", "message": "Fehler beim Löschen des Bildes"})
+	// Enqueue async DeleteImage job
+	queue := jobqueue.GetManager().GetQueue()
+	initiated := userID
+	if _, err := queue.EnqueueDeleteImageJob(image.ID, image.UUID, nil, &initiated); err != nil {
+		flash.WithError(c, fiber.Map{"type": "error", "message": "Löschauftrag konnte nicht erstellt werden"})
 		return c.Redirect("/user/images")
 	}
 
-	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Bild und alle Varianten gelöscht"})
+	// Immediate soft-delete via repository to hide image from UI
+	imgRepo := repository.GetGlobalFactory().GetImageRepository()
+	if err := imgRepo.Delete(image.ID); err != nil {
+		flash.WithError(c, fiber.Map{"type": "error", "message": "Fehler beim Entfernen in der Datenbank"})
+		return c.Redirect("/user/images")
+	}
+
+	flash.WithSuccess(c, fiber.Map{"type": "success", "message": "Löschung eingeplant"})
 	return c.Redirect("/user/images")
 }
 

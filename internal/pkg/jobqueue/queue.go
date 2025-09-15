@@ -283,6 +283,8 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 		err = q.processPoolMoveEnqueueJob(job)
 	case JobTypeMoveImage:
 		err = q.processMoveImageJob(job)
+	case JobTypeDeleteImage:
+		err = q.processDeleteImageJob(ctx, job)
 	default:
 		err = fmt.Errorf("unknown job type: %s", job.Type)
 	}

@@ -208,7 +208,32 @@ func (aic *AdminImagesController) HandleAdminImageDelete(c *fiber.Ctx) error {
 		return flash.WithError(c, fm).Redirect("/admin/images")
 	}
 
-	// Delete image using repository (this should handle file cleanup and variants)
+	// Enqueue async delete job (files, backups, deep cleanup)
+	queue := jobqueue.GetManager().GetQueue()
+	var ridPtr *uint
+	if reportIDStr := c.Query("resolved_report_id", ""); reportIDStr != "" {
+		if rid64, err := strconv.ParseUint(reportIDStr, 10, 64); err == nil {
+			r := uint(rid64)
+			ridPtr = &r
+		}
+	}
+	uctx := usercontext.GetUserContext(c)
+	var initiatedBy *uint
+	if uctx.UserID > 0 {
+		uid := uctx.UserID
+		initiatedBy = &uid
+	}
+	if _, err := queue.EnqueueDeleteImageJob(image.ID, image.UUID, ridPtr, initiatedBy); err != nil {
+		// If enqueue fails, fall back to immediate soft delete path
+		// proceed but log via flash
+		fm := fiber.Map{
+			"type":    "error",
+			"message": "Konnte Löschauftrag nicht einreihen, versuche direkt zu löschen",
+		}
+		flash.WithError(c, fm)
+	}
+
+	// Immediate soft-delete in DB to hide image from UI
 	if err := aic.imageRepo.Delete(image.ID); err != nil {
 		fm := fiber.Map{
 			"type":    "error",

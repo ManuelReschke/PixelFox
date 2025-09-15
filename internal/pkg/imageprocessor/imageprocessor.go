@@ -1288,6 +1288,17 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 
 	log.Infof("[ImageProcessor] Starting deletion of image %s and all variants", imageModel.UUID)
 
+	// Ensure storage pool is loaded to resolve absolute filesystem paths
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool == nil {
+		var pool models.StoragePool
+		if err := db.First(&pool, imageModel.StoragePoolID).Error; err == nil {
+			imageModel.StoragePool = &pool
+			log.Debugf("[ImageProcessor] Loaded storage pool for deletion: ID=%d BasePath=%s", pool.ID, pool.BasePath)
+		} else {
+			log.Debugf("[ImageProcessor] Could not preload storage pool (ID=%d): %v", imageModel.StoragePoolID, err)
+		}
+	}
+
 	// Get all variants for this image
 	variants, err := models.FindVariantsByImageID(db, imageModel.ID)
 	if err != nil {
@@ -1308,7 +1319,12 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 	}
 
 	// Delete original file if it exists and is different from variants
-	originalPath := filepath.Join(imageModel.FilePath, imageModel.FileName)
+	var originalPath string
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+		originalPath = filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath, imageModel.FileName)
+	} else {
+		originalPath = filepath.Join(imageModel.FilePath, imageModel.FileName)
+	}
 	if err := os.Remove(originalPath); err != nil {
 		if !os.IsNotExist(err) {
 			log.Errorf("[ImageProcessor] Failed to delete original file %s: %v", originalPath, err)
@@ -1319,9 +1335,18 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 
 	// Clean up empty directories
 	// Try to remove the variants directory for this image
-	relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
-	relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-	variantsDir := filepath.Join(VariantsDir, relativePath)
+	var variantsDir string
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+		// storage pool layout: <base>/variants/<yyyy>/<mm>/<dd>
+		relativePath := strings.TrimPrefix(imageModel.FilePath, "original/")
+		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+		variantsDir = filepath.Join(imageModel.StoragePool.BasePath, "variants", relativePath)
+	} else {
+		// legacy layout: uploads/variants/<yyyy>/<mm>/<dd>
+		relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
+		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
+		variantsDir = filepath.Join(VariantsDir, relativePath)
+	}
 	if err := os.Remove(variantsDir); err != nil {
 		if !os.IsNotExist(err) {
 			log.Debugf("[ImageProcessor] Could not remove variants directory %s (may not be empty): %v", variantsDir, err)
@@ -1329,7 +1354,12 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 	}
 
 	// Remove original directory if empty
-	originalDir := imageModel.FilePath
+	var originalDir string
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
+		originalDir = filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath)
+	} else {
+		originalDir = imageModel.FilePath
+	}
 	if err := os.Remove(originalDir); err != nil {
 		if !os.IsNotExist(err) {
 			log.Debugf("[ImageProcessor] Could not remove original directory %s (may not be empty): %v", originalDir, err)
