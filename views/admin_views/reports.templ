@@ -1,0 +1,205 @@
+package admin_views
+
+import (
+    "fmt"
+    "github.com/ManuelReschke/PixelFox/app/models"
+)
+
+// Small helper to render a status badge with icon
+templ statusBadge(status string) {
+    if status == models.ReportStatusOpen {
+        <span class="badge badge-warning gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 3h.01M12 3a9 9 0 100 18 9 9 0 000-18z" />
+            </svg>
+            Offen
+        </span>
+    } else if status == models.ReportStatusResolved {
+        <span class="badge badge-success gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Erledigt
+        </span>
+    } else {
+        <span class="badge badge-neutral gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+            </svg>
+            Verworfen
+        </span>
+    }
+}
+
+templ reportsList(openReports []models.ImageReport, recentClosed []models.ImageReport) {
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold">Meldungen</h1>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6">
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Offene Meldungen</h2>
+                if len(openReports) == 0 {
+                    <div class="text-sm opacity-70">Derzeit keine offenen Meldungen.</div>
+                } else {
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Bild</th>
+                                    <th>Grund</th>
+                                    <th>Gemeldet von</th>
+                                    <th>Erstellt</th>
+                                    <th>Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                for _, r := range openReports {
+                                    <tr>
+                                        <td>{ fmt.Sprintf("%d", r.ID) }</td>
+                                        <td>
+                                            if r.Image != nil {
+                                                <a class="link link-primary" href={ "/image/" + r.Image.UUID } target="_blank">{ r.Image.FileName }</a>
+                                            } else {
+                                                <span>-</span>
+                                            }
+                                        </td>
+                                        <td>{ r.Reason }</td>
+                                        <td>
+                                            if r.Reporter != nil {
+                                                { r.Reporter.Name }
+                                            } else {
+                                                <span class="opacity-70">(Gast)</span>
+                                            }
+                                        </td>
+                                        <td>{ r.CreatedAt.Format("02.01.2006 15:04") }</td>
+                                        <td>
+                                            <a class="btn btn-sm" href={ fmt.Sprintf("/admin/reports/%d", r.ID) }>Öffnen</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Zuletzt bearbeitet</h2>
+                if len(recentClosed) == 0 {
+                    <div class="text-sm opacity-70">Keine Einträge.</div>
+                } else {
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Bild</th>
+                                    <th>Status</th>
+                                    <th>Bearbeitet</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                for _, r := range recentClosed {
+                                    <tr>
+                                        <td>{ fmt.Sprintf("%d", r.ID) }</td>
+                                        <td>
+                                            if r.Image != nil {
+                                                <a class="link link-primary" href={ "/image/" + r.Image.UUID } target="_blank">{ r.Image.FileName }</a>
+                                            } else {
+                                                <span>-</span>
+                                            }
+                                        </td>
+                                        <td>@statusBadge(r.Status)</td>
+                                        <td>{ r.UpdatedAt.Format("02.01.2006 15:04") }</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+templ AdminReportsPage(openReports []models.ImageReport, recentClosed []models.ImageReport) {
+    @AdminLayout(reportsList(openReports, recentClosed))
+}
+
+templ reportShowContent(report *models.ImageReport, csrfToken string) {
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold">Meldung #{ fmt.Sprintf("%d", report.ID) }</h1>
+        <div class="flex gap-2">
+            if report.Status == models.ReportStatusOpen {
+                <form method="post" action={ fmt.Sprintf("/admin/reports/%d/resolve", report.ID) }>
+                    <input type="hidden" name="_csrf" value={ csrfToken } />
+                    <button class="btn btn-sm btn-success">Als gelöst markieren</button>
+                </form>
+                <form method="post" action={ fmt.Sprintf("/admin/reports/%d/dismiss", report.ID) }>
+                    <input type="hidden" name="_csrf" value={ csrfToken } />
+                    <button class="btn btn-sm btn-ghost">Verwerfen</button>
+                </form>
+            }
+        </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Details</h2>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="opacity-70">Status:</span> @statusBadge(report.Status)
+                    </div>
+                    <div><span class="opacity-70">Grund:</span> <span class="font-medium">{ report.Reason }</span></div>
+                    <div><span class="opacity-70">Erstellt:</span> { report.CreatedAt.Format("02.01.2006 15:04") }</div>
+                    if report.ResolvedAt != nil {
+                        <div><span class="opacity-70">Bearbeitet:</span> { report.ResolvedAt.Format("02.01.2006 15:04") }</div>
+                    }
+                    if report.Reporter != nil {
+                        <div><span class="opacity-70">Gemeldet von:</span> { report.Reporter.Name }</div>
+                    } else {
+                        <div><span class="opacity-70">Gemeldet von:</span> Gast</div>
+                    }
+                </div>
+                if report.Details != "" {
+                    <div class="mt-3">
+                        <div class="opacity-70 text-sm mb-1">Beschreibung:</div>
+                        <div class="whitespace-pre-wrap">{ report.Details }</div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+            <div class="card-body">
+                <h2 class="card-title">Bild</h2>
+                if report.Image != nil {
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-semibold">{ report.Image.FileName }</div>
+                            <div class="text-sm opacity-70">UUID: { report.Image.UUID }</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <a class="btn btn-sm" href={ "/image/" + report.Image.UUID } target="_blank">Öffnen</a>
+                            <a class="btn btn-sm btn-outline" href={ "/i/" + report.Image.ShareLink } target="_blank">Share</a>
+                            <a class="btn btn-sm btn-error" href={ templ.SafeURL(fmt.Sprintf("/admin/images/delete/%s?resolved_report_id=%d", report.Image.UUID, report.ID)) }
+                               onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
+                                Bild löschen
+                            </a>
+                        </div>
+                    </div>
+                } else {
+                    <div class="opacity-70 text-sm">Bild nicht gefunden.</div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+templ AdminReportShow(report *models.ImageReport, csrfToken string) {
+    @AdminLayout(reportShowContent(report, csrfToken))
+}

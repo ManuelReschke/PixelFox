@@ -1,0 +1,88 @@
+package report
+
+import (
+    "github.com/ManuelReschke/PixelFox/views"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+)
+
+templ ReportForm(fromProtected bool, csrfToken string, imageUUID string, imageTitle string, shareURL string, hcaptchaSitekey string) {
+    <section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
+        <div class="card-body pb-2 w-[28rem]">
+            <h1 class="card-title border-b border-b-slate-600 pb-[4px]">
+                Bild melden
+            </h1>
+            <div class="text-sm opacity-80 mb-2">
+                Du meldest: <span class="font-semibold">{ imageTitle }</span><br/>
+                <a href={ shareURL } class="link link-primary" target="_blank">{ shareURL }</a>
+            </div>
+            <form class="rounded-xl drop-shadow-xl flex flex-col gap-4" action={ "/image/" + imageUUID + "/report" } method="post">
+                <input type="hidden" name="_csrf" value={csrfToken}>
+                <label class="flex flex-col justify-start gap-2">
+                    Grund:
+                    <select name="reason" class="select select-bordered" required>
+                        <option value="">Bitte auswählen</option>
+                        <option value="illegal">Illegale Inhalte</option>
+                        <option value="copyright">Urheberrechtsverletzung</option>
+                        <option value="nsfw">Sexuelle/NSFW Inhalte</option>
+                        <option value="hate">Hassrede/Gewalt</option>
+                        <option value="spam">Spam/Scam</option>
+                        <option value="other">Sonstiges</option>
+                    </select>
+                </label>
+                <label class="flex flex-col justify-start gap-2">
+                    Details (optional, bei Sonstiges bitte kurz begründen):
+                    <textarea name="details" class="textarea textarea-bordered" rows="4" placeholder="Kurze Beschreibung"></textarea>
+                </label>
+                if !fromProtected && hcaptchaSitekey != "" {
+                <div class="mt-2 flex justify-center">
+                    <div id="hcaptcha-container" class="h-captcha" data-sitekey={hcaptchaSitekey} data-theme="light"></div>
+                </div>
+                }
+                <footer class="card-actions justify-end">
+                    <a href={ "/image/" + imageUUID } class="btn btn-ghost">Abbrechen</a>
+                    <button class="btn btn-primary">
+                        Meldung senden
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </section>
+    if !fromProtected && hcaptchaSitekey != "" {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function loadHCaptcha() {
+                if (window.hcaptcha) {
+                    try { window.hcaptcha.reset('hcaptcha-container'); } catch (e) {}
+                    window.hcaptcha.render('hcaptcha-container', {
+                        sitekey: document.getElementById('hcaptcha-container').getAttribute('data-sitekey'),
+                        theme: 'light'
+                    });
+                }
+            }
+            if (!window.hcaptcha) {
+                var script = document.createElement('script');
+                script.src = 'https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoad';
+                script.async = true; script.defer = true; document.head.appendChild(script);
+                window.onHCaptchaLoad = loadHCaptcha;
+            } else { loadHCaptcha(); }
+            document.body.addEventListener('htmx:afterSwap', function(){
+                if (document.getElementById('hcaptcha-container')) { loadHCaptcha(); }
+            });
+        });
+    </script>
+    }
+}
+
+templ ReportIndex(fromProtected bool, csrfToken string, imageUUID string, imageTitle string, shareURL string, hcaptchaSitekey string) {
+    @views.Layout(viewmodel.Layout{
+        Page: " | Bild melden",
+        FromProtected: fromProtected,
+        IsError: false,
+        Msg: nil,
+        Username: "",
+        IsAdmin: false,
+        OGViewModel: nil,
+    }) {
+        @ReportForm(fromProtected, csrfToken, imageUUID, imageTitle, shareURL, hcaptchaSitekey)
+    }
+}
