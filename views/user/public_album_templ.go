@@ -189,20 +189,20 @@ func PublicAlbumIndex(album models.Album, albumImages []GalleryImage) templ.Comp
 				return templ_7745c5c3_Err
 			}
 			for _, image := range albumImages {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"masonry-item\"><div class=\"img-container relative\"><a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"masonry-item\"><div class=\"img-container relative\"><a href=\"#\" class=\"block image-view-btn\" data-image-src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var9 templ.SafeURL
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)))
+				var templ_7745c5c3_Var9 string
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(image.OriginalPath)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 64, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/public_album.templ`, Line: 64, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" class=\"block\"><img src=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\"><img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -269,7 +269,7 @@ func PublicAlbumIndex(album models.Album, albumImages []GalleryImage) templ.Comp
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><style>\n        .masonry-container { column-count: 5; column-gap: 15px; width: 100%; }\n        .masonry-item { break-inside: avoid; margin-bottom: 15px; display: block; }\n        .img-container { position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .gallery-img { width: 100%; display: block; transition: transform 0.3s ease; }\n        .img-container:hover .gallery-img { transform: scale(1.03); }\n        .overlay { position: absolute; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,0); transition: background 0.3s ease; display:flex; flex-direction:column; justify-content:space-between; padding:12px; }\n        .img-container:hover .overlay { background: rgba(0,0,0,0.3); }\n        .image-title-overlay { color:white; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,0.8); opacity:0; transition:opacity 0.3s ease; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:5px; border-radius:4px; background:rgba(0,0,0,0.3); }\n        .img-container:hover .image-title-overlay { opacity:1; }\n        .overlay-content { display:flex; justify-content:center; opacity:0; transition:opacity 0.3s ease; }\n        .img-container:hover .overlay-content { opacity:1; }\n        .view-btn { background:white; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:#333; border:none; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2); }\n        .view-btn:hover { background:#f0f0f0; }\n        @media (max-width: 1400px) { .masonry-container { column-count:4; } }\n        @media (max-width: 1100px) { .masonry-container { column-count:3; } }\n        @media (max-width: 768px) { .masonry-container { column-count:2; } }\n        @media (max-width: 500px) { .masonry-container { column-count:1; } }\n    </style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><style>\n        .masonry-container { column-count: 5; column-gap: 15px; width: 100%; }\n        .masonry-item { break-inside: avoid; margin-bottom: 15px; display: block; }\n        .img-container { position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .gallery-img { width: 100%; display: block; transition: transform 0.3s ease; }\n        .img-container:hover .gallery-img { transform: scale(1.03); }\n        .overlay { position: absolute; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,0); transition: background 0.3s ease; display:flex; flex-direction:column; justify-content:space-between; padding:12px; pointer-events:none; }\n        .img-container:hover .overlay { background: rgba(0,0,0,0.3); }\n        .image-title-overlay { color:white; font-weight:500; text-shadow:0 1px 2px rgba(0,0,0,0.8); opacity:0; transition:opacity 0.3s ease; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:5px; border-radius:4px; background:rgba(0,0,0,0.3); }\n        .img-container:hover .image-title-overlay { opacity:1; }\n        .overlay-content { display:flex; justify-content:center; opacity:0; transition:opacity 0.3s ease; }\n        .img-container:hover .overlay-content { opacity:1; }\n        .view-btn { background:white; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:#333; border:none; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2); pointer-events:auto; }\n        .view-btn:hover { background:#f0f0f0; }\n        @media (max-width: 1400px) { .masonry-container { column-count:4; } }\n        @media (max-width: 1100px) { .masonry-container { column-count:3; } }\n        @media (max-width: 768px) { .masonry-container { column-count:2; } }\n        @media (max-width: 500px) { .masonry-container { column-count:1; } }\n    </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
