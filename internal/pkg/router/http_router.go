@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/ManuelReschke/PixelFox/app/controllers"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/middleware"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/oauth"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
+	gothfiber "github.com/shareed2k/goth_fiber"
 )
 
 type HttpRouter struct {
@@ -18,6 +20,9 @@ type HttpRouter struct {
 func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// init session
 	session.NewSessionStore()
+
+	// init oauth providers
+	oauth.Setup()
 
 	// Apply UserContext middleware globally as first middleware
 	app.Use(middleware.UserContextMiddleware)
@@ -88,6 +93,10 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 
 	// auth
 	app.Post("/logout", requireAuthMiddleware, controllers.HandleAuthLogout)
+
+	// social oauth routes (public)
+	app.Get("/auth/:provider", gothfiber.BeginAuthHandler)
+	app.Get("/auth/:provider/callback", controllers.HandleOAuthCallback)
 
 	// Admin routes
 	adminGroup := app.Group("/admin", RequireAdminMiddleware)

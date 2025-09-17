@@ -4,10 +4,10 @@ CMD_DIR := $(PROJECT_ROOT)/cmd/pixelfox
 
 # Umgebungsvariablen
 ENV_FILE=$(PROJECT_ROOT)/.env
+ENV_LOCAL_FILE=$(PROJECT_ROOT)/.env.local
 ENV_DEV_FILE=$(PROJECT_ROOT)/.env.dev
 ENV_PROD_FILE=$(PROJECT_ROOT)/.env.prod
 
-# Aufgabe: Kopiere .env.dev nach .env (Testumgebung)
 .PHONY: build
 build:
 	@echo "🚧 Build..."
@@ -32,6 +32,11 @@ generate-api:
 	cd $(PROJECT_ROOT) && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen -config oapi-codegen.yaml public/docs/v1/openapi.yml
 	@echo "✅ API Code wurde erfolgreich generiert!"
 
+.PHONY: prepare-env-local
+prepare-env-local:
+	@echo "🔧 Kopiere $(ENV_LOCAL_FILE) nach $(ENV_FILE) (Testumgebung)"
+	cp $(ENV_LOCAL_FILE) $(ENV_FILE)
+
 .PHONY: prepare-env-dev
 prepare-env-dev:
 	@echo "🔧 Kopiere $(ENV_DEV_FILE) nach $(ENV_FILE) (Testumgebung)"
@@ -45,19 +50,20 @@ prepare-env-prod:
 
 # Docker Compose Build und Start für Testumgebung
 .PHONY: start
-start: prepare-env-dev
+start: prepare-env-local
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
 	mkdir -p tmp
 	cd $(PROJECT_ROOT) && docker-compose up -d
 
 .PHONY: start-build
-start-build: prepare-env-dev
+start-build: prepare-env-local
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
 	cd $(PROJECT_ROOT) && docker-compose up -d --build
 
+
 # Docker Compose Build und Start für Produktionsumgebung
-.PHONY: start-prod
-start-prod: prepare-env-prod
+.PHONY: prod-start
+prod-start: prepare-env-prod
 	@echo "🚀 Starte Docker Compose (Produktionsumgebung)..."
 	cd $(PROJECT_ROOT) && docker-compose up -d
 

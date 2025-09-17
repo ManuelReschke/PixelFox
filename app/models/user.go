@@ -19,25 +19,26 @@ const (
 )
 
 type User struct {
-	ID                uint           `gorm:"primaryKey" json:"id"`
-	Name              string         `gorm:"type:varchar(150)" json:"name" validate:"required,min=3,max=150"`
-	Email             string         `gorm:"uniqueIndex;type:varchar(200) CHARACTER SET utf8 COLLATE utf8_bin" json:"email" validate:"required,email,min=5,max=200"`
-	Password          string         `gorm:"type:text" json:"-" validate:"required,min=6"`
-	Role              string         `gorm:"type:varchar(50);default:'user'" json:"role" validate:"oneof=user admin"`
-	Status            string         `gorm:"type:varchar(50);default:'active'" json:"status" validate:"oneof=active inactive disabled"`
-	Bio               string         `gorm:"type:text;default:null" json:"bio" validate:"max=1000"`
-	AvatarURL         string         `gorm:"type:varchar(255);default:null" json:"avatar_url" validate:"max=255"`
-	IPv4              string         `gorm:"type:varchar(15);default:null" json:"-"`
-	IPv6              string         `gorm:"type:varchar(45);default:null" json:"-"`
-	ActivationToken   string         `gorm:"type:varchar(100);index" json:"-"`
-	ActivationSentAt  *time.Time     `gorm:"type:timestamp;default:null" json:"-"`
-	PendingEmail      string         `gorm:"type:varchar(200);default:null" json:"-"`       // New email waiting for verification
-	EmailChangeToken  string         `gorm:"type:varchar(100);default:null;index" json:"-"` // Token for email change verification
-	EmailChangeSentAt *time.Time     `gorm:"type:timestamp;default:null" json:"-"`          // When email change token was sent
-	LastLoginAt       *time.Time     `gorm:"type:timestamp;default:null" json:"last_login_at"`
-	CreatedAt         time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt         time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
-	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                uint              `gorm:"primaryKey" json:"id"`
+	Name              string            `gorm:"type:varchar(150)" json:"name" validate:"required,min=3,max=150"`
+	Email             string            `gorm:"uniqueIndex;type:varchar(200) CHARACTER SET utf8 COLLATE utf8_bin" json:"email" validate:"required,email,min=5,max=200"`
+	Password          string            `gorm:"type:text" json:"-" validate:"required,min=6"`
+	Role              string            `gorm:"type:varchar(50);default:'user'" json:"role" validate:"oneof=user admin"`
+	Status            string            `gorm:"type:varchar(50);default:'active'" json:"status" validate:"oneof=active inactive disabled"`
+	Bio               string            `gorm:"type:text;default:null" json:"bio" validate:"max=1000"`
+	AvatarURL         string            `gorm:"type:varchar(255);default:null" json:"avatar_url" validate:"max=255"`
+	IPv4              string            `gorm:"type:varchar(15);default:null" json:"-"`
+	IPv6              string            `gorm:"type:varchar(45);default:null" json:"-"`
+	ActivationToken   string            `gorm:"type:varchar(100);index" json:"-"`
+	ActivationSentAt  *time.Time        `gorm:"type:timestamp;default:null" json:"-"`
+	PendingEmail      string            `gorm:"type:varchar(200);default:null" json:"-"`       // New email waiting for verification
+	EmailChangeToken  string            `gorm:"type:varchar(100);default:null;index" json:"-"` // Token for email change verification
+	EmailChangeSentAt *time.Time        `gorm:"type:timestamp;default:null" json:"-"`          // When email change token was sent
+	LastLoginAt       *time.Time        `gorm:"type:timestamp;default:null" json:"last_login_at"`
+	CreatedAt         time.Time         `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt         time.Time         `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt         gorm.DeletedAt    `gorm:"index" json:"-"`
+	Accounts          []ProviderAccount `gorm:"foreignKey:UserID" json:"accounts,omitempty"`
 }
 
 func (u *User) Validate() error {

@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/ManuelReschke/PixelFox/app/controllers"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
@@ -10,6 +12,12 @@ import (
 // UserContextMiddleware sets up the complete user context for every request
 // This centralizes user session handling and eliminates code duplication
 func UserContextMiddleware(c *fiber.Ctx) error {
+	// Avoid interfering with Goth/Fiber session handling on OAuth routes.
+	// Goth uses its own fiber session store and relies on per-request locals.
+	// We skip our app session on /auth/* to prevent cross-store collisions.
+	if strings.HasPrefix(c.Path(), "/auth/") {
+		return c.Next()
+	}
 	// Get session with error handling
 	sess, err := session.GetSessionStore().Get(c)
 	if err != nil {
