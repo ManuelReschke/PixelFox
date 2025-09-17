@@ -452,21 +452,28 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		// Get current admin settings for thumbnail formats
 		settings := models.GetAppSettings()
 
-		// Optimized WebP
-		if err := saveWebP(imgDecoded, optimizedWebPPath); err != nil {
-			log.Errorf("[ImageProcessor] Failed to create optimized WebP for %s: %v", imageModel.UUID, err)
+		// Optimized WebP (controlled by settings)
+		if settings.IsThumbnailWebPEnabled() {
+			if err := saveWebP(imgDecoded, optimizedWebPPath); err != nil {
+				log.Errorf("[ImageProcessor] Failed to create optimized WebP for %s: %v", imageModel.UUID, err)
+			} else {
+				hasWebp = true
+				log.Debugf("[ImageProcessor] Saved optimized WebP for %s", imageModel.UUID)
+			}
 		} else {
-			hasWebp = true
-			log.Debugf("[ImageProcessor] Saved optimized WebP for %s", imageModel.UUID)
+			log.Debugf("[ImageProcessor] Skipping optimized WebP for %s: WebP disabled in settings", imageModel.UUID)
 		}
-		// Optimized AVIF
-		if IsFFmpegAvailable {
+
+		// Optimized AVIF (controlled by settings + ffmpeg availability)
+		if settings.IsThumbnailAVIFEnabled() && IsFFmpegAvailable {
 			if err := convertToAVIF(imgDecoded, optimizedAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to convert to optimized AVIF for %s: %v", imageModel.UUID, err)
 			} else {
 				hasAvif = true
 				log.Debugf("[ImageProcessor] Saved optimized AVIF for %s", imageModel.UUID)
 			}
+		} else if !settings.IsThumbnailAVIFEnabled() {
+			log.Debugf("[ImageProcessor] Skipping optimized AVIF for %s: AVIF disabled in settings", imageModel.UUID)
 		} else {
 			log.Warnf("[ImageProcessor] Skipping optimized AVIF conversion for %s: ffmpeg not found.", imageModel.UUID)
 		}
