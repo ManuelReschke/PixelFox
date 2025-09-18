@@ -96,53 +96,15 @@ func HandleUserImages(c *fiber.Ctx) error {
 	// Bereite die Bilderpfade für die Galerie vor
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
-		previewPath := ""
-		// Get variant info for this image
-		variantInfo, err := imageprocessor.GetImageVariantInfo(img.ID)
-		if err != nil {
-			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
-		}
-
-		// Try medium thumbnails first
-		if variantInfo.HasThumbnailMedium {
-			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImageURL(&img, "avif", "medium"); avifPath != "" {
-				previewPath = avifPath
-			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "medium"); webpPath != "" {
-				previewPath = webpPath
-			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "medium"); originalPath != "" {
-				previewPath = originalPath
-			}
-		}
-
-		// Fallback to small thumbnails if medium not available
-		if previewPath == "" && variantInfo.HasThumbnailSmall {
-			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImageURL(&img, "avif", "small"); avifPath != "" {
-				previewPath = avifPath
-			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "small"); webpPath != "" {
-				previewPath = webpPath
-			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "small"); originalPath != "" {
-				previewPath = originalPath
-			}
-		}
-
-		// Final fallback to original image
-		if previewPath == "" {
-			previewPath = imageprocessor.GetImageURL(&img, "original", "")
-		}
+		// Use centralized helper for a cross-node absolute preview URL
+		previewPath := imageprocessor.GetBestPreviewURL(&img)
 
 		title := img.FileName
 		if img.Title != "" {
 			title = img.Title
 		}
-
-		// Convert paths to absolute using storage base URL
-		base := imageprocessor.GetPublicBaseURLForImage(&img)
-		if previewPath != "" {
-			previewPath = imageprocessor.MakeAbsoluteURL(base, previewPath)
-		}
-		originalPath := imageprocessor.MakeAbsoluteURL(base, imageprocessor.GetImageURL(&img, "original", ""))
+		// Absolute original URL
+		originalPath := imageprocessor.GetImageAbsoluteURL(&img, "original", "")
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,
@@ -189,54 +151,14 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 
 	var galleryImages []user_views.GalleryImage
 	for _, img := range images {
-		previewPath := ""
-		// Get variant info for this image
-		variantInfo, err := imageprocessor.GetImageVariantInfo(img.ID)
-		if err != nil {
-			variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
-		}
-
-		// Try medium thumbnails first
-		if variantInfo.HasThumbnailMedium {
-			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImageURL(&img, "avif", "medium"); avifPath != "" {
-				previewPath = avifPath
-			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "medium"); webpPath != "" {
-				previewPath = webpPath
-			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "medium"); originalPath != "" {
-				previewPath = originalPath
-			}
-		}
-
-		// Fallback to small thumbnails if medium not available
-		if previewPath == "" && variantInfo.HasThumbnailSmall {
-			// Priority: AVIF -> WebP -> Original format
-			if avifPath := imageprocessor.GetImageURL(&img, "avif", "small"); avifPath != "" {
-				previewPath = avifPath
-			} else if webpPath := imageprocessor.GetImageURL(&img, "webp", "small"); webpPath != "" {
-				previewPath = webpPath
-			} else if originalPath := imageprocessor.GetImageURL(&img, "original", "small"); originalPath != "" {
-				previewPath = originalPath
-			}
-		}
-
-		// Final fallback to original image
-		if previewPath == "" {
-			previewPath = imageprocessor.GetImageURL(&img, "original", "")
-		}
-
-		// Convert to absolute URLs based on storage base URL
-		base := imageprocessor.GetPublicBaseURLForImage(&img)
-		if previewPath != "" {
-			previewPath = imageprocessor.MakeAbsoluteURL(base, previewPath)
-		}
+		previewPath := imageprocessor.GetBestPreviewURL(&img)
 
 		title := img.FileName
 		if img.Title != "" {
 			title = img.Title
 		}
 
-		originalPath := imageprocessor.MakeAbsoluteURL(base, imageprocessor.GetImageURL(&img, "original", ""))
+		originalPath := imageprocessor.GetImageAbsoluteURL(&img, "original", "")
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,

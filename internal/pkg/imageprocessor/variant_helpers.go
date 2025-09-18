@@ -234,3 +234,37 @@ func GetImageAbsoluteURL(imageModel *models.Image, format string, size string) s
 	rel := GetImageURL(imageModel, format, size)
 	return MakeAbsoluteForImage(imageModel, rel)
 }
+
+// GetBestPreviewURL returns an absolute URL for a suitable preview image.
+// Preference order: medium (AVIF -> WebP -> Original), then small (AVIF -> WebP -> Original),
+// and finally falls back to the original image URL.
+func GetBestPreviewURL(imageModel *models.Image) string {
+	if imageModel == nil || imageModel.UUID == "" {
+		return ""
+	}
+
+	// Try medium thumbnails first
+	if p := GetImageURL(imageModel, "avif", "medium"); p != "" {
+		return MakeAbsoluteForImage(imageModel, p)
+	}
+	if p := GetImageURL(imageModel, "webp", "medium"); p != "" {
+		return MakeAbsoluteForImage(imageModel, p)
+	}
+	if p := GetImageURL(imageModel, "original", "medium"); p != "" {
+		return MakeAbsoluteForImage(imageModel, p)
+	}
+
+	// Fallback to small thumbnails
+	if p := GetImageURL(imageModel, "avif", "small"); p != "" {
+		return MakeAbsoluteForImage(imageModel, p)
+	}
+	if p := GetImageURL(imageModel, "webp", "small"); p != "" {
+		return MakeAbsoluteForImage(imageModel, p)
+	}
+	if p := GetImageURL(imageModel, "original", "small"); p != "" {
+		return MakeAbsoluteForImage(imageModel, p)
+	}
+
+	// Final fallback to original
+	return GetImageAbsoluteURL(imageModel, "original", "")
+}

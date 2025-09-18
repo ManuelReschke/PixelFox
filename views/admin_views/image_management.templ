@@ -2,7 +2,6 @@ package admin_views
 
 import (
     "fmt"
-    "path/filepath"
     "github.com/ManuelReschke/PixelFox/app/models"
     "github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
     "github.com/ManuelReschke/PixelFox/internal/pkg/database"
@@ -22,30 +21,10 @@ func formatFileSize(size int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "KMGTPE"[exp])
 }
 
-// getThumbnailPath returns an absolute URL to the best available thumbnail (cross-node aware)
+// Use centralized imageprocessor helper to build preview URL
+// (absolute URL, cross-node aware)
 func getThumbnailPath(image models.Image) string {
-    // Get variant info for this image
-    variantInfo, err := imageprocessor.GetImageVariantInfo(image.ID)
-    if err != nil {
-        // Fallback to absolute original URL if variant info not available
-        return imageprocessor.GetImageAbsoluteURL(&image, "original", "")
-    }
-
-    // Try small thumbnails with priority: AVIF -> WebP -> Original format
-    if variantInfo.HasThumbnailSmall {
-        if avifPath := imageprocessor.GetImageURL(&image, "avif", "small"); avifPath != "" {
-            return imageprocessor.MakeAbsoluteForImage(&image, avifPath)
-        }
-        if webpPath := imageprocessor.GetImageURL(&image, "webp", "small"); webpPath != "" {
-            return imageprocessor.MakeAbsoluteForImage(&image, webpPath)
-        }
-        if originalPath := imageprocessor.GetImageURL(&image, "original", "small"); originalPath != "" {
-            return imageprocessor.MakeAbsoluteForImage(&image, originalPath)
-        }
-    }
-
-    // Final fallback to absolute original
-    return imageprocessor.GetImageAbsoluteURL(&image, "original", "")
+    return imageprocessor.GetBestPreviewURL(&image)
 }
 
 // hasS3Backup checks if the image has at least one completed S3 backup

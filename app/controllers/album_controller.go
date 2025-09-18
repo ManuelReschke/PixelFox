@@ -19,44 +19,17 @@ import (
 
 // Helper function to convert models.Image to GalleryImage with proper paths
 func imageToGalleryImage(img models.Image) user_views.GalleryImage {
-	previewPath := ""
+	// Use centralized best-preview helper (absolute URL)
+	previewPath := imageprocessor.GetBestPreviewURL(&img)
 	smallPreviewPath := ""
-	// Get variant info for this image
-	variantInfo, err := imageprocessor.GetImageVariantInfo(img.ID)
-	if err != nil {
-		variantInfo = &imageprocessor.VariantInfo{} // fallback to empty
-	}
-
-	// Medium preview path for gallery view
-	if variantInfo.HasThumbnailMedium {
-		if variantInfo.HasAVIF {
-			previewPath = imageprocessor.GetImageURL(&img, "avif", "medium")
-		} else if variantInfo.HasWebP {
-			previewPath = imageprocessor.GetImageURL(&img, "webp", "medium")
-		} else {
-			// Fallback to original format medium thumbnail if present
-			if originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "medium"); originalThumbnailPath != "" {
-				previewPath = originalThumbnailPath
-			}
-		}
-	}
-	// Final fallback to original image if no medium thumbnail available
-	if previewPath == "" {
-		previewPath = imageprocessor.GetImageURL(&img, "original", "")
-	}
 
 	// Small preview path for album covers / selection modal
-	if variantInfo.HasThumbnailSmall {
-		if variantInfo.HasAVIF {
-			smallPreviewPath = imageprocessor.GetImageURL(&img, "avif", "small")
-		} else if variantInfo.HasWebP {
-			smallPreviewPath = imageprocessor.GetImageURL(&img, "webp", "small")
-		} else {
-			// Fallback to original format small thumbnail if present
-			if originalThumbnailPath := imageprocessor.GetImageURL(&img, "original", "small"); originalThumbnailPath != "" {
-				smallPreviewPath = originalThumbnailPath
-			}
-		}
+	if p := imageprocessor.GetImageURL(&img, "avif", "small"); p != "" {
+		smallPreviewPath = p
+	} else if p := imageprocessor.GetImageURL(&img, "webp", "small"); p != "" {
+		smallPreviewPath = p
+	} else if p := imageprocessor.GetImageURL(&img, "original", "small"); p != "" {
+		smallPreviewPath = p
 	}
 	// Final fallback to original image if no small thumbnail available
 	if smallPreviewPath == "" {
@@ -68,15 +41,11 @@ func imageToGalleryImage(img models.Image) user_views.GalleryImage {
 		title = img.Title
 	}
 
-	// Convert to absolute URLs based on the image's storage pool base URL
-	base := imageprocessor.GetPublicBaseURLForImage(&img)
-	if previewPath != "" {
-		previewPath = imageprocessor.MakeAbsoluteURL(base, previewPath)
-	}
+	// Convert to absolute URLs
 	if smallPreviewPath != "" {
-		smallPreviewPath = imageprocessor.MakeAbsoluteURL(base, smallPreviewPath)
+		smallPreviewPath = imageprocessor.MakeAbsoluteForImage(&img, smallPreviewPath)
 	}
-	originalPath := imageprocessor.MakeAbsoluteURL(base, imageprocessor.GetImageURL(&img, "original", ""))
+	originalPath := imageprocessor.GetImageAbsoluteURL(&img, "original", "")
 	return user_views.GalleryImage{
 		ID:               img.ID,
 		UUID:             img.UUID,

@@ -1,10 +1,15 @@
 package admin_views
 
 import (
-	"fmt"
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
+    "fmt"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 )
+
+// Use centralized helper for preview URL
+func getPreviewURL(image models.Image) string {
+    return imageprocessor.GetBestPreviewURL(&image)
+}
 
 templ imageEditContent(image models.Image) {
 	<div class="mb-6">
@@ -23,7 +28,7 @@ templ imageEditContent(image models.Image) {
 			<h2 class="text-lg font-semibold mb-4 text-base-content">Bildvorschau</h2>
             <div class="flex justify-center">
                 <img class="max-w-full h-auto rounded-lg" 
-                    src={ imageprocessor.GetImageAbsoluteURL(&image, "webp", "medium") } 
+                    src={ getPreviewURL(image) } 
                     alt={ image.Title }/>
             </div>
 			
