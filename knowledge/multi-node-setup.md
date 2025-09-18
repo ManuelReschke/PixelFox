@@ -86,3 +86,37 @@ curl -X PUT \
 - Der Sweeper zieht Jobs aus `processing` zurück, wenn sie >10 Minuten hängen (Intervall 1 Minute).
 - Entferne/benenne `docker-compose.override.yml` um, wenn du den zweiten Node nicht standardmäßig starten möchtest.
 
+
+
+Kurz: Dein Link ist falsch. Im Browser gibt es nur den Pfad /uploads/…, nicht /uploads_s01/… (uploads_s01 ist nur ein Verzeichnisname im Container-FS). Außerdem muss der s01‑Container unter /uploads das richtige Verzeichnis ausliefern.
+
+Was du beachten musst
+
+- docker-compose.override.yml
+    - Dem s01‑Container fehlt aktuell ein Mount auf /app/uploads (die App servt statisch immer von /uploads → /app/uploads).
+    - Ergänze in app_s01.volumes:
+        - ./uploads_s01:/app/uploads     (zusätzlich zu ./uploads_s01:/app/uploads_s01)
+    - Ergebnis: Dateien, die unter /app/uploads_s01 liegen, sind im Container gleichzeitig unter /app/uploads sichtbar und damit unter /uploads im Browser erreichbar.
+    - Ports sind ok: 8082 → 4000.
+- Storage‑Pool (Admin → Speicherverwaltung) für s01
+    - base_path: weiterhin /app/uploads_s01 (saubere Trennung)
+    - upload_api_url: http://app_s01:4000/api/internal/upload (interner Container‑DNS)
+    - public_base_url: http://s01.local:8082 (nur Host/Port, KEIN /uploads oder /uploads_s01 anhängen)
+    - node_id: s01
+- Hosts-Einträge (Browser)
+    - 127.0.0.1 app.local
+    - 127.0.0.1 s01.local
+- Aufruf der Bilder
+    - Korrekt: http://s01.local:8082/uploads/original/…/…jpg (oder http://localhost:8082/uploads/original/…)
+    - Falsch: http://localhost:8082/uploads_s01/original/… (gibt es als Route nicht)
+- Warum 404 kam
+    - Die App mountet statisch nur /uploads → /app/uploads. Deine Dateien lagen unter /app/uploads_s01, daher fand der s01‑Container sie nicht. Mit dem zusätzlichen Mount zeigst du /app/uploads auf dieselben Inhalte.
+- Checks/Debug
+    - Nach Compose‑Änderung neu starten: docker-compose up -d (oder make start)
+    - Im s01‑Container prüfen, ob die Datei dort unter /app/uploads/original/… liegt.
+    - curl -I http://s01.local:8082/uploads/original/… sollte 200 liefern.
+
+Optionaler Hinweis
+
+- Falls du den Pool lieber auf /app/uploads zeigen lassen willst, kannst du base_path im Pool auf /app/uploads ändern und den zusätzlichen Mount sparen. Mit zwei Knoten lokal ist die getrennte base_path‑Variante (/app/uploads vs. /app/
+  uploads_s01) meist übersichtlicher; mit dem Doppelmapping auf /app/uploads ist die Auslieferung sauber gelöst.

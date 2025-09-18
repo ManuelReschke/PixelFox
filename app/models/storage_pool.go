@@ -29,17 +29,18 @@ const (
 
 // StoragePool represents a storage location for images and variants
 type StoragePool struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
-	Name        string `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
-	BasePath    string `gorm:"type:varchar(500);not null" json:"base_path"`
-	MaxSize     int64  `gorm:"type:bigint;not null" json:"max_size"`                                                                                             // Maximum size in bytes
-	UsedSize    int64  `gorm:"type:bigint;default:0" json:"used_size"`                                                                                           // Currently used size in bytes
-	IsActive    bool   `gorm:"default:true" json:"is_active"`                                                                                                    // Whether this pool is available for new files
-	IsDefault   bool   `gorm:"default:false" json:"is_default"`                                                                                                  // Whether this is the default fallback pool
-	Priority    int    `gorm:"default:100" json:"priority"`                                                                                                      // Lower number = higher priority
-	StorageType string `gorm:"type:varchar(50);default:'local'" json:"storage_type"`                                                                             // local, nfs, s3, etc.
-	StorageTier string `gorm:"type:varchar(20);default:'hot';index:idx_storage_tier;index:idx_tier_active,composite:storage_tier,is_active" json:"storage_tier"` // hot, warm, cold, archive
-	Description string `gorm:"type:text" json:"description"`                                                                                                     // Optional description
+	ID             uint   `gorm:"primaryKey" json:"id"`
+	Name           string `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
+	BasePath       string `gorm:"type:varchar(500);not null" json:"base_path"`
+	MaxSize        int64  `gorm:"type:bigint;not null" json:"max_size"`                                                                                             // Maximum size in bytes
+	UsedSize       int64  `gorm:"type:bigint;default:0" json:"used_size"`                                                                                           // Currently used size in bytes
+	IsActive       bool   `gorm:"default:true" json:"is_active"`                                                                                                    // Whether this pool is available for new files
+	IsDefault      bool   `gorm:"default:false" json:"is_default"`                                                                                                  // Whether this is the default fallback pool
+	IsBackupTarget bool   `gorm:"default:false" json:"is_backup_target"`                                                                                            // If true, S3 backups prefer this pool
+	Priority       int    `gorm:"default:100" json:"priority"`                                                                                                      // Lower number = higher priority
+	StorageType    string `gorm:"type:varchar(50);default:'local'" json:"storage_type"`                                                                             // local, nfs, s3, etc.
+	StorageTier    string `gorm:"type:varchar(20);default:'hot';index:idx_storage_tier;index:idx_tier_active,composite:storage_tier,is_active" json:"storage_tier"` // hot, warm, cold, archive
+	Description    string `gorm:"type:text" json:"description"`                                                                                                     // Optional description
 
 	// S3-specific configuration fields (only used when StorageType = 's3')
 	// Note: These credentials should be encrypted at rest in production
@@ -515,6 +516,23 @@ func FindActiveStoragePoolsByType(db *gorm.DB, storageType string) ([]StoragePoo
 // FindS3StoragePools returns all active S3 storage pools
 func FindS3StoragePools(db *gorm.DB) ([]StoragePool, error) {
 	return FindActiveStoragePoolsByType(db, StorageTypeS3)
+}
+
+// FindBackupTargetS3Pool returns the active S3 storage pool explicitly marked as backup target
+// If multiple are marked, the one with the highest priority (lowest number) is returned.
+// Returns nil if none found.
+func FindBackupTargetS3Pool(db *gorm.DB) (*StoragePool, error) {
+	var pool StoragePool
+	err := db.Where("storage_type = ? AND is_active = ? AND is_backup_target = ?", StorageTypeS3, true, true).
+		Order("priority ASC").
+		First(&pool).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find backup target S3 storage pool: %w", err)
+	}
+	return &pool, nil
 }
 
 // FindHighestPriorityS3Pool returns the S3 storage pool with the highest priority (lowest number)

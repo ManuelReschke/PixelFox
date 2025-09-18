@@ -170,6 +170,10 @@ func (asc *AdminStorageController) HandleAdminCreateStoragePoolPost(c *fiber.Ctx
 		IsActive:    c.FormValue("is_active") == "on",
 		IsDefault:   c.FormValue("is_default") == "on",
 	}
+	// Backup target toggle (only meaningful for S3 pools, harmless otherwise)
+	if c.FormValue("is_backup_target") == "on" {
+		pool.IsBackupTarget = true
+	}
 	// Validate storage type early
 	switch pool.StorageType {
 	case models.StorageTypeLocal, models.StorageTypeNFS, models.StorageTypeS3:
@@ -405,6 +409,7 @@ func (asc *AdminStorageController) HandleAdminEditStoragePoolPost(c *fiber.Ctx) 
 	pool.Description = strings.TrimSpace(c.FormValue("description"))
 	pool.IsActive = c.FormValue("is_active") == "on"
 	pool.IsDefault = c.FormValue("is_default") == "on"
+	pool.IsBackupTarget = c.FormValue("is_backup_target") == "on"
 
 	// Node/URL awareness
 	pool.PublicBaseURL = strings.TrimSpace(c.FormValue("public_base_url"))

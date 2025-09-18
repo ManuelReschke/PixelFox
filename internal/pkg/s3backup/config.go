@@ -69,14 +69,20 @@ func (c *Config) GetBucketName() string {
 
 // LoadConfigFromStoragePool loads S3 configuration from the highest priority S3 storage pool
 func LoadConfigFromStoragePool(db *gorm.DB) (*Config, error) {
-	// Find the highest priority S3 storage pool
-	s3Pool, err := models.FindHighestPriorityS3Pool(db)
+	// Prefer an explicit backup target S3 pool
+	s3Pool, err := models.FindBackupTargetS3Pool(db)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find S3 storage pool: %w", err)
+		return nil, fmt.Errorf("failed to find backup target S3 storage pool: %w", err)
 	}
-
 	if s3Pool == nil {
-		return &Config{Enabled: false}, nil // No S3 pools configured, but not an error
+		// Fallback to highest priority S3 pool
+		s3Pool, err = models.FindHighestPriorityS3Pool(db)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find S3 storage pool: %w", err)
+		}
+		if s3Pool == nil {
+			return &Config{Enabled: false}, nil // No S3 pools configured, but not an error
+		}
 	}
 
 	// Validate that all required S3 fields are set

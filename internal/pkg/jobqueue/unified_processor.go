@@ -77,11 +77,18 @@ func ProcessImageUnified(image *models.Image) error {
 		return EnqueueImageProcessing(image, false)
 	}
 
-	// Check if there are any active S3 storage pools
-	s3Pool, err := models.FindHighestPriorityS3Pool(db)
+	// Check if there is an explicit backup-target S3 storage pool (fallback to highest priority)
+	s3Pool, err := models.FindBackupTargetS3Pool(db)
 	if err != nil {
-		log.Errorf("[UnifiedQueue] Failed to check S3 storage pools for image %s: %v", image.UUID, err)
+		log.Errorf("[UnifiedQueue] Failed to find backup target S3 pool for image %s: %v", image.UUID, err)
 		return EnqueueImageProcessing(image, false)
+	}
+	if s3Pool == nil {
+		s3Pool, err = models.FindHighestPriorityS3Pool(db)
+		if err != nil {
+			log.Errorf("[UnifiedQueue] Failed to check S3 storage pools for image %s: %v", image.UUID, err)
+			return EnqueueImageProcessing(image, false)
+		}
 	}
 
 	// Also respect admin setting toggle

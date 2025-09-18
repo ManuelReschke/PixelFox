@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -57,8 +58,18 @@ func HandleCreateUploadSession(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create token"})
 	}
 
+	// Build browser-facing upload URL from public_base_url if available; fallback to internal upload_api_url
+	uploadURL := pool.UploadAPIURL
+	if pb := strings.TrimSpace(pool.PublicBaseURL); pb != "" {
+		lower := strings.ToLower(pb)
+		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+			base := strings.TrimRight(pb, "/")
+			uploadURL = base + "/api/internal/upload"
+		}
+	}
+
 	return c.JSON(fiber.Map{
-		"upload_url": pool.UploadAPIURL,
+		"upload_url": uploadURL,
 		"token":      token,
 		"pool_id":    pool.ID,
 		"expires_at": time.Now().Add(ttl).Unix(),

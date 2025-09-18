@@ -316,6 +316,19 @@ templ StoragePoolForm(pool models.StoragePool, isEdit bool, csrfToken string) {
 								<span class="label-text-alt">Fallback wenn andere Pools voll sind</span>
 							</label>
 						</div>
+						<div class="form-control">
+							<label class="label cursor-pointer">
+								<span class="label-text">Backup-Ziel (S3)</span>
+								<input 
+									type="checkbox" 
+									name="is_backup_target" 
+									class="checkbox"
+									checked?={ pool.IsBackupTarget }/>
+							</label>
+							<label class="label">
+								<span class="label-text-alt">Wenn gesetzt, werden S3‑Backups bevorzugt in diesen Pool geschrieben (bei mehreren entscheidet die Priorität).</span>
+							</label>
+						</div>
 					</div>
 					<!-- Current Usage (only show when editing) -->
 					if isEdit && pool.ID > 0 {

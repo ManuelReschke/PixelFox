@@ -18,6 +18,7 @@ services:
       - .:/app
       # ensure a distinct folder exists for s01 if you want to separate data
       - ./uploads_s01:/app/uploads_s01
+      - ./uploads_s01:/app/uploads
     depends_on:
       - db
       - cache
