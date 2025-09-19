@@ -90,7 +90,7 @@ func HandleUserAlbums(c *fiber.Ctx) error {
 
 	albumsIndex := user_views.AlbumsIndex(username, csrfToken, albumsWithGalleryImages)
 	albumsPage := user_views.Albums(
-		" | Meine Alben", isLoggedIn(c), false, flash.Get(c), username, albumsIndex, isAdmin,
+		" | Meine Alben", isLoggedIn(c), false, flash.Get(c), username, usercontext.GetUserContext(c).Plan, albumsIndex, isAdmin,
 	)
 
 	return adaptor.HTTPHandler(templ.Handler(albumsPage))(c)

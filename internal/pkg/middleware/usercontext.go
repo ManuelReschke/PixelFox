@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/ManuelReschke/PixelFox/app/controllers"
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/gofiber/fiber/v2"
@@ -50,12 +52,25 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 	username := session.GetSessionValue(c, controllers.USER_NAME)
 	isAdmin := sess.Get(controllers.USER_IS_ADMIN)
 
+	// Determine plan with session-first strategy
+	plan := session.GetSessionValue(c, "user_plan")
+	if plan == "" {
+		plan = "free"
+		if db := database.GetDB(); db != nil {
+			if us, err := models.GetOrCreateUserSettings(db, userID.(uint)); err == nil && us != nil && us.Plan != "" {
+				plan = us.Plan
+			}
+		}
+		// cache in session for subsequent requests
+		_ = session.SetSessionValue(c, "user_plan", plan)
+	}
 	// Set complete user context
 	userCtx := usercontext.UserContext{
 		UserID:     userID.(uint),
 		Username:   username,
 		IsLoggedIn: true,
 		IsAdmin:    isAdmin != nil && isAdmin.(bool),
+		Plan:       plan,
 	}
 	c.Locals("USER_CONTEXT", userCtx)
 

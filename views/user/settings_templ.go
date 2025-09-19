@@ -270,6 +270,7 @@ func Settings(
 	isError bool,
 	msg fiber.Map,
 	username string,
+	plan string,
 	cmp templ.Component,
 	isAdmin bool,
 ) templ.Component {
@@ -319,6 +320,7 @@ func Settings(
 			Username:      username,
 			IsAdmin:       isAdmin,
 			OGViewModel:   nil,
+			Plan:          plan,
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

@@ -42,15 +42,16 @@ templ albumCoverImage(albumData AlbumWithGalleryImages) {
 }
 
 templ Albums(
-	page string,
-	fromProtected bool,
-	isError bool,
-	msg fiber.Map,
-	username string,
-	cmp templ.Component,
-	isAdmin bool,
+    page string,
+    fromProtected bool,
+    isError bool,
+    msg fiber.Map,
+    username string,
+    plan string,
+    cmp templ.Component,
+    isAdmin bool,
 ) {
-	@views.Layout(viewmodel.Layout{
+    @views.Layout(viewmodel.Layout{
         Page:          page,
         FromProtected: fromProtected,
         IsError:       isError,
@@ -58,9 +59,10 @@ templ Albums(
         Username:      username,
         IsAdmin:       isAdmin,
         OGViewModel:   nil,
+        Plan:          plan,
     }) {
-		@cmp
-	}
+        @cmp
+    }
 }
 
 templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryImages) {

@@ -101,6 +101,14 @@ func HandleOAuthCallback(c *fiber.Ctx) error {
 	sess.Set(USER_ID, appUser.ID)
 	sess.Set(USER_NAME, appUser.Name)
 	sess.Set(USER_IS_ADMIN, appUser.Role == "admin")
+	// Cache user plan in session for navbar/entitlements
+	if us, err := models.GetOrCreateUserSettings(db, appUser.ID); err == nil && us != nil {
+		if us.Plan == "" {
+			session.SetSessionValue(c, "user_plan", "free")
+		} else {
+			session.SetSessionValue(c, "user_plan", us.Plan)
+		}
+	}
 	if err := sess.Save(); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("session save failed")
 	}

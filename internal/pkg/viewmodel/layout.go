@@ -10,4 +10,5 @@ type Layout struct {
 	Username      string
 	IsAdmin       bool
 	OGViewModel   *OpenGraph
+	Plan          string
 }

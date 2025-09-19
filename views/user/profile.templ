@@ -236,23 +236,25 @@ templ ProfileIndex(username string, csrfToken string, user models.User, imageCou
 }
 
 templ Profile(
-	page string,
-	fromProtected bool,
-	isError bool,
-	msg fiber.Map,
-	username string,
-	cmp templ.Component,
-	isAdmin bool,
+    page string,
+    fromProtected bool,
+    isError bool,
+    msg fiber.Map,
+    username string,
+    plan string,
+    cmp templ.Component,
+    isAdmin bool,
 ) {
- 	@views.Layout(viewmodel.Layout{
-         Page:          page,
-         FromProtected: fromProtected,
-         IsError:       isError,
-         Msg:           msg,
-         Username:      username,
-         IsAdmin:       isAdmin,
-         OGViewModel:   nil,
-     }) {
- 		@cmp
- 	}
+	@views.Layout(viewmodel.Layout{
+        Page:          page,
+        FromProtected: fromProtected,
+        IsError:       isError,
+        Msg:           msg,
+        Username:      username,
+        IsAdmin:       isAdmin,
+        OGViewModel:   nil,
+        Plan:          plan,
+    }) {
+		@cmp
+	}
 }

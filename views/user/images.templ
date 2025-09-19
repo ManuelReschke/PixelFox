@@ -24,15 +24,16 @@ type GalleryImage struct {
 }
 
 templ Images(
-	page string,
-	fromProtected bool,
-	isError bool,
-	msg fiber.Map,
-	username string,
-	cmp templ.Component,
-	isAdmin bool,
+    page string,
+    fromProtected bool,
+    isError bool,
+    msg fiber.Map,
+    username string,
+    plan string,
+    cmp templ.Component,
+    isAdmin bool,
 ) {
-	@views.Layout(viewmodel.Layout{
+    @views.Layout(viewmodel.Layout{
         Page:          page,
         FromProtected: fromProtected,
         IsError:       isError,
@@ -40,9 +41,10 @@ templ Images(
         Username:      username,
         IsAdmin:       isAdmin,
         OGViewModel:   nil,
+        Plan:          plan,
     }) {
-		@cmp
-	}
+        @cmp
+    }
 }
 
 templ ImagesGallery(username string, images []GalleryImage) {

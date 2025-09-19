@@ -33,14 +33,14 @@ func Footer() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/page/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/page/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/page/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright &copy; 2024-")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<footer class=\"footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10 mt-8 min-h-full\"><nav class=\"grid grid-flow-col gap-4\"><a class=\"link link-hover\" href=\"/news\">Neuigkeiten</a> <a class=\"link link-hover\" href=\"/page/about\">Über Uns</a> <a class=\"link link-hover\" href=\"/page/contact\">Kontakt</a> <a class=\"link link-hover\" href=\"/page/jobs\">Jobs</a> <a class=\"link link-hover\" href=\"/page/agb\">AGB</a> <a class=\"link link-hover\" href=\"/docs/api\">API</a></nav><aside><p>Copyright &copy; 2024-")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(time.Now().Year()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/footer_partial.templ`, Line: 18, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/partials/footer_partial.templ`, Line: 19, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {

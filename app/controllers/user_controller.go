@@ -55,7 +55,7 @@ func HandleUserProfile(c *fiber.Ctx) error {
 
 	profileIndex := user_views.ProfileIndex(username, csrfToken, user, int(imageCount), int(albumCount), int64(totalStorage))
 	profile := user_views.Profile(
-		" | Profil", userCtx.IsLoggedIn, false, flash.Get(c), username, profileIndex, isAdmin,
+		" | Profil", userCtx.IsLoggedIn, false, flash.Get(c), username, userCtx.Plan, profileIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(profile))
@@ -85,7 +85,7 @@ func HandleUserSettings(c *fiber.Ctx) error {
 		allowedOrig && adminOrig, allowedWebp && adminWebp, allowedAvif && adminAvif,
 		us.PrefThumbOriginal, us.PrefThumbWebP, us.PrefThumbAVIF)
 	settings := user_views.Settings(
-		" | Einstellungen", userCtx.IsLoggedIn, false, flash.Get(c), username, settingsIndex, isAdmin,
+		" | Einstellungen", userCtx.IsLoggedIn, false, flash.Get(c), username, us.Plan, settingsIndex, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(settings))
@@ -169,7 +169,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 
 	imagesGallery := user_views.ImagesGallery(username, galleryImages)
 	imagesPage := user_views.Images(
-		" | Meine Bilder", userCtx.IsLoggedIn, false, flash.Get(c), username, imagesGallery, isAdmin,
+		" | Meine Bilder", userCtx.IsLoggedIn, false, flash.Get(c), username, userCtx.Plan, imagesGallery, isAdmin,
 	)
 
 	handler := adaptor.HTTPHandler(templ.Handler(imagesPage))

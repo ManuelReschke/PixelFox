@@ -105,6 +105,7 @@ func Albums(
 	isError bool,
 	msg fiber.Map,
 	username string,
+	plan string,
 	cmp templ.Component,
 	isAdmin bool,
 ) templ.Component {
@@ -154,6 +155,7 @@ func Albums(
 			Username:      username,
 			IsAdmin:       isAdmin,
 			OGViewModel:   nil,
+			Plan:          plan,
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -190,7 +192,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Alben", len(albums)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 71, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 73, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -221,7 +223,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(albumData.Album.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 89, Col: 84}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 91, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -239,7 +241,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(albumData.Album.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 91, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 93, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -257,7 +259,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d Bilder", len(albumData.Images)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 94, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 96, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -270,7 +272,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(albumData.Album.CreatedAt.Format("02.01.2006"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 95, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 97, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -283,7 +285,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var12 templ.SafeURL
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 98, Col: 99}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 100, Col: 99}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -313,7 +315,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var14 templ.SafeURL
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 104, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 106, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
@@ -326,7 +328,7 @@ func AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIma
 				var templ_7745c5c3_Var15 templ.SafeURL
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 107, Col: 106}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/albums.templ`, Line: 109, Col: 106}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {

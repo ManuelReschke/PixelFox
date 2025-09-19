@@ -8,6 +8,7 @@ type UserContext struct {
 	Username   string `json:"username"`
 	IsLoggedIn bool   `json:"is_logged_in"`
 	IsAdmin    bool   `json:"is_admin"`
+	Plan       string `json:"plan"`
 }
 
 // GetUserContext retrieves the user context from fiber context

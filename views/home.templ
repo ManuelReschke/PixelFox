@@ -8,6 +8,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 )
 
 templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.StatisticsData) {
@@ -134,6 +135,13 @@ templ HomeCtx(
 	isAdmin bool,
 	ogViewModel *viewmodel.OpenGraph,
 ) {
+    {{
+        plan := ""
+        if fromProtected {
+            uc := usercontext.GetUserContext(c)
+            if uc.Plan != "" { plan = uc.Plan } else { plan = "free" }
+        }
+    }}
 	@Layout(viewmodel.Layout{
                     Page:          page,
                     FromProtected: fromProtected,
@@ -142,6 +150,7 @@ templ HomeCtx(
                     Username:      extractUsername(c),
                     IsAdmin:       isAdmin,
                     OGViewModel:   ogViewModel,
+                    Plan:          plan,
     }) {
 		@cmp
 	}
@@ -164,6 +173,7 @@ templ Home(
                     Username:      "", // Legacy - Username not available
                     IsAdmin:       isAdmin,
                     OGViewModel:   ogViewModel,
+                    Plan:          "",
     }) {
 		@cmp
 	}

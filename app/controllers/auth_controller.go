@@ -84,6 +84,15 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 		sess.Set(USER_NAME, user.Name)
 		sess.Set(USER_IS_ADMIN, user.Role == "admin")
 
+		// Cache user plan in session for navbar/entitlements
+		if us, err := models.GetOrCreateUserSettings(database.GetDB(), user.ID); err == nil && us != nil {
+			if us.Plan == "" {
+				session.SetSessionValue(c, "user_plan", "free")
+			} else {
+				session.SetSessionValue(c, "user_plan", us.Plan)
+			}
+		}
+
 		err = sess.Save()
 		if err != nil {
 			fm["message"] = fmt.Sprintf("something went wrong: %s", err)

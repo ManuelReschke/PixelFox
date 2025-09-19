@@ -23,6 +23,15 @@ templ Navbar(appName string, layout viewmodel.Layout) {
 					Meine Alben
 				</a>
 
+                if layout.Plan == "free" {
+                    <a hx-swap="transition:true" class="btn btn-outline btn-warning text-base hover:bg-yellow-100 hover:text-yellow-700" href="/pricing" title="Jetzt upgraden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                        </svg>
+                        +Premium
+                    </a>
+                }
+
 				<div class="dropdown dropdown-end">
                   <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar hover:bg-base-200">
                     <div class="w-10 rounded-full">
