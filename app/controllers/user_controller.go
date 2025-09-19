@@ -15,6 +15,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
@@ -69,7 +70,20 @@ func HandleUserSettings(c *fiber.Ctx) error {
 
 	csrfToken := c.Locals("csrf").(string)
 
-	settingsIndex := user_views.SettingsIndex(username, csrfToken)
+	// Load or create user settings
+	db := database.GetDB()
+	us, _ := models.GetOrCreateUserSettings(db, userCtx.UserID)
+	// Compute entitlements against app settings
+	app := models.GetAppSettings()
+	allowedOrig, allowedWebp, allowedAvif := entitlements.AllowedThumbs(entitlements.Plan(us.Plan))
+	// Admin toggles may further restrict visibility/enablement (UI can show info)
+	adminOrig := app.IsThumbnailOriginalEnabled()
+	adminWebp := app.IsThumbnailWebPEnabled()
+	adminAvif := app.IsThumbnailAVIFEnabled()
+
+	settingsIndex := user_views.SettingsIndex(username, csrfToken, us.Plan,
+		allowedOrig && adminOrig, allowedWebp && adminWebp, allowedAvif && adminAvif,
+		us.PrefThumbOriginal, us.PrefThumbWebP, us.PrefThumbAVIF)
 	settings := user_views.Settings(
 		" | Einstellungen", userCtx.IsLoggedIn, false, flash.Get(c), username, settingsIndex, isAdmin,
 	)
@@ -77,6 +91,38 @@ func HandleUserSettings(c *fiber.Ctx) error {
 	handler := adaptor.HTTPHandler(templ.Handler(settings))
 
 	return handler(c)
+}
+
+// HandleUserSettingsPost updates user preferences (clamped by entitlements)
+func HandleUserSettingsPost(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
+	if !userCtx.IsLoggedIn {
+		return c.Redirect("/login")
+	}
+	db := database.GetDB()
+	us, err := models.GetOrCreateUserSettings(db, userCtx.UserID)
+	if err != nil {
+		flash.WithError(c, fiber.Map{"message": "Einstellungen konnten nicht geladen werden"})
+		return c.Redirect("/user/settings")
+	}
+	// Read posted values
+	wantOrig := c.FormValue("pref_thumb_original") == "on"
+	wantWebp := c.FormValue("pref_thumb_webp") == "on"
+	wantAvif := c.FormValue("pref_thumb_avif") == "on"
+
+	app := models.GetAppSettings()
+	// Clamp to entitlements and admin settings
+	allowOrig, allowWebp, allowAvif := entitlements.AllowedThumbs(entitlements.Plan(us.Plan))
+	us.PrefThumbOriginal = wantOrig && allowOrig && app.IsThumbnailOriginalEnabled()
+	us.PrefThumbWebP = wantWebp && allowWebp && app.IsThumbnailWebPEnabled()
+	us.PrefThumbAVIF = wantAvif && allowAvif && app.IsThumbnailAVIFEnabled()
+
+	if err := db.Save(us).Error; err != nil {
+		flash.WithError(c, fiber.Map{"message": "Einstellungen speichern fehlgeschlagen"})
+		return c.Redirect("/user/settings")
+	}
+	flash.WithSuccess(c, fiber.Map{"message": "Einstellungen gespeichert"})
+	return c.Redirect("/user/settings")
 }
 
 func HandleUserImages(c *fiber.Ctx) error {

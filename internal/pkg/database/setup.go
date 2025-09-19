@@ -53,6 +53,7 @@ func SetupDatabase() {
 			DB.AutoMigrate(
 				&models.User{},
 				&models.ProviderAccount{},
+				&models.UserSettings{},
 				&models.Image{},
 				&models.ImageVariant{},
 				&models.ImageMetadata{},

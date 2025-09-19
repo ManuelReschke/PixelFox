@@ -104,6 +104,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/users", controllers.HandleAdminUsers)
 	adminGroup.Get("/users/edit/:id", controllers.HandleAdminUserEdit)
 	adminGroup.Post("/users/update/:id", controllers.HandleAdminUserUpdate)
+	adminGroup.Post("/users/update-plan/:id", controllers.HandleAdminUserUpdatePlan)
 	adminGroup.Get("/users/delete/:id", controllers.HandleAdminUserDelete)
 	// Resend activation email
 	adminGroup.Post("/users/resend-activation/:id", controllers.HandleAdminResendActivation)
@@ -160,6 +161,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/user/profile/edit/cancel-email-change", requireAuthMiddleware, controllers.HandleCancelEmailChange)
 	group.Get("/user/profile/edit/resend-email-change", requireAuthMiddleware, controllers.HandleResendEmailChange)
 	group.Get("/user/settings", requireAuthMiddleware, controllers.HandleUserSettings)
+	group.Post("/user/settings", requireAuthMiddleware, controllers.HandleUserSettingsPost)
 	group.Get("/user/images", requireAuthMiddleware, controllers.HandleUserImages)
 	group.Get("/user/images/load", requireAuthMiddleware, controllers.HandleLoadMoreImages)
 	group.Get("/user/images/edit/:uuid", requireAuthMiddleware, controllers.HandleUserImageEdit)

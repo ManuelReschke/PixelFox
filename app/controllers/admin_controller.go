@@ -156,12 +156,56 @@ func (ac *AdminController) HandleUserEdit(c *fiber.Ctx) error {
 		return flash.WithError(c, fm).Redirect("/admin/users")
 	}
 
-	// Render user edit page
-	userEdit := admin_views.UserEdit(*user)
+	// Load user plan from user_settings
+	us, _ := models.GetOrCreateUserSettings(database.GetDB(), user.ID)
+	plan := "free"
+	if us != nil && us.Plan != "" {
+		plan = us.Plan
+	}
+	// Render user edit page with plan
+	userEdit := admin_views.UserEdit(*user, plan)
 	home := views.HomeCtx(c, " | Edit User", userCtx.IsLoggedIn, false, flash.Get(c), userEdit, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
 	return handler(c)
+}
+
+// HandleAdminUserUpdatePlan updates a user's plan (entitlements)
+func (ac *AdminController) HandleAdminUserUpdatePlan(c *fiber.Ctx) error {
+	userID := c.Params("id")
+	if userID == "" {
+		return c.Redirect("/admin/users")
+	}
+	id, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
+		return c.Redirect("/admin/users")
+	}
+	user, err := ac.repos.User.GetByID(uint(id))
+	if err != nil || user == nil {
+		fm := fiber.Map{"type": "error", "message": "User not found"}
+		return flash.WithError(c, fm).Redirect("/admin/users")
+	}
+	plan := strings.TrimSpace(c.FormValue("plan"))
+	switch plan {
+	case "free", "premium", "premium_max":
+		// ok
+	default:
+		fm := fiber.Map{"type": "error", "message": "Ungültiger Plan"}
+		return flash.WithError(c, fm).Redirect("/admin/users/edit/" + userID)
+	}
+	db := database.GetDB()
+	us, err := models.GetOrCreateUserSettings(db, user.ID)
+	if err != nil {
+		fm := fiber.Map{"type": "error", "message": "Konnte User‑Einstellungen nicht laden"}
+		return flash.WithError(c, fm).Redirect("/admin/users/edit/" + userID)
+	}
+	us.Plan = plan
+	if err := db.Save(us).Error; err != nil {
+		fm := fiber.Map{"type": "error", "message": "Plan speichern fehlgeschlagen"}
+		return flash.WithError(c, fm).Redirect("/admin/users/edit/" + userID)
+	}
+	fm := fiber.Map{"type": "success", "message": "Plan aktualisiert"}
+	return flash.WithSuccess(c, fm).Redirect("/admin/users/edit/" + userID)
 }
 
 // HandleUserUpdate handles user update with repository pattern

@@ -44,6 +44,11 @@ func HandleAdminUserUpdate(c *fiber.Ctx) error {
 	return GetAdminController().HandleUserUpdate(c)
 }
 
+// HandleAdminUserUpdatePlan - Adapter to update a user's plan/entitlements
+func HandleAdminUserUpdatePlan(c *fiber.Ctx) error {
+	return GetAdminController().HandleAdminUserUpdatePlan(c)
+}
+
 // HandleAdminUserDelete - Adapter for user delete
 func HandleAdminUserDelete(c *fiber.Ctx) error {
 	return GetAdminController().HandleUserDelete(c)

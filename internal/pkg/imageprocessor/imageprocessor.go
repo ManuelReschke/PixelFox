@@ -23,6 +23,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -299,6 +300,8 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 	var width, height int
 	var smallThumb image.Image
 	var mediumThumb image.Image
+	// DB handle used for user settings lookup
+	db := database.GetDB()
 	defer func() {
 		smallThumb = nil
 		mediumThumb = nil
@@ -363,14 +366,25 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 	if isGif {
 		log.Debugf("[ImageProcessor] GIF detected, creating thumbnails for %s", imageModel.UUID)
 
-		// Get current admin settings for thumbnail formats
+		// Resolve effective thumbnail entitlements for user
 		settings := models.GetAppSettings()
+		var userSettings *models.UserSettings
+		if imageModel.UserID > 0 {
+			if us, err := models.GetOrCreateUserSettings(db, imageModel.UserID); err == nil {
+				userSettings = us
+			}
+		}
+		// Fallback defaults if missing
+		if userSettings == nil {
+			userSettings = &models.UserSettings{Plan: "free", PrefThumbOriginal: true}
+		}
+		origOK, webpOK, avifOK := entitlements.EffectiveThumbs(userSettings, settings)
 
 		// Small Thumbnail
 		smallThumb = imaging.Resize(imgDecoded, SmallThumbnailSize, 0, imaging.Lanczos)
 
 		// Save WebP version if enabled
-		if settings.IsThumbnailWebPEnabled() {
+		if webpOK {
 			if err := saveWebP(smallThumb, smallThumbWebPPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save small WebP thumbnail for GIF %s: %v", imageModel.UUID, err)
 			} else {
@@ -382,7 +396,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save original format version if enabled
-		if settings.IsThumbnailOriginalEnabled() {
+		if origOK {
 			if err := saveOriginalFormat(smallThumb, smallThumbOriginalPath, imageModel.FileType); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save small original format thumbnail for GIF %s: %v", imageModel.UUID, err)
 			} else {
@@ -394,14 +408,14 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save AVIF version if available and enabled
-		if settings.IsThumbnailAVIFEnabled() && IsFFmpegAvailable {
+		if avifOK && IsFFmpegAvailable {
 			if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to create small AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
 			} else {
 				hasThumbnailSmall = true
 				log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for GIF %s", smallThumbAVIFPath)
 			}
-		} else if !settings.IsThumbnailAVIFEnabled() {
+		} else if !avifOK {
 			log.Debugf("[ImageProcessor] Skipping small AVIF thumbnail for GIF %s: AVIF thumbnails disabled", imageModel.UUID)
 		}
 		smallThumb = nil
@@ -410,7 +424,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		mediumThumb = imaging.Resize(imgDecoded, MediumThumbnailSize, 0, imaging.Lanczos)
 
 		// Save WebP version if enabled
-		if settings.IsThumbnailWebPEnabled() {
+		if webpOK {
 			if err := saveWebP(mediumThumb, mediumThumbWebPPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save medium WebP thumbnail for GIF %s: %v", imageModel.UUID, err)
 			} else {
@@ -422,7 +436,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save original format version if enabled
-		if settings.IsThumbnailOriginalEnabled() {
+		if origOK {
 			if err := saveOriginalFormat(mediumThumb, mediumThumbOriginalPath, imageModel.FileType); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save medium original format thumbnail for GIF %s: %v", imageModel.UUID, err)
 			} else {
@@ -434,14 +448,14 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save AVIF version if available and enabled
-		if settings.IsThumbnailAVIFEnabled() && IsFFmpegAvailable {
+		if avifOK && IsFFmpegAvailable {
 			if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to create medium AVIF thumbnail for GIF %s: %v", imageModel.UUID, err)
 			} else {
 				hasThumbnailMedium = true
 				log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for GIF %s", mediumThumbAVIFPath)
 			}
-		} else if !settings.IsThumbnailAVIFEnabled() {
+		} else if !avifOK {
 			log.Debugf("[ImageProcessor] Skipping medium AVIF thumbnail for GIF %s: AVIF thumbnails disabled", imageModel.UUID)
 		}
 		mediumThumb = nil
@@ -449,11 +463,21 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		// --- Standard Image Handling ---
 		log.Debugf("[ImageProcessor] Standard image detected, creating optimized WebP/AVIF and thumbnails for %s", imageModel.UUID)
 
-		// Get current admin settings for thumbnail formats
+		// Resolve effective thumbnail entitlements for user
 		settings := models.GetAppSettings()
+		var userSettings *models.UserSettings
+		if imageModel.UserID > 0 {
+			if us, err := models.GetOrCreateUserSettings(db, imageModel.UserID); err == nil {
+				userSettings = us
+			}
+		}
+		if userSettings == nil {
+			userSettings = &models.UserSettings{Plan: "free", PrefThumbOriginal: true}
+		}
+		origOK, webpOK, avifOK := entitlements.EffectiveThumbs(userSettings, settings)
 
-		// Optimized WebP (controlled by settings)
-		if settings.IsThumbnailWebPEnabled() {
+		// Optimized WebP (controlled by effective entitlements)
+		if webpOK {
 			if err := saveWebP(imgDecoded, optimizedWebPPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to create optimized WebP for %s: %v", imageModel.UUID, err)
 			} else {
@@ -464,15 +488,15 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 			log.Debugf("[ImageProcessor] Skipping optimized WebP for %s: WebP disabled in settings", imageModel.UUID)
 		}
 
-		// Optimized AVIF (controlled by settings + ffmpeg availability)
-		if settings.IsThumbnailAVIFEnabled() && IsFFmpegAvailable {
+		// Optimized AVIF (controlled by effective entitlements + ffmpeg availability)
+		if avifOK && IsFFmpegAvailable {
 			if err := convertToAVIF(imgDecoded, optimizedAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to convert to optimized AVIF for %s: %v", imageModel.UUID, err)
 			} else {
 				hasAvif = true
 				log.Debugf("[ImageProcessor] Saved optimized AVIF for %s", imageModel.UUID)
 			}
-		} else if !settings.IsThumbnailAVIFEnabled() {
+		} else if !avifOK {
 			log.Debugf("[ImageProcessor] Skipping optimized AVIF for %s: AVIF disabled in settings", imageModel.UUID)
 		} else {
 			log.Warnf("[ImageProcessor] Skipping optimized AVIF conversion for %s: ffmpeg not found.", imageModel.UUID)
@@ -481,7 +505,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		smallThumb = imaging.Resize(imgDecoded, SmallThumbnailSize, 0, imaging.Lanczos)
 
 		// Save WebP version if enabled
-		if settings.IsThumbnailWebPEnabled() {
+		if webpOK {
 			if err := saveWebP(smallThumb, smallThumbWebPPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save small WebP thumbnail for %s: %v", imageModel.UUID, err)
 			} else {
@@ -493,7 +517,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save original format version if enabled
-		if settings.IsThumbnailOriginalEnabled() {
+		if origOK {
 			if err := saveOriginalFormat(smallThumb, smallThumbOriginalPath, imageModel.FileType); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save small original format thumbnail for %s: %v", imageModel.UUID, err)
 			} else {
@@ -505,14 +529,14 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save AVIF version if available and enabled
-		if settings.IsThumbnailAVIFEnabled() && IsFFmpegAvailable {
+		if avifOK && IsFFmpegAvailable {
 			if err := convertToAVIF(smallThumb, smallThumbAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save small AVIF thumbnail for %s: %v", imageModel.UUID, err)
 			} else {
 				hasThumbnailSmall = true
 				log.Debugf("[ImageProcessor] Saved small AVIF thumbnail for %s", imageModel.UUID)
 			}
-		} else if !settings.IsThumbnailAVIFEnabled() {
+		} else if !avifOK {
 			log.Debugf("[ImageProcessor] Skipping small AVIF thumbnail for %s: AVIF thumbnails disabled", imageModel.UUID)
 		}
 		smallThumb = nil
@@ -521,7 +545,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		mediumThumb = imaging.Resize(imgDecoded, MediumThumbnailSize, 0, imaging.Lanczos)
 
 		// Save WebP version if enabled
-		if settings.IsThumbnailWebPEnabled() {
+		if webpOK {
 			if err := saveWebP(mediumThumb, mediumThumbWebPPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save medium WebP thumbnail for %s: %v", imageModel.UUID, err)
 			} else {
@@ -533,7 +557,7 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save original format version if enabled
-		if settings.IsThumbnailOriginalEnabled() {
+		if origOK {
 			if err := saveOriginalFormat(mediumThumb, mediumThumbOriginalPath, imageModel.FileType); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save medium original format thumbnail for %s: %v", imageModel.UUID, err)
 			} else {
@@ -545,14 +569,14 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 		}
 
 		// Save AVIF version if available and enabled
-		if settings.IsThumbnailAVIFEnabled() && IsFFmpegAvailable {
+		if avifOK && IsFFmpegAvailable {
 			if err := convertToAVIF(mediumThumb, mediumThumbAVIFPath); err != nil {
 				log.Errorf("[ImageProcessor] Failed to save medium AVIF thumbnail for %s: %v", imageModel.UUID, err)
 			} else {
 				hasThumbnailMedium = true
 				log.Debugf("[ImageProcessor] Saved medium AVIF thumbnail for %s", imageModel.UUID)
 			}
-		} else if !settings.IsThumbnailAVIFEnabled() {
+		} else if !avifOK {
 			log.Debugf("[ImageProcessor] Skipping medium AVIF thumbnail for %s: AVIF thumbnails disabled", imageModel.UUID)
 		}
 		mediumThumb = nil
