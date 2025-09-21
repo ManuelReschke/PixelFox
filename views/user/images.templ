@@ -48,11 +48,21 @@ templ Images(
 }
 
 templ ImagesGallery(username string, images []GalleryImage) {
-	<div class="container mx-auto px-4 py-8">
-		<h1 class="text-2xl font-bold mb-1">Meine Bilder</h1>
-            <p class="text-sm text-gray-500 mb-6">{ fmt.Sprintf("%d Bilder", len(images)) }</p>
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold mb-1">Meine Bilder</h1>
+                <p class="text-sm text-gray-500 mb-0">{ fmt.Sprintf("%d Bilder", len(images)) }</p>
+            </div>
+            <a href="/" class="btn btn-primary gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Bild hochladen
+            </a>
+        </div>
 		
-		<!-- Photo gallery with masonry layout and HTMX infinite scroll -->
+        <!-- Photo gallery with masonry layout and HTMX infinite scroll -->
 		<div id="gallery-container" class="masonry-container">
 			if len(images) > 0 {
 				@GalleryItems(images, 1)

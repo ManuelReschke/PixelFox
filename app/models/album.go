@@ -5,8 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-
-	"github.com/ManuelReschke/PixelFox/internal/pkg/shortener"
 )
 
 type Album struct {
@@ -17,7 +15,7 @@ type Album struct {
 	Description  string         `gorm:"type:text" json:"description"`
 	CoverImageID uint           `json:"cover_image_id"`
 	IsPublic     bool           `gorm:"default:false" json:"is_public"`
-	ShareLink    string         `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
+	ShareLink    string         `gorm:"type:char(36) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex;not null" json:"share_link"`
 	ViewCount    int            `gorm:"default:0" json:"view_count"`
 	Images       []Image        `gorm:"many2many:album_images;" json:"images,omitempty"`
 	CreatedAt    time.Time      `gorm:"autoCreateTime" json:"created_at"`
@@ -48,21 +46,11 @@ func (a *Album) RemoveImage(db *gorm.DB, imageID uint) error {
 
 // BeforeCreate wird vor dem Erstellen eines neuen Datensatzes aufgerufen
 func (a *Album) BeforeCreate(tx *gorm.DB) error {
-	// Generiere einen eindeutigen ShareLink, falls nicht vorhanden
+	// Generiere einen eindeutigen ShareLink als UUIDv4
 	if a.ShareLink == "" {
-		// Temporärer ShareLink für den Insert
-		a.ShareLink = "temp-" + uuid.New().String()[:8]
+		a.ShareLink = uuid.New().String()
 	}
 	return nil
 }
 
-// AfterCreate wird nach dem Erstellen eines neuen Datensatzes aufgerufen
-func (a *Album) AfterCreate(tx *gorm.DB) error {
-	// Generiere den ShareLink basierend auf der ID
-	if a.ShareLink != "" && (a.ShareLink[:5] == "temp-" || a.ShareLink == "") {
-		a.ShareLink = shortener.EncodeID(a.ID)
-		// Aktualisiere den ShareLink in der Datenbank
-		return tx.Model(a).Update("share_link", a.ShareLink).Error
-	}
-	return nil
-}
+// AfterCreate wird nicht benötigt, da der ShareLink bereits als UUID gesetzt wird

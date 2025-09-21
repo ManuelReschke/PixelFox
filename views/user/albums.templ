@@ -1,11 +1,13 @@
 package user_views
 
 import (
-	"fmt"
-	"github.com/ManuelReschke/PixelFox/views"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/gofiber/fiber/v2"
+    "fmt"
+    "strings"
+    "github.com/ManuelReschke/PixelFox/views"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+    "github.com/ManuelReschke/PixelFox/app/models"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
+    "github.com/gofiber/fiber/v2"
 )
 
 // AlbumWithGalleryImages holds album with converted gallery images
@@ -65,22 +67,45 @@ templ Albums(
     }
 }
 
-templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryImages) {
-	<div class="container mx-auto px-4 py-8">
-		<div class="flex justify-between items-center mb-6">
-			<div>
-				<h1 class="text-2xl font-bold mb-1">Meine Alben</h1>
-				<p class="text-sm text-base-content/70 mb-6">{ fmt.Sprintf("%d Alben", len(albums)) }</p>
-			</div>
-			<a href="/user/albums/create" class="btn btn-primary gap-2">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-				</svg>
-				Neues Album
-			</a>
-		</div>
+templ AlbumsIndex(username string, csrfToken string, plan string, albums []AlbumWithGalleryImages) {
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold mb-1">Meine Alben</h1>
+                if entitlements.AlbumLimit(entitlements.Plan(strings.ToLower(plan))) > -1 {
+                    <p class="text-sm text-base-content/70 mb-6">{ fmt.Sprintf("%d / %d Alben", len(albums), entitlements.AlbumLimit(entitlements.Plan(strings.ToLower(plan)))) }</p>
+                } else {
+                    <p class="text-sm text-base-content/70 mb-6">{ fmt.Sprintf("%d Alben", len(albums)) }</p>
+                }
+            </div>
+            if entitlements.AlbumLimit(entitlements.Plan(strings.ToLower(plan))) < 0 || len(albums) < entitlements.AlbumLimit(entitlements.Plan(strings.ToLower(plan))) {
+                <a href="/user/albums/create" class="btn btn-primary gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Neues Album
+                </a>
+            } else {
+                <div class="flex items-center gap-2">
+                    <div class="tooltip tooltip-left" data-tip="Du willst mehr? Upgrade auf Premium">
+                        <button class="btn btn-primary gap-2" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Neues Album
+                        </button>
+                    </div>
+                    <a href="/pricing" class="btn btn-outline btn-warning gap-2 hover:bg-yellow-100 hover:text-yellow-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                        </svg>
+                        +Premium
+                    </a>
+                </div>
+            }
+        </div>
 
-		if len(albums) > 0 {
+        if len(albums) > 0 {
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
 				for _, albumData := range albums {
 					<div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-200">
@@ -124,14 +149,33 @@ templ AlbumsIndex(username string, csrfToken string, albums []AlbumWithGalleryIm
 					</svg>
 					<h3 class="text-2xl font-bold mb-2">Keine Alben vorhanden</h3>
 					<p class="text-base-content/60 mb-6">Erstelle dein erstes Album, um deine Bilder zu organisieren.</p>
-					<a href="/user/albums/create" class="btn btn-primary gap-2">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-						</svg>
-						Erstes Album erstellen
-					</a>
-				</div>
-			</div>
-		}
-	</div>
+                if entitlements.AlbumLimit(entitlements.Plan(strings.ToLower(plan))) < 0 || len(albums) < entitlements.AlbumLimit(entitlements.Plan(strings.ToLower(plan))) {
+                    <a href="/user/albums/create" class="btn btn-primary gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Erstes Album erstellen
+                    </a>
+                } else {
+                    <div class="flex items-center justify-center gap-2">
+                        <div class="tooltip tooltip-left" data-tip="Du willst mehr? Upgrade auf Premium">
+                            <button class="btn btn-primary gap-2" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                Erstes Album erstellen
+                            </button>
+                        </div>
+                        <a href="/pricing" class="btn btn-outline btn-warning gap-2 hover:bg-yellow-100 hover:text-yellow-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                            </svg>
+                            +Premium
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+        }
+    </div>
 }

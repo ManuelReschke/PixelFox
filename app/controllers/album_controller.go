@@ -11,6 +11,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	metrics "github.com/ManuelReschke/PixelFox/internal/pkg/metrics/counter"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
@@ -88,7 +89,7 @@ func HandleUserAlbums(c *fiber.Ctx) error {
 
 	csrfToken := c.Locals("csrf").(string)
 
-	albumsIndex := user_views.AlbumsIndex(username, csrfToken, albumsWithGalleryImages)
+	albumsIndex := user_views.AlbumsIndex(username, csrfToken, userCtx.Plan, albumsWithGalleryImages)
 	albumsPage := user_views.Albums(
 		" | Meine Alben", isLoggedIn(c), false, flash.Get(c), username, usercontext.GetUserContext(c).Plan, albumsIndex, isAdmin,
 	)
@@ -102,9 +103,18 @@ func HandleUserAlbumCreate(c *fiber.Ctx) error {
 	username := userCtx.Username
 	isAdmin := userCtx.IsAdmin
 
+	// Enforce album creation limits based on plan (both GET and POST)
+	var albumCount int64
+	database.DB.Model(&models.Album{}).Where("user_id = ?", userID).Count(&albumCount)
+	if !entitlements.CanCreateAlbum(entitlements.Plan(userCtx.Plan), int(albumCount)) {
+		flash.WithError(c, fiber.Map{"message": "Du willst mehr? Upgrade auf Premium"})
+		return c.Redirect("/user/albums")
+	}
+
 	if c.Method() == "POST" {
 		title := c.FormValue("title")
 		description := c.FormValue("description")
+		isPublic := c.FormValue("is_public") == "on"
 
 		if title == "" {
 			flash.WithError(c, fiber.Map{"message": "Titel ist erforderlich"})
@@ -115,7 +125,7 @@ func HandleUserAlbumCreate(c *fiber.Ctx) error {
 			UserID:      userID,
 			Title:       title,
 			Description: description,
-			IsPublic:    false,
+			IsPublic:    isPublic,
 		}
 
 		if err := database.DB.Create(&album).Error; err != nil {

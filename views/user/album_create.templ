@@ -59,6 +59,16 @@ templ AlbumCreateIndex(username string, csrfToken string) {
 							<textarea name="description" placeholder="Album Beschreibung" class="textarea textarea-bordered w-full h-24"></textarea>
 						</div>
 
+						<div class="form-control w-full mb-6">
+							<label class="cursor-pointer label justify-start gap-3">
+								<input type="checkbox" name="is_public" class="toggle toggle-primary" />
+								<span class="label-text font-medium">Album öffentlich machen</span>
+							</label>
+							<p class="text-sm text-base-content/60 mt-1">
+								Wenn aktiviert, ist das Album öffentlich zugänglich und kann in der globalen Suche gefunden werden.
+							</p>
+						</div>
+
 						<div class="form-control w-full">
 							<button type="submit" class="btn btn-primary w-full">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">

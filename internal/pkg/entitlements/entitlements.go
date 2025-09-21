@@ -26,6 +26,28 @@ func AllowedThumbs(plan Plan) (orig, webp, avif bool) {
 	}
 }
 
+// AlbumLimit returns the allowed number of albums for a given plan.
+// -1 means unlimited.
+func AlbumLimit(plan Plan) int {
+	switch plan {
+	case PlanPremiumMax:
+		return -1
+	case PlanPremium:
+		return 50
+	default:
+		return 5
+	}
+}
+
+// CanCreateAlbum decides if a user with given plan and current album count may create another album.
+func CanCreateAlbum(plan Plan, currentCount int) bool {
+	limit := AlbumLimit(plan)
+	if limit < 0 {
+		return true
+	}
+	return currentCount < limit
+}
+
 // EffectiveThumbs combines admin settings, user plan and user preferences
 // to compute final booleans for generating Original/WebP/AVIF variants.
 func EffectiveThumbs(us *models.UserSettings, app *models.AppSettings) (orig, webp, avif bool) {
