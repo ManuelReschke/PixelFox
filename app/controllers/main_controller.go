@@ -20,7 +20,7 @@ func HandleStart(c *fiber.Ctx) error {
 
 	stats := statistics.GetStatisticsData()
 
-	page := views.HomeIndex(userCtx.IsLoggedIn, csrfToken, stats)
+	page := views.HomeIndex(userCtx.IsLoggedIn, csrfToken, userCtx.Plan, stats)
 	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))

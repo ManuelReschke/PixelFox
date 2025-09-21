@@ -9,9 +9,10 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	"github.com/ManuelReschke/PixelFox/app/models"
     "github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 )
 
-templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.StatisticsData) {
+templ HomeIndex(fromProtected bool, csrfToken string, plan string, stats statistics.StatisticsData) {
 	<section class="mx-auto w-fit flex flex-col gap-6 text-center">
         <img loading="lazy" src="/img/pixelfox-logo.png" class="mx-auto w-32"  alt="PixelFox Logo"/>
 		if !fromProtected {
@@ -57,6 +58,10 @@ templ HomeIndex(fromProtected bool, csrfToken string, stats statistics.Statistic
                     </div>
                     <div id="file-name" class="text-sm font-medium">Datei hierher ziehen oder klicken zum Auswählen</div>
                     <p class="text-xs text-base-content/60 mt-1">Formate: JPG, PNG, GIF, WEBP, AVIF, SVG, BMP</p>
+                    {{
+                        limitMB := int(entitlements.MaxUploadBytes(entitlements.Plan(plan)) / (1024 * 1024))
+                    }}
+                    <p class="text-xs text-base-content/70">Maximale Dateigröße: { fmt.Sprintf("%d MB", limitMB) }</p>
                   </div>
                 </div>
               </div>

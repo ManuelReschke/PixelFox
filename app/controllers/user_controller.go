@@ -53,7 +53,7 @@ func HandleUserProfile(c *fiber.Ctx) error {
 
 	csrfToken := c.Locals("csrf").(string)
 
-	profileIndex := user_views.ProfileIndex(username, csrfToken, user, int(imageCount), int(albumCount), int64(totalStorage))
+	profileIndex := user_views.ProfileIndex(username, csrfToken, userCtx.Plan, user, int(imageCount), int(albumCount), int64(totalStorage))
 	profile := user_views.Profile(
 		" | Profil", userCtx.IsLoggedIn, false, flash.Get(c), username, userCtx.Plan, profileIndex, isAdmin,
 	)

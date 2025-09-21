@@ -9,6 +9,7 @@ import (
 	fiberlog "github.com/gofiber/fiber/v2/log"
 
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/security"
@@ -46,6 +47,13 @@ func HandleCreateUploadSession(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "pool missing upload_api_url"})
 	}
 
+	// Clamp requested size to plan limit
+	planLimit := entitlements.MaxUploadBytes(entitlements.Plan(user.Plan))
+	maxBytes := req.FileSize
+	if maxBytes <= 0 || maxBytes > planLimit {
+		maxBytes = planLimit
+	}
+
 	// Generate token
 	secret := env.GetEnv("UPLOAD_TOKEN_SECRET", "")
 	if secret == "" {
@@ -53,7 +61,7 @@ func HandleCreateUploadSession(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "upload token secret not configured"})
 	}
 	ttl := 30 * time.Minute
-	token, err := security.GenerateUploadToken(user.UserID, pool.ID, req.FileSize, ttl, secret)
+	token, err := security.GenerateUploadToken(user.UserID, pool.ID, maxBytes, ttl, secret)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create token"})
 	}
@@ -73,6 +81,7 @@ func HandleCreateUploadSession(c *fiber.Ctx) error {
 		"token":      token,
 		"pool_id":    pool.ID,
 		"expires_at": time.Now().Add(ttl).Unix(),
+		"max_bytes":  maxBytes,
 	})
 }
 

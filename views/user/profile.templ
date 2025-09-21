@@ -24,7 +24,7 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-templ ProfileIndex(username string, csrfToken string, user models.User, imageCount int, albumCount int, storageUsage int64) {
+templ ProfileIndex(username string, csrfToken string, plan string, user models.User, imageCount int, albumCount int, storageUsage int64) {
 	<!-- Hero Section with animated gradient -->
 	<div class="relative min-h-screen overflow-hidden">
 		<!-- Animated background -->
@@ -78,7 +78,21 @@ templ ProfileIndex(username string, csrfToken string, user models.User, imageCou
 					<h1 class="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
 						{ username }
 					</h1>
-					<p class="text-xl text-base-content/70 mb-2">{ user.Email }</p>
+                    <p class="text-xl text-base-content/70 mb-2">{ user.Email }</p>
+                    {{
+                        planClass := "badge-ghost badge-outline"
+                        planLabel := "Free"
+                        if plan == "premium" {
+                            planClass = "badge-primary"
+                            planLabel = "Premium"
+                        } else if plan == "premium_max" {
+                            planClass = "badge-accent"
+                            planLabel = "Premium‑Max"
+                        }
+                    }}
+                    <div class="mt-2 flex justify-center">
+                        <div class={ templ.KV("badge "+planClass, true) } title="Aktuelles Paket">{ planLabel }</div>
+                    </div>
 					<div class="flex items-center justify-center gap-2 text-base-content/60">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />

@@ -20,6 +20,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
@@ -105,6 +106,19 @@ func HandleUpload(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 	file := files[0]
+
+	// Enforce plan-based file size limit
+	maxBytes := entitlements.MaxUploadBytes(entitlements.Plan(userCtx.Plan))
+	if file.Size > maxBytes {
+		allowed := formatBytes(maxBytes)
+		msg := fmt.Sprintf("Die Datei ist zu groß für dein Paket. Maximal erlaubt: %s.", allowed)
+		fm := fiber.Map{"type": "error", "message": msg}
+		flash.WithError(c, fm)
+		if c.Get("HX-Request") == "true" {
+			return c.Status(fiber.StatusRequestEntityTooLarge).SendString(msg)
+		}
+		return c.Redirect("/flash/upload-too-large")
+	}
 
 	// Validate extension + MIME by sniffing first bytes
 	fileExt := strings.ToLower(filepath.Ext(file.Filename))

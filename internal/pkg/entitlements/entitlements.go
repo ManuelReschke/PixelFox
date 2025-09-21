@@ -48,6 +48,20 @@ func CanCreateAlbum(plan Plan, currentCount int) bool {
 	return currentCount < limit
 }
 
+// MaxUploadBytes returns the maximum allowed upload size in bytes for a plan.
+// Free: 5 MiB, Premium: 50 MiB, Premium Max: 100 MiB
+func MaxUploadBytes(plan Plan) int64 {
+	const MiB = 1024 * 1024
+	switch plan {
+	case PlanPremiumMax:
+		return 100 * MiB
+	case PlanPremium:
+		return 50 * MiB
+	default:
+		return 5 * MiB
+	}
+}
+
 // EffectiveThumbs combines admin settings, user plan and user preferences
 // to compute final booleans for generating Original/WebP/AVIF variants.
 func EffectiveThumbs(us *models.UserSettings, app *models.AppSettings) (orig, webp, avif bool) {
