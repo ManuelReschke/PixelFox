@@ -20,6 +20,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
@@ -118,6 +119,29 @@ func HandleUpload(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusRequestEntityTooLarge).SendString(msg)
 		}
 		return c.Redirect("/flash/upload-too-large")
+	}
+
+	// Enforce plan-based storage quota (used + incoming file)
+	quota := entitlements.StorageQuotaBytes(entitlements.Plan(userCtx.Plan))
+	if quota > 0 {
+		var used int64
+		db := database.GetDB()
+		if db != nil {
+			db.Model(&models.Image{}).Where("user_id = ?", userCtx.UserID).Select("COALESCE(SUM(file_size), 0)").Row().Scan(&used)
+		}
+		if used+file.Size > quota {
+			remaining := quota - used
+			if remaining < 0 {
+				remaining = 0
+			}
+			msg := fmt.Sprintf("Speicherlimit erreicht. Frei: %s, benötigt: %s.", formatBytes(remaining), formatBytes(file.Size))
+			fm := fiber.Map{"type": "error", "message": msg}
+			flash.WithError(c, fm)
+			if c.Get("HX-Request") == "true" {
+				return c.Status(fiber.StatusRequestEntityTooLarge).SendString(msg)
+			}
+			return c.Redirect("/flash/upload-too-large")
+		}
 	}
 
 	// Validate extension + MIME by sniffing first bytes

@@ -8,7 +8,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	fiberlog "github.com/gofiber/fiber/v2/log"
 
+	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
@@ -52,6 +54,21 @@ func HandleCreateUploadSession(c *fiber.Ctx) error {
 	maxBytes := req.FileSize
 	if maxBytes <= 0 || maxBytes > planLimit {
 		maxBytes = planLimit
+	}
+
+	// Clamp further to remaining storage quota
+	if quota := entitlements.StorageQuotaBytes(entitlements.Plan(user.Plan)); quota > 0 {
+		var used int64
+		if db := database.GetDB(); db != nil {
+			db.Model(&models.Image{}).Where("user_id = ?", user.UserID).Select("COALESCE(SUM(file_size), 0)").Row().Scan(&used)
+		}
+		remaining := quota - used
+		if remaining <= 0 {
+			return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "storage quota exceeded"})
+		}
+		if maxBytes > remaining {
+			maxBytes = remaining
+		}
 	}
 
 	// Generate token

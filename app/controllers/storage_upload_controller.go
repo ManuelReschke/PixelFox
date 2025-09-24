@@ -21,6 +21,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/repository"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/security"
@@ -109,6 +110,28 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	file := files[0]
 	if file.Size > claims.MaxBytes {
 		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large for session"})
+	}
+
+	// Enforce per-plan storage quota for the user
+	db := database.GetDB()
+	if db != nil {
+		us, _ := models.GetOrCreateUserSettings(db, claims.UserID)
+		quota := entitlements.StorageQuotaBytes(entitlements.Plan(us.Plan))
+		if quota > 0 {
+			var used int64
+			db.Model(&models.Image{}).Where("user_id = ?", claims.UserID).Select("COALESCE(SUM(file_size), 0)").Row().Scan(&used)
+			if used+file.Size > quota {
+				remaining := quota - used
+				if remaining < 0 {
+					remaining = 0
+				}
+				return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{
+					"error":     "storage quota exceeded",
+					"remaining": remaining,
+					"needed":    file.Size,
+				})
+			}
+		}
 	}
 
 	// Validate filename extension and MIME by sniffing the first bytes

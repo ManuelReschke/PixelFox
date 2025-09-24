@@ -62,6 +62,20 @@ func MaxUploadBytes(plan Plan) int64 {
 	}
 }
 
+// StorageQuotaBytes returns the total storage quota in bytes per plan.
+// -1 means unlimited.
+func StorageQuotaBytes(plan Plan) int64 {
+	const GiB = int64(1024 * 1024 * 1024)
+	switch plan {
+	case PlanPremiumMax:
+		return 2000 * GiB // 2 TB
+	case PlanPremium:
+		return 500 * GiB // 500 GB
+	default:
+		return 25 * GiB
+	}
+}
+
 // EffectiveThumbs combines admin settings, user plan and user preferences
 // to compute final booleans for generating Original/WebP/AVIF variants.
 func EffectiveThumbs(us *models.UserSettings, app *models.AppSettings) (orig, webp, avif bool) {

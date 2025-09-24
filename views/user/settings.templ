@@ -87,6 +87,7 @@ templ SettingsIndex(
                                 <input type="checkbox" name="pref_thumb_original" class="toggle toggle-primary" disabled?={!canOrig} />
                             }
                         </label>
+                        <div class="text-xs opacity-70 ml-1 -mt-2 mb-2">Originalformat, keine zusätzliche Komprimierung.</div>
                         <label class="label cursor-pointer" title={ webpTitle }>
                             <span class="label-text">WebP</span>
                             if prefWebp {
@@ -95,6 +96,7 @@ templ SettingsIndex(
                                 <input type="checkbox" name="pref_thumb_webp" class="toggle toggle-primary" disabled?={!canWebp} />
                             }
                         </label>
+                        <div class="text-xs opacity-70 ml-1 -mt-2 mb-2">Spart bis zu 70% Speicherplatz.</div>
                         <label class="label cursor-pointer" title={ avifTitle }>
                             <span class="label-text">AVIF</span>
                             if prefAvif {
@@ -103,6 +105,7 @@ templ SettingsIndex(
                                 <input type="checkbox" name="pref_thumb_avif" class="toggle toggle-primary" disabled?={!canAvif} />
                             }
                         </label>
+                        <div class="text-xs opacity-70 ml-1 -mt-2 mb-2">Spart bis zu 90% Speicherplatz.</div>
                         if !canWebp || !canAvif {
                             <div class="text-xs opacity-70 mt-2">Hinweis: Einige Formate sind in deinem Paket nicht verfügbar.</div>
                         }

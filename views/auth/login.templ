@@ -16,8 +16,8 @@ templ LoginIndex(fromProtected bool, csrfToken string) {
             <!-- Social Login zuerst -->
             <div class="flex flex-col gap-2 w-96 mt-2">
                 <a href="/auth/google" class="btn btn-outline w-full" hx-boost="false" target="_top" rel="external noopener">Mit Google einloggen</a>
-                <a href="/auth/facebook" class="btn btn-outline w-full" hx-boost="false" target="_top" rel="external noopener">Mit Facebook einloggen</a>
-                <a href="/auth/discord" class="btn btn-outline w-full" hx-boost="false" target="_top" rel="external noopener">Mit Discord einloggen</a>
+                <a href="/auth/facebook" class="btn btn-outline w-full" hx-boost="false" target="_top" rel="external noopener" disabled>*Soon* Mit Facebook einloggen</a>
+                <a href="/auth/discord" class="btn btn-outline w-full" hx-boost="false" target="_top" rel="external noopener" disabled>*Soon*Mit Discord einloggen</a>
             </div>
             <p class="text-sm text-base-content/70 w-96 mt-3">
                 Hinweis: Beim ersten Login über einen Social Provider wird automatisch ein Konto erstellt.
