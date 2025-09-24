@@ -112,11 +112,19 @@ func HomeIndex(fromProtected bool, csrfToken string, plan string, stats statisti
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		templ_7745c5c3_Err = TrustBadges().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		if !fromProtected {
 			templ_7745c5c3_Err = Stats(stats).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+		}
+		templ_7745c5c3_Err = Features(fromProtected).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
 		}
 		return nil
 	})
@@ -326,7 +334,7 @@ func Stats(stats statistics.StatisticsData) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(stats.TodayImages))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 214, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 218, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -339,7 +347,7 @@ func Stats(stats statistics.StatisticsData) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(time.Now().Format("02.01.2006"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 215, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 219, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -352,7 +360,7 @@ func Stats(stats statistics.StatisticsData) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(stats.TotalUsers))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 236, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 240, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -365,7 +373,7 @@ func Stats(stats statistics.StatisticsData) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(stats.TotalAlbums))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 258, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 262, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -378,13 +386,71 @@ func Stats(stats statistics.StatisticsData) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(stats.TotalImages))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 280, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/home.templ`, Line: 284, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div><div class=\"stat-desc\">Hochgeladene Bilder</div></div></div></section>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func Features(fromProtected bool) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var16 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var16 == nil {
+			templ_7745c5c3_Var16 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<section class=\"mx-auto max-w-6xl px-4 mt-8 mb-8\"><div class=\"text-center mb-8\"><h3 class=\"text-3xl font-bold\">Warum PixelFox?</h3><p class=\"text-base font-thin opacity-80\">Die Highlights auf einen Blick</p></div><div class=\"grid gap-4 sm:grid-cols-2 lg:grid-cols-3\"><div class=\"card bg-base-200 shadow\"><div class=\"card-body items-center text-center\"><div class=\"mb-2 text-primary bg-primary/10 rounded-full p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\" class=\"size-10\"><path d=\"M12 2.25c.414 0 .75.336.75.75v3.026a.75.75 0 1 1-1.5 0V3a.75.75 0 0 1 .75-.75Zm6.364 3.386a.75.75 0 0 1 1.06 1.06l-2.14 2.14a.75.75 0 0 1-1.06-1.06l2.14-2.14ZM4.576 5.636a.75.75 0 0 1 1.06 0l2.14 2.14a.75.75 0 1 1-1.06 1.06l-2.14-2.14a.75.75 0 0 1 0-1.06ZM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z\"></path></svg></div><h4 class=\"card-title\">Schnelle Uploads</h4><p class=\"text-sm opacity-80\">Drag & Drop, Fortschrittsanzeige und direkte Links – schnell und unkompliziert.</p></div></div><div class=\"card bg-base-200 shadow\"><div class=\"card-body items-center text-center\"><div class=\"mb-2 text-primary bg-primary/10 rounded-full p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"size-10\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 7.5h12m0 0L13.5 4M15 7.5 13.5 11M21 16.5H9m0 0 1.5-3M9 16.5l1.5 3\"></path></svg></div><h4 class=\"card-title\">Moderne Formate</h4><p class=\"text-sm opacity-80\">WebP spart bis zu 70%, AVIF bis zu 90% Speicher – bei top Qualität.</p></div></div><div class=\"card bg-base-200 shadow\"><div class=\"card-body items-center text-center\"><div class=\"mb-2 text-primary bg-primary/10 rounded-full p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"size-10\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M15.75 6v10.5a2.25 2.25 0 1 1-4.5 0V6m4.5 0a2.25 2.25 0 1 0-4.5 0m4.5 0H18a2.25 2.25 0 0 1 2.25 2.25v6a2.25 2.25 0 0 1-2.25 2.25h-2.25\"></path></svg></div><h4 class=\"card-title\">Alben & Freigabelinks</h4><p class=\"text-sm opacity-80\">Bilder in Alben organisieren und sicher per Link teilen.</p></div></div><div class=\"card bg-base-200 shadow\"><div class=\"card-body items-center text-center\"><div class=\"mb-2 text-primary bg-primary/10 rounded-full p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"size-10\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75M6 10.5h12v9a2.25 2.25 0 0 1-2.25 2.25H8.25A2.25 2.25 0 0 1 6 19.5v-9Z\"></path></svg></div><h4 class=\"card-title\">Privat oder öffentlich</h4><p class=\"text-sm opacity-80\">Du entscheidest pro Bild, wer es sehen darf.</p></div></div><div class=\"card bg-base-200 shadow\"><div class=\"card-body items-center text-center\"><div class=\"mb-2 text-primary bg-primary/10 rounded-full p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"size-10\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3.75 7.5h16.5m-16.5 9h16.5M6 4.5h12a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z\"></path></svg></div><h4 class=\"card-title\">Optimierte Vorschauen</h4><p class=\"text-sm opacity-80\">Scharfe Thumbnails und schnelle Ladezeiten auf allen Geräten.</p></div></div><div class=\"card bg-base-200 shadow\"><div class=\"card-body items-center text-center\"><div class=\"mb-2 text-primary bg-primary/10 rounded-full p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"size-10\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M8.25 4.5h7.5m-9 15h10.5m-9-3h7.5M4.5 6.75h15v10.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 17.25V6.75Z\"></path></svg></div><h4 class=\"card-title\">API inklusive</h4><p class=\"text-sm opacity-80\">OpenAPI‑basiert für Integration und Automatisierung.</p></div></div></div><div class=\"flex justify-center gap-3 mt-8\"><a hx-swap=\"transition:true\" href=\"/register\" class=\"btn btn-primary\">Jetzt kostenlos starten</a> <a hx-swap=\"transition:true\" href=\"/docs/api\" class=\"btn btn-secondary btn-outline\">API ansehen</a></div></section>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func TrustBadges() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var17 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var17 == nil {
+			templ_7745c5c3_Var17 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<section class=\"mx-auto max-w-6xl px-4 mt-8\"><div class=\"grid gap-3 sm:grid-cols-3\"><!-- Ultra fast hosting --><div class=\"flex items-center gap-3 p-4 rounded-xl bg-base-200\"><span class=\"inline-flex items-center justify-center rounded-full bg-primary/10 p-2 text-primary text-2xl\">🚀</span><div><div class=\"font-semibold\">Ultra schnelles Bilderhosting</div><div class=\"text-sm opacity-80\">Gebaut mit Go und modernen Web‑Technologien</div></div></div><!-- Hosting locations --><div class=\"flex items-center gap-3 p-4 rounded-xl bg-base-200\"><span class=\"inline-flex items-center justify-center rounded-full bg-primary/10 p-2\"><svg width=\"28\" height=\"18\" viewBox=\"0 0 28 18\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><rect width=\"28\" height=\"6\" y=\"0\" fill=\"#000\"></rect> <rect width=\"28\" height=\"6\" y=\"6\" fill=\"#DD0000\"></rect> <rect width=\"28\" height=\"6\" y=\"12\" fill=\"#FFCE00\"></rect></svg></span><div><div class=\"font-semibold\">Hosting in Deutschland & EU</div><div class=\"text-sm opacity-80\">Serverstandorte in DE/EU</div></div></div><!-- Quality --><div class=\"flex items-center gap-3 p-4 rounded-xl bg-base-200\"><span class=\"inline-flex items-center justify-center rounded-full bg-primary/10 p-2 text-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"size-7\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z\"></path></svg></span><div><div class=\"font-semibold\">Deutsche Qualität</div><div class=\"text-sm opacity-80\">Zuverlässig, stabil und transparent</div></div></div></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
