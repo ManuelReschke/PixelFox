@@ -49,6 +49,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)
 	// Phase 2: Direct-to-Storage Upload Session API (requires auth)
 	app.Post("/api/v1/upload/sessions", requireAuthMiddleware, controllers.HandleCreateUploadSession)
+	// Upload batch API (premium multi-upload): stores batch result in cache
+	app.Post("/api/v1/upload/batches", requireAuthMiddleware, controllers.HandleCreateUploadBatch)
 	// Storage-side upload endpoint (token protected) with CORS for cross-origin uploads
 	app.Post("/api/internal/upload", cors.New(cors.Config{
 		AllowOrigins:     "*",
@@ -148,6 +150,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group := app.Group("", cors.New(), csrf.New(csrfConf))
 	group.Get("/", loggedInMiddleware, controllers.HandleStart)
 	group.Post("/upload", requireAuthMiddleware, controllers.HandleUpload)
+	group.Get("/upload/batch/:id", requireAuthMiddleware, controllers.HandleUploadBatchView)
+	group.Post("/upload/batch/:id/album", requireAuthMiddleware, controllers.HandleUploadBatchSaveAsAlbum)
 	group.Get("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Post("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Get("/register", loggedInMiddleware, controllers.HandleAuthRegister)

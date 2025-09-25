@@ -1,0 +1,91 @@
+package upload_views
+
+import (
+    "github.com/ManuelReschke/PixelFox/views"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+    "github.com/gofiber/fiber/v2"
+)
+
+type BatchItem struct {
+    UUID      string
+    ShareURL  string
+    EditURL   string
+    Preview   string
+    Duplicate bool
+}
+
+templ BatchResultIndex(csrfToken string, batchID string, items []BatchItem) {
+    <section class="mx-auto max-w-5xl w-full px-4 mt-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-semibold">Uploads – Zusammenfassung</h2>
+            {{
+                // Build CSV of UUIDs for server-side processing
+                uuids := ""
+                for i, it := range items {
+                    if i == 0 { uuids = it.UUID } else { uuids = uuids + "," + it.UUID }
+                }
+            }}
+            <form method="POST" action={ "/upload/batch/" + batchID + "/album" } class="flex items-center gap-2">
+                <input type="hidden" name="_csrf" value={ csrfToken }>
+                <input type="hidden" name="uuids" value={ uuids }>
+                <button type="submit" class="btn btn-sm btn-primary">Als Album speichern</button>
+            </form>
+        </div>
+        <div class="text-sm opacity-70 mb-4">Diese Seite ist temporär und wird nach dem Verlassen nicht erneut angezeigt.</div>
+        <div class="divider"></div>
+
+        if len(items) == 0 {
+            <div class="alert alert-info">Keine Einträge gefunden.</div>
+        } else {
+            <div class="flex flex-col gap-3">
+                for _, it := range items {
+                    <div class="card bg-base-200 shadow-sm">
+                        <div class="card-body flex flex-row items-center gap-4 py-4">
+                            <div class="shrink-0">
+                                if it.Preview != "" {
+                                    <a href={ it.ShareURL } target="_blank"><img src={ it.Preview } alt="Vorschau" class="w-24 h-24 object-cover rounded"/></a>
+                                } else {
+                                    <a href={ it.ShareURL } target="_blank"><div class="w-24 h-24 grid place-items-center rounded bg-base-300 text-base-content/60">🖼️</div></a>
+                                }
+                            </div>
+                            <div class="grow">
+                                if it.Duplicate {
+                                    <div class="text-sm mb-2"><span class="badge badge-outline badge-warning">Bereits vorhanden</span></div>
+                                }
+                                <div class="join w-full max-w-xl">
+                                    <input type="text" readonly class="input input-bordered join-item w-full" value={ it.ShareURL } />
+                                    <button class="btn btn-primary join-item copy-link-btn" type="button" data-rel={ it.ShareURL }>Kopieren</button>
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                <a href={ it.EditURL } class="btn btn-secondary">Bearbeiten</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+}
+
+templ BatchResult(
+    page string,
+    fromProtected bool,
+    isError bool,
+    msg fiber.Map,
+    cmp templ.Component,
+    isAdmin bool,
+) {
+    @views.Layout(viewmodel.Layout{
+        Page:          page,
+        FromProtected: fromProtected,
+        IsError:       isError,
+        Msg:           msg,
+        Username:      "",
+        IsAdmin:       isAdmin,
+        OGViewModel:   nil,
+        Plan:          "",
+    }) {
+        @cmp
+    }
+}

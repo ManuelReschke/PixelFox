@@ -16,6 +16,7 @@ templ PublicAlbum(
     username string,
     cmp templ.Component,
     isAdmin bool,
+    ogViewModel *viewmodel.OpenGraph,
 ) {
     @views.Layout(viewmodel.Layout{
         Page:          page,
@@ -24,7 +25,7 @@ templ PublicAlbum(
         Msg:           msg,
         Username:      username,
         IsAdmin:       isAdmin,
-        OGViewModel:   nil,
+        OGViewModel:   ogViewModel,
     }) {
         @cmp
     }

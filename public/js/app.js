@@ -139,23 +139,33 @@ function initUploadForm() {
     // Datei-Input-Event-Listener
     fileInput.addEventListener('change', function() {
         if (this.files.length > 0) {
+            // Multi-Upload: nur Dateiname(n) anzeigen
+            if (fileInput.multiple && this.files.length > 1) {
+                fileName.textContent = `${this.files.length} Dateien ausgewählt`;
+                uploadButton.disabled = false;
+                dropArea.classList.add('border-primary');
+                dropArea.classList.remove('border-primary/50');
+                // Keine Einzelvorschau im Multi-Modus
+                uploadIcon.classList.remove('hidden');
+                inlineImagePreview.classList.add('hidden');
+                inlineImagePreview.src = '';
+                return;
+            }
+
             const file = this.files[0];
-            
-            // Prüfe, ob es sich um ein Bild handelt
+            // Prüfe Bildtyp
             if (!file.type.startsWith('image/')) {
                 errorMessage.classList.remove('hidden');
                 errorText.textContent = 'Nur Bildformate werden unterstützt (JPG, JPEG, PNG, GIF, WEBP, AVIF, BMP)';
                 uploadResult.classList.remove('hidden');
-                fileInput.value = ''; // Dateiauswahl zurücksetzen
+                fileInput.value = '';
                 return;
             }
-            
             fileName.textContent = file.name;
             uploadButton.disabled = false;
             dropArea.classList.add('border-primary');
             dropArea.classList.remove('border-primary/50');
-            
-            // Zeige Bildvorschau
+            // Einzelvorschau
             const reader = new FileReader();
             reader.onload = function(e) {
                 uploadIcon.classList.add('hidden');
@@ -227,7 +237,7 @@ function initUploadForm() {
         inlineImagePreview.src = '';
     }
 
-    // Direct-to-Storage flow
+    // Direct-to-Storage flow (single file)
     async function directUpload(file) {
         try {
             // Show progress UI
@@ -357,11 +367,134 @@ function initUploadForm() {
         }
     }
 
+    // Direct-to-Storage multi-file flow (sequentiell)
+    async function directUploadFiles(files) {
+        try {
+            progressContainer.classList.remove('hidden');
+            uploadButton.disabled = true;
+            uploadStatus.textContent = 'Vorbereitung...';
+
+            const items = [];
+            window.__pxf_multi_items = items;
+            for (let i = 0; i < files.length; i++) {
+                const f = files[i];
+                uploadStatus.textContent = `(${i+1}/${files.length}) Session...`;
+
+                // 1) Session
+                const sessRes = await fetch('/api/v1/upload/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ file_size: f.size })
+                });
+                if (!sessRes.ok) {
+                    throw { status: sessRes.status, body: await sessRes.text() };
+                }
+                const sess = await sessRes.json();
+                if (!sess.upload_url || !sess.token) {
+                    throw new Error('Ungültige Session-Antwort');
+                }
+
+                // 2) Upload
+                const perFileResult = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', sess.upload_url, true);
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + sess.token);
+                    xhr.upload.onprogress = (evt) => {
+                        if (evt.lengthComputable) {
+                            const percent = Math.round((evt.loaded / evt.total) * 100);
+                            progressBar.style.width = percent + '%';
+                            uploadPercentage.textContent = percent + '%';
+                            if (percent === 100) uploadStatus.textContent = `(${i+1}/${files.length}) Verarbeitung...`;
+                        }
+                    };
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try { resolve(JSON.parse(xhr.responseText || '{}')); }
+                                catch(_) { resolve({}); }
+                            } else {
+                                reject({ status: xhr.status, body: xhr.responseText });
+                            }
+                        }
+                    };
+                    const fd = new FormData();
+                    fd.append('file', f);
+                    xhr.send(fd);
+                });
+
+                // Collect item
+                items.push({
+                    uuid: perFileResult.image_uuid || '',
+                    view_url: perFileResult.view_url || '',
+                    duplicate: !!perFileResult.duplicate,
+                });
+            }
+
+            // 3) Create batch
+            uploadStatus.textContent = 'Ergebnis sammeln...';
+            const bres = await fetch('/api/v1/upload/batches', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ items })
+            });
+            if (!bres.ok) {
+                throw { status: bres.status, body: await bres.text() };
+            }
+            const bj = await bres.json();
+            const batchId = bj.batch_id || '';
+            if (!batchId) {
+                throw new Error('Batch konnte nicht erstellt werden');
+            }
+            window.location.href = `/upload/batch/${batchId}`;
+        } catch (err) {
+            // Known errors → flash helpers
+            if (err && err.status === 429) { window.location.href = '/flash/upload-rate-limit'; return; }
+            if (err && err.status === 413) { window.location.href = '/flash/upload-too-large'; return; }
+            if (err && err.status === 415) { window.location.href = '/flash/upload-unsupported-type'; return; }
+            // If we already uploaded some items, try to create a partial batch
+            try {
+                const items = window.__pxf_multi_items || [];
+                if (items.length > 0) {
+                    const bres = await fetch('/api/v1/upload/batches', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ items })
+                    });
+                    if (bres.ok) {
+                        const bj = await bres.json();
+                        if (bj.batch_id) { window.location.href = `/upload/batch/${bj.batch_id}`; return; }
+                    }
+                }
+            } catch(_) {}
+            // Otherwise, show generic error
+            try {
+                let msg = '';
+                if (err && err.body) { try { const obj = JSON.parse(err.body); msg = (obj && obj.error) || ''; } catch(_) {} }
+                if (msg) { window.location.href = '/flash/upload-error?msg=' + encodeURIComponent(msg); return; }
+            } catch(_) {}
+            progressContainer.classList.add('hidden');
+            errorMessage && errorMessage.classList.remove('hidden');
+            errorText && (errorText.textContent = 'Fehler beim Multi-Upload');
+        }
+    }
+
     // Intercept submit when direct upload enabled
     uploadForm.addEventListener('submit', function(e) {
+        if (!fileInput.files.length) return;
+        // Always intercept when multi-selected, regardless of directUpload setting
+        if (fileInput.multiple && fileInput.files.length > 1) {
+            e.preventDefault();
+            // Disable HTMX on this form to avoid accidental /upload requests
+            try { uploadForm.setAttribute('data-hx-disable', 'true'); } catch(_) {}
+            try { uploadForm.removeAttribute('hx-post'); } catch(_) {}
+            try { uploadForm.removeAttribute('hx-encoding'); } catch(_) {}
+            const files = Array.from(fileInput.files);
+            directUploadFiles(files);
+            return;
+        }
+        // Single file: only intercept if direct upload is enabled
         if (!directUploadEnabled) return; // let HTMX handle
         e.preventDefault();
-        if (!fileInput.files.length) return;
         directUpload(fileInput.files[0]);
     });
 
@@ -679,7 +812,15 @@ function openAlbumShare(relOrAbsUrl) {
         `,
         showConfirmButton: false,
         showCloseButton: true,
-        width: '32rem'
+        width: '32rem',
+        background: 'oklch(var(--b1)/1)',
+        color: 'oklch(var(--bc)/1)',
+        customClass: {
+            popup: 'bg-base-100 text-base-content',
+            title: 'text-base-content',
+            htmlContainer: 'text-base-content',
+            closeButton: 'text-base-content'
+        }
     }).then(() => {
         // cleanup if needed
     });

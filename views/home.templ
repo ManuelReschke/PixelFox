@@ -41,11 +41,13 @@ templ HomeIndex(fromProtected bool, csrfToken string, plan string, stats statist
               <!-- File Input Area -->
               <div class="w-full">
                 <div id="drop-area" class="border-2 border-dashed border-primary/50 rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors duration-200 relative">
+                  {{ mu := entitlements.CanMultiUpload(entitlements.Plan(plan)) }}
                   <input
                     type="file"
                     name="file"
                     id="file-input"
                     accept="image/*"
+                    multiple?={ mu }
                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     required
                   />
@@ -62,6 +64,9 @@ templ HomeIndex(fromProtected bool, csrfToken string, plan string, stats statist
                         limitMB := int(entitlements.MaxUploadBytes(entitlements.Plan(plan)) / (1024 * 1024))
                     }}
                     <p class="text-xs text-base-content/70">Maximale Dateigröße: { fmt.Sprintf("%d MB", limitMB) }</p>
+                    if mu {
+                        <p class="text-xs text-primary mt-1">Mehrere Dateien gleichzeitig auswählen (Premium)</p>
+                    }
                   </div>
                 </div>
               </div>

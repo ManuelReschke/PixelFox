@@ -490,11 +490,18 @@ func processImageCore(imageModel *models.Image) (errResult error) {
 
 		// Optimized AVIF (controlled by effective entitlements + ffmpeg availability)
 		if avifOK && IsFFmpegAvailable {
-			if err := convertToAVIF(imgDecoded, optimizedAVIFPath); err != nil {
-				log.Errorf("[ImageProcessor] Failed to convert to optimized AVIF for %s: %v", imageModel.UUID, err)
+			// Guard: libsvtav1 requires at least 64x64 input
+			w := imgDecoded.Bounds().Dx()
+			h := imgDecoded.Bounds().Dy()
+			if w < 64 || h < 64 {
+				log.Debugf("[ImageProcessor] Skipping optimized AVIF for %s: original dimensions %dx%d below 64x64", imageModel.UUID, w, h)
 			} else {
-				hasAvif = true
-				log.Debugf("[ImageProcessor] Saved optimized AVIF for %s", imageModel.UUID)
+				if err := convertToAVIF(imgDecoded, optimizedAVIFPath); err != nil {
+					log.Errorf("[ImageProcessor] Failed to convert to optimized AVIF for %s: %v", imageModel.UUID, err)
+				} else {
+					hasAvif = true
+					log.Debugf("[ImageProcessor] Saved optimized AVIF for %s", imageModel.UUID)
+				}
 			}
 		} else if !avifOK {
 			log.Debugf("[ImageProcessor] Skipping optimized AVIF for %s: AVIF disabled in settings", imageModel.UUID)

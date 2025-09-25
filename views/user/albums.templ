@@ -109,9 +109,9 @@ templ AlbumsIndex(username string, csrfToken string, plan string, albums []Album
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
 				for _, albumData := range albums {
 					<div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-200">
-						<figure class="h-32 bg-base-200 flex items-center justify-center overflow-hidden">
+						<a href={ templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)) } class="h-32 bg-base-200 flex items-center justify-center overflow-hidden block">
 							@albumCoverImage(albumData)
-						</figure>
+						</a>
 						<div class="card-body p-4">
 							<h2 class="card-title text-sm font-semibold truncate">{ albumData.Album.Title }</h2>
 							if albumData.Album.Description != "" {
@@ -121,24 +121,21 @@ templ AlbumsIndex(username string, csrfToken string, plan string, albums []Album
 								<span>{ fmt.Sprintf("%d Bilder", len(albumData.Images)) }</span>
 								<span>{ albumData.Album.CreatedAt.Format("02.01.2006") }</span>
 							</div>
-                        <div class="card-actions justify-center gap-2">
-                            <a href={ templ.URL(fmt.Sprintf("/user/albums/%d", albumData.Album.ID)) } class="btn btn-primary btn-xs">
-                                Ansehen
-                            </a>
-                            <button class="btn btn-outline btn-xs" onclick={ templ.ComponentScript{ Call: fmt.Sprintf("openAlbumShare('/a/%s')", albumData.Album.ShareLink) } }>
-                                Teilen
-                            </button>
-                            <a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="btn btn-outline btn-xs">
-                                Bearbeiten
-                            </a>
-                            <a href={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } 
-                               class="btn btn-error btn-outline btn-xs"
-                               onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
-                                Löschen
-                            </a>
-                        </div>
-                    </div>
-                </div>
+							<div class="card-actions justify-center gap-2">
+								<button class="btn btn-outline btn-xs" onclick={ templ.ComponentScript{ Call: fmt.Sprintf("openAlbumShare('/a/%s')", albumData.Album.ShareLink) } }>
+									Teilen
+								</button>
+								<a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="btn btn-outline btn-xs">
+									Bearbeiten
+								</a>
+								<a href={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } 
+								   class="btn btn-error btn-outline btn-xs"
+								   onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
+									Löschen
+								</a>
+							</div>
+						</div>
+					</div>
             }
 			</div>
 		} else {

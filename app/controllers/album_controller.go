@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
@@ -15,6 +16,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	metrics "github.com/ManuelReschke/PixelFox/internal/pkg/metrics/counter"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
 )
 
@@ -444,10 +446,61 @@ func HandleAlbumShareLink(c *fiber.Ctx) error {
 		galleryAlbumImages = append(galleryAlbumImages, imageToGalleryImage(img))
 	}
 
+	// Build Open Graph model using cover image, title and shortened description
+	var cover *models.Image
+	if album.CoverImageID != 0 {
+		for i := range album.Images {
+			if album.Images[i].ID == album.CoverImageID {
+				cover = &album.Images[i]
+				break
+			}
+		}
+	}
+	if cover == nil && len(album.Images) > 0 {
+		cover = &album.Images[0]
+	}
+
+	coverURL := ""
+	if cover != nil {
+		coverURL = imageprocessor.GetBestPreviewURL(cover)
+	}
+
+	ogTitle := album.Title
+	ogDesc := strings.TrimSpace(album.Description)
+	if ogDesc == "" {
+		ogDesc = album.Title
+	}
+	ogDesc = truncateForOG(ogDesc, 180)
+
+	shareURL := fmt.Sprintf("%s/a/%s", c.BaseURL(), album.ShareLink)
+	og := &viewmodel.OpenGraph{
+		URL:         shareURL,
+		Image:       coverURL,
+		ImageAlt:    ogTitle,
+		Title:       ogTitle,
+		Description: ogDesc,
+	}
+
 	pageTitle := fmt.Sprintf(" | %s", album.Title)
 	cmp := user_views.PublicAlbumIndex(album, galleryAlbumImages)
-	page := user_views.PublicAlbum(pageTitle, false, false, nil, "", cmp, false)
+	page := user_views.PublicAlbum(pageTitle, false, false, nil, "", cmp, false, og)
 	// Increment album view counter for public views as well
 	_ = metrics.AddAlbumView(album.ID)
 	return adaptor.HTTPHandler(templ.Handler(page))(c)
+}
+
+// truncateForOG shortens a string to max characters without breaking words when possible
+func truncateForOG(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if len(s) <= max {
+		return s
+	}
+	// Attempt to cut at last space before max
+	cut := s[:max]
+	if idx := strings.LastIndex(cut, " "); idx > 40 { // keep at least some length
+		cut = cut[:idx]
+	}
+	return strings.TrimSpace(cut) + "…"
 }

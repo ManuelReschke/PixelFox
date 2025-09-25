@@ -47,28 +47,6 @@ func readToken(c *fiber.Ctx) string {
 // HandleStorageDirectUpload verifies token and writes file into the designated pool
 // Expects multipart form with field "file" and token via Authorization: Bearer <token> or form field "token"
 func HandleStorageDirectUpload(c *fiber.Ctx) error {
-	// IP-based rate limit based on settings (uploads per minute)
-	if limit := models.GetAppSettings().GetUploadRateLimitPerMinute(); limit > 0 {
-		ip := c.IP()
-		if ip == "" {
-			ip = "unknown"
-		}
-		rateKey := fmt.Sprintf("rate:upload:%s", ip)
-		cli := cache.GetClient()
-		if cli != nil {
-			ctx := context.Background()
-			n, err := cli.Incr(ctx, rateKey).Result()
-			if err == nil {
-				if n == 1 {
-					cli.Expire(ctx, rateKey, 60*time.Second)
-				}
-				if int(n) > limit {
-					return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "rate limit exceeded"})
-				}
-			}
-		}
-	}
-
 	token := readToken(c)
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "missing token"})
@@ -79,19 +57,95 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
 	}
 
-	// Per-User Rate Limit (in addition to IP limit)
-	if userLimit := models.GetAppSettings().GetUploadUserRateLimitPerMinute(); userLimit > 0 && claims != nil && claims.UserID > 0 {
-		cli := cache.GetClient()
-		if cli != nil {
-			ctx := context.Background()
-			rateKey := fmt.Sprintf("rate:upload:user:%d", claims.UserID)
-			n, err := cli.Incr(ctx, rateKey).Result()
-			if err == nil {
-				if n == 1 {
-					cli.Expire(ctx, rateKey, 60*time.Second)
+	// IP-based rate limit: apply only for anonymous/unauthenticated tokens.
+	// Für autorisierte Uploads (mit gültigem Token/claims) verlassen wir uns auf das per‑User‑Limit.
+	if claims == nil || claims.UserID == 0 {
+		if limit := models.GetAppSettings().GetUploadRateLimitPerMinute(); limit > 0 {
+			ip := c.IP()
+			if ip == "" {
+				ip = "unknown"
+			}
+			rateKey := fmt.Sprintf("rate:upload:%s", ip)
+			cli := cache.GetClient()
+			if cli != nil {
+				ctx := context.Background()
+				n, err := cli.Incr(ctx, rateKey).Result()
+				if err == nil {
+					if n == 1 {
+						cli.Expire(ctx, rateKey, 60*time.Second)
+					} else {
+						ttl, _ := cli.TTL(ctx, rateKey).Result()
+						if ttl <= 0 || ttl > 2*time.Minute {
+							// Repair missing TTL and reset counter if it already exceeded the limit due to a stale key
+							if int(n) > limit {
+								_ = cli.Set(ctx, rateKey, 1, 60*time.Second).Err()
+								n = 1
+							} else {
+								cli.Expire(ctx, rateKey, 60*time.Second)
+							}
+						}
+					}
+					// Expose debug headers for diagnostics
+					ttl, _ := cli.TTL(ctx, rateKey).Result()
+					c.Set("X-Rate-Limit-Scope", "ip")
+					c.Set("X-Rate-Limit", fmt.Sprintf("%d/min", limit))
+					c.Set("X-Rate-Count", fmt.Sprintf("%d", n))
+					if ttl > 0 {
+						c.Set("X-Rate-TTL", fmt.Sprintf("%ds", int(ttl.Seconds())))
+					}
+					if int(n) > limit {
+						return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "rate limit exceeded"})
+					}
 				}
-				if int(n) > userLimit {
-					return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "Du hast dein Upload-Limit erreicht. Bitte warte kurz und versuche es erneut."})
+			}
+		}
+	}
+
+	// Per-User Rate Limit (in addition to IP limit)
+	if claims != nil && claims.UserID > 0 {
+		userLimit := models.GetAppSettings().GetUploadUserRateLimitPerMinute()
+		// Premium: erlauben mindestens MaxFilesPerBatch innerhalb 60s
+		// (macht Multi-Upload praktikabel, respektiert gleichzeitig globale Limits)
+		if userLimit > 0 {
+			if db := database.GetDB(); db != nil {
+				if us, err := models.GetOrCreateUserSettings(db, claims.UserID); err == nil && us != nil {
+					if mf := entitlements.MaxFilesPerBatch(entitlements.Plan(us.Plan)); mf > userLimit {
+						userLimit = mf
+					}
+				}
+			}
+			cli := cache.GetClient()
+			if cli != nil {
+				ctx := context.Background()
+				rateKey := fmt.Sprintf("rate:upload:user:%d", claims.UserID)
+				n, err := cli.Incr(ctx, rateKey).Result()
+				if err == nil {
+					if n == 1 {
+						cli.Expire(ctx, rateKey, 60*time.Second)
+					} else {
+						ttl, _ := cli.TTL(ctx, rateKey).Result()
+						if ttl <= 0 || ttl > 2*time.Minute {
+							// Repair missing TTL and reset counter if it already exceeded the limit due to a stale key
+							if int(n) > userLimit {
+								_ = cli.Set(ctx, rateKey, 1, 60*time.Second).Err()
+								n = 1
+							} else {
+								cli.Expire(ctx, rateKey, 60*time.Second)
+							}
+						}
+					}
+					// Expose debug headers for diagnostics
+					ttl, _ := cli.TTL(ctx, rateKey).Result()
+					c.Set("X-Rate-Limit-Scope", "user")
+					c.Set("X-Rate-Limit-UserID", fmt.Sprintf("%d", claims.UserID))
+					c.Set("X-Rate-Limit", fmt.Sprintf("%d/min", userLimit))
+					c.Set("X-Rate-Count", fmt.Sprintf("%d", n))
+					if ttl > 0 {
+						c.Set("X-Rate-TTL", fmt.Sprintf("%ds", int(ttl.Seconds())))
+					}
+					if int(n) > userLimit {
+						return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "Du hast dein Upload-Limit erreicht. Bitte warte kurz und versuche es erneut."})
+					}
 				}
 			}
 		}

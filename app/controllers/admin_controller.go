@@ -537,6 +537,13 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 		jobQueueWorkerCount = 20
 	}
 
+	apiRateLimitPerMinute, _ := strconv.Atoi(c.FormValue("api_rate_limit_per_minute"))
+	if apiRateLimitPerMinute < 0 {
+		apiRateLimitPerMinute = 0
+	} else if apiRateLimitPerMinute > 100000 {
+		apiRateLimitPerMinute = 100000
+	}
+
 	// Create new settings
 	newSettings := &models.AppSettings{
 		SiteTitle:                    siteTitle,
@@ -553,6 +560,7 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 		S3BackupCheckInterval:        s3BackupCheckInterval,
 		S3RetryInterval:              s3RetryInterval,
 		JobQueueWorkerCount:          jobQueueWorkerCount,
+		APIRateLimitPerMinute:        apiRateLimitPerMinute,
 		ReplicationRequireChecksum:   replicationRequireChecksum,
 	}
 

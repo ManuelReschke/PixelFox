@@ -28,7 +28,8 @@ func (r *settingRepository) Save(settings *models.AppSettings) error {
 // GetValue retrieves a specific setting value by key
 func (r *settingRepository) GetValue(key string) (string, error) {
 	var setting models.Setting
-	err := r.db.Where("key = ?", key).First(&setting).Error
+	// Correct column is `setting_key` (see gorm tag in models.Setting)
+	err := r.db.Where("setting_key = ?", key).First(&setting).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return "", nil // Return empty string for non-existent settings
@@ -41,7 +42,8 @@ func (r *settingRepository) GetValue(key string) (string, error) {
 // SetValue sets a specific setting value by key
 func (r *settingRepository) SetValue(key, value string) error {
 	var setting models.Setting
-	err := r.db.Where("key = ?", key).First(&setting).Error
+	// Correct column is `setting_key` (see gorm tag in models.Setting)
+	err := r.db.Where("setting_key = ?", key).First(&setting).Error
 
 	if err == gorm.ErrRecordNotFound {
 		// Create new setting

@@ -39,6 +39,8 @@ type AppSettings struct {
 	S3BackupCheckInterval int  `json:"s3_backup_check_interval" validate:"min=1,max=60"`   // How often to check for delayed backups (1-60 minutes)
 	S3RetryInterval       int  `json:"s3_retry_interval" validate:"min=1,max=60"`          // How often to retry failed backups (1-60 minutes)
 	JobQueueWorkerCount   int  `json:"job_queue_worker_count" validate:"min=1,max=20"`     // Number of job queue workers (1-20)
+	// API rate limiting
+	APIRateLimitPerMinute int `json:"api_rate_limit_per_minute" validate:"min=0,max=100000"` // Global API limiter for /api routes (0 = unlimited)
 	// Replication/Storage settings
 	ReplicationRequireChecksum bool `json:"replication_require_checksum"`
 	mu                         sync.RWMutex
@@ -78,6 +80,7 @@ func LoadSettings(db *gorm.DB) error {
 		S3BackupCheckInterval:        5,    // Default: check every 5 minutes
 		S3RetryInterval:              2,    // Default: retry every 2 minutes
 		JobQueueWorkerCount:          5,    // Default: 5 workers
+		APIRateLimitPerMinute:        120,  // Default: 120 requests / minute for /api routes
 		ReplicationRequireChecksum:   true, // Default: enforce checksum for replication
 	}
 
@@ -130,6 +133,10 @@ func LoadSettings(db *gorm.DB) error {
 			if count, err := strconv.Atoi(setting.Value); err == nil {
 				appSettings.JobQueueWorkerCount = count
 			}
+		case "api_rate_limit_per_minute":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.APIRateLimitPerMinute = v
+			}
 		case "replication_require_checksum":
 			appSettings.ReplicationRequireChecksum = setting.Value == "true"
 		}
@@ -164,6 +171,7 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 		"s3_backup_check_interval":          fmt.Sprintf("%d", settings.S3BackupCheckInterval),
 		"s3_retry_interval":                 fmt.Sprintf("%d", settings.S3RetryInterval),
 		"job_queue_worker_count":            fmt.Sprintf("%d", settings.JobQueueWorkerCount),
+		"api_rate_limit_per_minute":         fmt.Sprintf("%d", settings.APIRateLimitPerMinute),
 		"replication_require_checksum":      fmt.Sprintf("%t", settings.ReplicationRequireChecksum),
 	}
 
@@ -208,6 +216,8 @@ func getSettingType(key string) string {
 	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled", "replication_require_checksum", "s3_backup_enabled":
 		return "boolean"
 	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count", "upload_rate_limit_per_minute", "upload_user_rate_limit_per_minute":
+		return "integer"
+	case "api_rate_limit_per_minute":
 		return "integer"
 	default:
 		return "string"
@@ -316,6 +326,13 @@ func (s *AppSettings) GetS3RetryInterval() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.S3RetryInterval
+}
+
+// GetAPIRateLimitPerMinute returns the API limiter value for /api routes (0 = unlimited)
+func (s *AppSettings) GetAPIRateLimitPerMinute() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.APIRateLimitPerMinute
 }
 
 // GetJobQueueWorkerCount returns the job queue worker count

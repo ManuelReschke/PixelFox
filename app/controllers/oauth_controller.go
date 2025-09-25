@@ -116,6 +116,8 @@ func HandleOAuthCallback(c *fiber.Ctx) error {
 	// Update last login timestamp
 	_ = db.Model(&appUser).UpdateColumn("last_login_at", time.Now()).Error
 
+	// Ensure HTMX boosted flows perform a full redirect and refresh head/meta
+	c.Set("HX-Redirect", "/")
 	return c.Redirect("/", fiber.StatusSeeOther)
 }
 

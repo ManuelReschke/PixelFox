@@ -107,6 +107,8 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 			"message": "Glückwunsch du bist drin! Viel Spaß!",
 		}
 
+		// Ensure HTMX performs a full redirect to refresh head/meta
+		c.Set("HX-Redirect", "/")
 		return flash.WithSuccess(c, fm).Redirect("/")
 	}
 
@@ -140,6 +142,8 @@ func HandleAuthLogout(c *fiber.Ctx) error {
 	c.Locals(FROM_PROTECTED, false)
 	// fromProtected = false
 
+	// Ensure HTMX performs a full redirect to refresh head/meta
+	c.Set("HX-Redirect", "/login")
 	return flash.WithSuccess(c, fm).Redirect("/login")
 }
 

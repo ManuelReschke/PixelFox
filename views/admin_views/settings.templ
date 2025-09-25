@@ -127,6 +127,27 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 					</label>
 				</div>
 
+				<!-- API Einstellungen -->
+				<div class="divider">API</div>
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text font-semibold">API Rate Limit (Requests/Minute)</span>
+					</label>
+					<input 
+						type="number" 
+						name="api_rate_limit_per_minute" 
+						value={ fmt.Sprintf("%d", settings.APIRateLimitPerMinute) }
+						class="input input-bordered w-full" 
+						placeholder="120"
+						min="0"
+						max="100000"
+						required
+					/>
+					<label class="label">
+						<span class="label-text-alt">Globales API‑Limit für Routen unter <code>/api</code> (0 = unbegrenzt). Änderungen greifen nach einem Neustart des App‑Servers.</span>
+					</label>
+				</div>
+
 				<div class="form-control">
 					<label class="label">
 						<span class="label-text font-semibold">API Upload Rate Limit (Uploads/Minute)</span>

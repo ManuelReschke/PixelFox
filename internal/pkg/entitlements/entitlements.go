@@ -76,6 +76,30 @@ func StorageQuotaBytes(plan Plan) int64 {
 	}
 }
 
+// CanMultiUpload returns whether a plan supports selecting and uploading
+// multiple files in one batch from the UI.
+func CanMultiUpload(plan Plan) bool {
+	switch plan {
+	case PlanPremium, PlanPremiumMax:
+		return true
+	default:
+		return false
+	}
+}
+
+// MaxFilesPerBatch returns the maximum number of files allowed per batch
+// upload for a given plan. -1 means unlimited (not recommended in UI).
+func MaxFilesPerBatch(plan Plan) int {
+	switch plan {
+	case PlanPremiumMax:
+		return 50
+	case PlanPremium:
+		return 20
+	default:
+		return 1
+	}
+}
+
 // EffectiveThumbs combines admin settings, user plan and user preferences
 // to compute final booleans for generating Original/WebP/AVIF variants.
 func EffectiveThumbs(us *models.UserSettings, app *models.AppSettings) (orig, webp, avif bool) {

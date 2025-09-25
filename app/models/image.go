@@ -49,11 +49,12 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 		i.UUID = uuid.New().String()
 	}
 
-	// Generiere einen eindeutigen ShareLink, falls nicht vorhanden
+	// Generiere einen eindeutigen temporären ShareLink, falls nicht vorhanden
 	if i.ShareLink == "" {
-		// Wir müssen zuerst das Objekt speichern, um eine ID zu bekommen
-		// Daher setzen wir einen temporären ShareLink
-		i.ShareLink = "temp"
+		// Vor der DB‑ID setzen wir einen garantiert eindeutigen Platzhalter,
+		// um Deadlocks/Kollisionen auf dem uniqueIndex zu vermeiden.
+		// Nach Insert ersetzt AfterCreate diesen Wert durch die finale, kurze ID.
+		i.ShareLink = "tmp-" + uuid.New().String()
 	}
 
 	return nil
@@ -61,8 +62,8 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 
 // AfterCreate wird nach dem Erstellen eines neuen Datensatzes aufgerufen
 func (i *Image) AfterCreate(tx *gorm.DB) error {
-	// Jetzt haben wir eine ID und können den ShareLink generieren
-	if i.ShareLink == "temp" {
+	// Jetzt haben wir eine ID und können den finalen, kurzen ShareLink generieren
+	if len(i.ShareLink) >= 4 && i.ShareLink[:4] == "tmp-" {
 		// Generiere den ShareLink basierend auf der ID
 		i.ShareLink = shortener.EncodeID(i.ID)
 
