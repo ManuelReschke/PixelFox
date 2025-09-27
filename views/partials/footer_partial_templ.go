@@ -84,7 +84,7 @@ func DevNote() templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if env.IsDev() {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"navbar-center text-white text-center bg-red-500\">DEV MODE <a href=\"//0.0.0.0:8080/metrics\" class=\"btn btn-ghost text-base\" target=\"_blank\">Metrics</a> <a href=\"//localhost:8025/#\" class=\"btn btn-ghost text-base\" target=\"_blank\">MailHog</a> <a href=\"//0.0.0.0:8081/index.php?route=/\" class=\"btn btn-ghost text-base\" target=\"_blank\">PHPMyAdmin</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"navbar-center text-white text-center bg-red-500\">DEV MODE <a href=\"//0.0.0.0:8080/metrics\" class=\"btn btn-ghost text-base\" target=\"_blank\">Metrics</a> <a href=\"//localhost:8025/#\" class=\"btn btn-ghost text-base\" target=\"_blank\">MailHog</a> <a href=\"//0.0.0.0:8081/index.php?route=/\" class=\"btn btn-ghost text-base\" target=\"_blank\">PHPMyAdmin</a> <a href=\"//0.0.0.0:8080/docs/api/internal\" class=\"btn btn-ghost text-base\" target=\"_blank\">API Internal</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

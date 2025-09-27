@@ -42,15 +42,15 @@ type batchStored struct {
 func HandleCreateUploadBatch(c *fiber.Ctx) error {
 	user := usercontext.GetUserContext(c)
 	if !user.IsLoggedIn {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized", "message": "Missing or invalid authentication"})
 	}
 
 	var payload batchPayload
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid payload"})
 	}
 	if len(payload.Items) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "no items"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "no items"})
 	}
 	// sanitize: cap items length to a safe bound
 	if len(payload.Items) > 100 {
@@ -67,7 +67,7 @@ func HandleCreateUploadBatch(c *fiber.Ctx) error {
 	batchID := fmt.Sprintf("%d-%d", user.UserID, time.Now().UnixNano())
 	key := fmt.Sprintf("upload:batch:%s", batchID)
 	if err := cache.Set(key, string(b), 30*time.Minute); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to persist batch"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to persist batch"})
 	}
 	return c.JSON(fiber.Map{"batch_id": batchID, "expires_at": time.Now().Add(30 * time.Minute).Unix()})
 }

@@ -1,0 +1,5 @@
+package: apiinternal
+generate:
+  models: true
+  embedded-spec: false
+output: internal/api/internal/generated.go

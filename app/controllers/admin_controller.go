@@ -277,7 +277,7 @@ func (ac *AdminController) HandleUserDelete(c *fiber.Ctx) error {
 
 	// Prevent self-deletion (this logic could be moved to a service)
 	sess, _ := session.GetSessionStore().Get(c)
-	currentUserID := sess.Get(USER_ID).(uint)
+	currentUserID := sess.Get(usercontext.KeyUserID).(uint)
 
 	if currentUserID == uint(id) {
 		fm := fiber.Map{

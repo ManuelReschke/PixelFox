@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
@@ -19,24 +20,23 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/mail"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
-	auth_views "github.com/ManuelReschke/PixelFox/views/auth"
-	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
+	authViews "github.com/ManuelReschke/PixelFox/views/auth"
+	emailViews "github.com/ManuelReschke/PixelFox/views/email_views"
 )
 
-const (
-	AUTH_KEY       string = "authenticated"
-	USER_ID        string = "user_id"
-	USER_NAME      string = "username"
-	USER_IS_ADMIN  string = "isAdmin"
-	FROM_PROTECTED string = "from_protected"
-)
+// Keys moved to internal/pkg/usercontext/keys.go
 
 func HandleAuthLogin(c *fiber.Ctx) error {
-	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	fromProtected := false
+	if v := c.Locals(usercontext.KeyFromProtected); v != nil {
+		if b, ok := v.(bool); ok {
+			fromProtected = b
+		}
+	}
 	csrfToken := c.Locals("csrf").(string)
 
-	lindex := auth_views.LoginIndex(fromProtected, csrfToken)
-	login := auth_views.Login(
+	lindex := authViews.LoginIndex(fromProtected, csrfToken)
+	login := authViews.Login(
 		" | Einloggen", fromProtected, false, flash.Get(c), "", lindex, false,
 	)
 
@@ -79,10 +79,10 @@ func HandleAuthLogin(c *fiber.Ctx) error {
 			return flash.WithError(c, fm).Redirect("/login")
 		}
 
-		sess.Set(AUTH_KEY, true)
-		sess.Set(USER_ID, user.ID)
-		sess.Set(USER_NAME, user.Name)
-		sess.Set(USER_IS_ADMIN, user.Role == "admin")
+		sess.Set(usercontext.AuthKey, true)
+		sess.Set(usercontext.KeyUserID, user.ID)
+		sess.Set(usercontext.KeyUsername, user.Name)
+		sess.Set(usercontext.KeyIsAdmin, user.Role == "admin")
 
 		// Cache user plan in session for navbar/entitlements
 		if us, err := models.GetOrCreateUserSettings(database.GetDB(), user.ID); err == nil && us != nil {
@@ -139,7 +139,7 @@ func HandleAuthLogout(c *fiber.Ctx) error {
 		"message": "Bye bye! Auf wiedersehen.",
 	}
 
-	c.Locals(FROM_PROTECTED, false)
+	c.Locals(usercontext.KeyFromProtected, false)
 	// fromProtected = false
 
 	// Ensure HTMX performs a full redirect to refresh head/meta
@@ -148,14 +148,19 @@ func HandleAuthLogout(c *fiber.Ctx) error {
 }
 
 func HandleAuthRegister(c *fiber.Ctx) error {
-	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	fromProtected := false
+	if v := c.Locals(usercontext.KeyFromProtected); v != nil {
+		if b, ok := v.(bool); ok {
+			fromProtected = b
+		}
+	}
 	csrfToken := c.Locals("csrf").(string)
 
 	// Get hCaptcha site key from environment
 	hcaptchaSitekey := env.GetEnv("HCAPTCHA_SITEKEY", "")
 
-	rindex := auth_views.RegisterIndex(fromProtected, csrfToken, hcaptchaSitekey)
-	register := auth_views.Register(
+	rindex := authViews.RegisterIndex(fromProtected, csrfToken, hcaptchaSitekey)
+	register := authViews.Register(
 		" | Registrieren", fromProtected, false, flash.Get(c), "", rindex, false,
 	)
 
@@ -231,7 +236,7 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 		domain := env.GetEnv("PUBLIC_DOMAIN", "")
 		activationURL := fmt.Sprintf("%s/activate?token=%s", domain, user.ActivationToken)
 		rec := httptest.NewRecorder()
-		templ.Handler(email_views.ActivationEmail(user.Email, templ.SafeURL(activationURL), user.ActivationToken)).ServeHTTP(rec, &http.Request{})
+		templ.Handler(emailViews.ActivationEmail(user.Email, templ.SafeURL(activationURL), user.ActivationToken)).ServeHTTP(rec, &http.Request{})
 		body := rec.Body.String()
 		if err := mail.SendMail(user.Email, "Aktivierungslink PIXELFOX.cc", body); err != nil {
 			log.Printf("Activation email error: %v", err)
@@ -246,7 +251,12 @@ func HandleAuthRegister(c *fiber.Ctx) error {
 
 // HandleAuthActivate handles activation form display and token submission
 func HandleAuthActivate(c *fiber.Ctx) error {
-	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	fromProtected := false
+	if v := c.Locals(usercontext.KeyFromProtected); v != nil {
+		if b, ok := v.(bool); ok {
+			fromProtected = b
+		}
+	}
 	csrfToken := c.Locals("csrf").(string)
 	// determine token from form or query
 	var token string
@@ -257,8 +267,8 @@ func HandleAuthActivate(c *fiber.Ctx) error {
 	}
 	if token == "" {
 		// render activation form
-		aindex := auth_views.ActivateIndex(fromProtected, csrfToken)
-		activate := auth_views.Activate(" | Aktivieren", fromProtected, false, flash.Get(c), "", aindex, false)
+		aindex := authViews.ActivateIndex(fromProtected, csrfToken)
+		activate := authViews.Activate(" | Aktivieren", fromProtected, false, flash.Get(c), "", aindex, false)
 		return adaptor.HTTPHandler(templ.Handler(activate))(c)
 	}
 	// activation logic

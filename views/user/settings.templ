@@ -17,6 +17,11 @@ templ SettingsIndex(
     prefOrig bool,
     prefWebp bool,
     prefAvif bool,
+    newAPIKey string,
+    hasAPIKey bool,
+    maskedAPIKey string,
+    apiKeyCreated string,
+    apiKeyLastUsed string,
 ) {
     <section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
         <div class="card-body pb-2">
@@ -118,6 +123,69 @@ templ SettingsIndex(
                         <button type="submit" class="btn btn-primary">Speichern</button>
                     </div>
                 </form>
+
+                <div class="divider"></div>
+
+                <div class="form-control">
+                    <h3 class="text-lg font-medium mb-2">API Zugriff</h3>
+                    if newAPIKey != "" {
+                        <div class="alert alert-info flex flex-col gap-3">
+                            <div>
+                                <p class="font-semibold">Neuer API-Schlüssel</p>
+                                <p class="text-sm opacity-80">Bitte speichere diesen Schlüssel sofort sicher. Aus Sicherheitsgründen wird er später nicht erneut angezeigt.</p>
+                                <p class="text-xs opacity-70 mt-1">Der zuvor aktive Schlüssel ist nicht mehr gültig.</p>
+                            </div>
+                            <div class="join w-full">
+                                <input id="user-api-key" type="text" readonly class="input input-bordered join-item font-mono text-sm" value={ newAPIKey } />
+                                <button type="button" class="btn btn-primary join-item copy-btn" data-clipboard-target="#user-api-key" aria-label="API-Schlüssel kopieren">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    } else {
+                        if hasAPIKey {
+                            <div class="alert alert-soft flex flex-col gap-2">
+                                <div>
+                                    <span class="text-sm opacity-70">Aktiver Schlüssel</span>
+                                    <div class="font-mono text-sm">{ maskedAPIKey }</div>
+                                </div>
+                                <div class="text-xs opacity-70 flex flex-col gap-1">
+                                    if apiKeyCreated != "" {
+                                        <span>Erstellt am { apiKeyCreated }</span>
+                                    }
+                                    if apiKeyLastUsed != "" {
+                                        <span>Zuletzt verwendet { apiKeyLastUsed }</span>
+                                    } else {
+                                        <span>Noch nicht verwendet</span>
+                                    }
+                                </div>
+                                <div class="text-xs opacity-70">Ein neuer Schlüssel ersetzt den bisherigen sofort.</div>
+                            </div>
+                        } else {
+                            <div class="alert alert-soft">
+                                <span class="text-sm">Du hast noch keinen API-Schlüssel erstellt.</span>
+                            </div>
+                        }
+                    }
+
+                    <form method="POST" action="/user/settings/api-key" class="mt-2 flex flex-col gap-2">
+                        <input type="hidden" name="_csrf" value={ csrfToken }>
+                        <button type="submit" class="btn btn-primary">API-Schlüssel generieren</button>
+                    </form>
+
+                    if hasAPIKey {
+                        <form method="POST" action="/user/settings/api-key/revoke" class="mt-2 flex flex-col gap-2">
+                            <input type="hidden" name="_csrf" value={ csrfToken }>
+                            <button type="submit" class="btn btn-outline btn-error">API-Schlüssel entfernen</button>
+                        </form>
+                    }
+
+                    <div class="text-xs opacity-70 mt-2">
+                        Sende deinen Schlüssel bei API-Anfragen im Header <span class="font-mono">X-API-Key</span>.
+                    </div>
+                </div>
 
             </div>
         </div>

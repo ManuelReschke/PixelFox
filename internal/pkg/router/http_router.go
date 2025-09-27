@@ -5,11 +5,13 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/middleware"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/oauth"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 
 	"time"
 
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
 	gothfiber "github.com/shareed2k/goth_fiber"
 )
@@ -45,23 +47,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	// Initialize admin images controller with repository
 	controllers.InitializeAdminImagesController()
 
-	// API
+	// API routes moved to ApiRouter (internal/pkg/router/api_router.go)
 	app.Get("/docs/api", loggedInMiddleware, controllers.HandleDocsAPI)
-	// Phase 2: Direct-to-Storage Upload Session API (requires auth)
-	app.Post("/api/v1/upload/sessions", requireAuthMiddleware, controllers.HandleCreateUploadSession)
-	// Upload batch API (premium multi-upload): stores batch result in cache
-	app.Post("/api/v1/upload/batches", requireAuthMiddleware, controllers.HandleCreateUploadBatch)
-	// Storage-side upload endpoint (token protected) with CORS for cross-origin uploads
-	app.Post("/api/internal/upload", cors.New(cors.Config{
-		AllowOrigins:     "*",
-		AllowHeaders:     "Authorization, Content-Type",
-		AllowMethods:     "POST, OPTIONS",
-		AllowCredentials: false,
-	}), controllers.HandleStorageDirectUpload)
-	// Lightweight reachability: HEAD returns 204 (used by health monitor)
-	app.Head("/api/internal/upload", controllers.HandleStorageUploadHead)
-	// Replication endpoint for server-to-server file copy (HTTP Push)
-	app.Put("/api/internal/replicate", controllers.HandleStorageReplicate)
 
 	// NO AUTH - GENERAL
 	//app.Get("/news", loggedInMiddleware, controllers.HandleNews)
@@ -73,9 +60,8 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/pricing", loggedInMiddleware, controllers.HandlePricing)
 	app.Get("/jobs", loggedInMiddleware, controllers.HandleJobs)
 
-	// image processing status endpoint
+	// image processing status endpoint (HTML + API status in ApiRouter)
 	app.Get("/image/status/:uuid", loggedInMiddleware, controllers.HandleImageProcessingStatus)
-	app.Get("/api/v1/image/status/:uuid", loggedInMiddleware, controllers.HandleImageStatusJSON)
 	// image viewer
 	app.Get("/image/:uuid", loggedInMiddleware, controllers.HandleImageViewer)
 
@@ -94,14 +80,14 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	app.Get("/flash/upload-unsupported-type", loggedInMiddleware, controllers.HandleFlashUploadUnsupportedType)
 
 	// auth
-	app.Post("/logout", requireAuthMiddleware, controllers.HandleAuthLogout)
+	app.Post("/logout", middleware.RequireAuth, controllers.HandleAuthLogout)
 
 	// social oauth routes (public)
 	app.Get("/auth/:provider", gothfiber.BeginAuthHandler)
 	app.Get("/auth/:provider/callback", controllers.HandleOAuthCallback)
 
 	// Admin routes
-	adminGroup := app.Group("/admin", RequireAdminMiddleware)
+	adminGroup := app.Group("/admin", middleware.RequireAdmin)
 	adminGroup.Get("/", controllers.HandleAdminDashboard)
 	adminGroup.Get("/users", controllers.HandleAdminUsers)
 	adminGroup.Get("/users/edit/:id", controllers.HandleAdminUserEdit)
@@ -145,68 +131,75 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 		CookieSameSite: "Lax",
 		Expiration:     1 * time.Hour,
 		CookieSecure:   false, // Im Entwicklungsmodus auf false setzen
+		// Never enforce CSRF on API routes
+		Next: func(c *fiber.Ctx) bool {
+			p := c.Path()
+			return strings.HasPrefix(p, "/api/")
+		},
 	}
 	// setup group for csrf protected routes
 	group := app.Group("", cors.New(), csrf.New(csrfConf))
 	group.Get("/", loggedInMiddleware, controllers.HandleStart)
-	group.Post("/upload", requireAuthMiddleware, controllers.HandleUpload)
-	group.Get("/upload/batch/:id", requireAuthMiddleware, controllers.HandleUploadBatchView)
-	group.Post("/upload/batch/:id/album", requireAuthMiddleware, controllers.HandleUploadBatchSaveAsAlbum)
+	group.Post("/upload", middleware.RequireAuth, controllers.HandleUpload)
+	group.Get("/upload/batch/:id", middleware.RequireAuth, controllers.HandleUploadBatchView)
+	group.Post("/upload/batch/:id/album", middleware.RequireAuth, controllers.HandleUploadBatchSaveAsAlbum)
 	group.Get("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Post("/login", loggedInMiddleware, controllers.HandleAuthLogin)
 	group.Get("/register", loggedInMiddleware, controllers.HandleAuthRegister)
 	group.Post("/register", loggedInMiddleware, controllers.HandleAuthRegister)
 	group.Get("/activate", loggedInMiddleware, controllers.HandleAuthActivate)
 	group.Post("/activate", loggedInMiddleware, controllers.HandleAuthActivate)
-	group.Get("/user/profile", requireAuthMiddleware, controllers.HandleUserProfile)
-	group.Get("/user/profile/edit", requireAuthMiddleware, controllers.HandleUserProfileEdit)
-	group.Post("/user/profile/edit", requireAuthMiddleware, controllers.HandleUserProfileEditPost)
+	group.Get("/user/profile", middleware.RequireAuth, controllers.HandleUserProfile)
+	group.Get("/user/profile/edit", middleware.RequireAuth, controllers.HandleUserProfileEdit)
+	group.Post("/user/profile/edit", middleware.RequireAuth, controllers.HandleUserProfileEditPost)
 	group.Get("/user/profile/verify-email-change", controllers.HandleEmailChangeVerification)
-	group.Get("/user/profile/edit/cancel-email-change", requireAuthMiddleware, controllers.HandleCancelEmailChange)
-	group.Get("/user/profile/edit/resend-email-change", requireAuthMiddleware, controllers.HandleResendEmailChange)
-	group.Get("/user/settings", requireAuthMiddleware, controllers.HandleUserSettings)
-	group.Post("/user/settings", requireAuthMiddleware, controllers.HandleUserSettingsPost)
-	group.Get("/user/images", requireAuthMiddleware, controllers.HandleUserImages)
-	group.Get("/user/images/load", requireAuthMiddleware, controllers.HandleLoadMoreImages)
-	group.Get("/user/images/edit/:uuid", requireAuthMiddleware, controllers.HandleUserImageEdit)
-	group.Post("/user/images/update/:uuid", requireAuthMiddleware, controllers.HandleUserImageUpdate)
-	group.Get("/user/images/delete/:uuid", requireAuthMiddleware, controllers.HandleUserImageDelete)
+	group.Get("/user/profile/edit/cancel-email-change", middleware.RequireAuth, controllers.HandleCancelEmailChange)
+	group.Get("/user/profile/edit/resend-email-change", middleware.RequireAuth, controllers.HandleResendEmailChange)
+	group.Get("/user/settings", middleware.RequireAuth, controllers.HandleUserSettings)
+	group.Post("/user/settings", middleware.RequireAuth, controllers.HandleUserSettingsPost)
+	group.Post("/user/settings/api-key", middleware.RequireAuth, controllers.HandleUserAPIKeyGenerate)
+	group.Post("/user/settings/api-key/revoke", middleware.RequireAuth, controllers.HandleUserAPIKeyRevoke)
+	group.Get("/user/images", middleware.RequireAuth, controllers.HandleUserImages)
+	group.Get("/user/images/load", middleware.RequireAuth, controllers.HandleLoadMoreImages)
+	group.Get("/user/images/edit/:uuid", middleware.RequireAuth, controllers.HandleUserImageEdit)
+	group.Post("/user/images/update/:uuid", middleware.RequireAuth, controllers.HandleUserImageUpdate)
+	group.Get("/user/images/delete/:uuid", middleware.RequireAuth, controllers.HandleUserImageDelete)
 	// User Album Routes (CSRF protected)
-	group.Get("/user/albums", requireAuthMiddleware, controllers.HandleUserAlbums)
-	group.Get("/user/albums/create", requireAuthMiddleware, controllers.HandleUserAlbumCreate)
-	group.Post("/user/albums/create", requireAuthMiddleware, controllers.HandleUserAlbumCreate)
-	group.Get("/user/albums/:id", requireAuthMiddleware, controllers.HandleUserAlbumView)
-	group.Get("/user/albums/edit/:id", requireAuthMiddleware, controllers.HandleUserAlbumEdit)
-	group.Post("/user/albums/edit/:id", requireAuthMiddleware, controllers.HandleUserAlbumEdit)
-	group.Get("/user/albums/delete/:id", requireAuthMiddleware, controllers.HandleUserAlbumDelete)
-	group.Post("/user/albums/:id/add-image", requireAuthMiddleware, controllers.HandleUserAlbumAddImage)
-	group.Post("/user/albums/:id/set-cover", requireAuthMiddleware, controllers.HandleUserAlbumSetCover)
-	group.Get("/user/albums/:id/remove-image/:image_id", requireAuthMiddleware, controllers.HandleUserAlbumRemoveImage)
+	group.Get("/user/albums", middleware.RequireAuth, controllers.HandleUserAlbums)
+	group.Get("/user/albums/create", middleware.RequireAuth, controllers.HandleUserAlbumCreate)
+	group.Post("/user/albums/create", middleware.RequireAuth, controllers.HandleUserAlbumCreate)
+	group.Get("/user/albums/:id", middleware.RequireAuth, controllers.HandleUserAlbumView)
+	group.Get("/user/albums/edit/:id", middleware.RequireAuth, controllers.HandleUserAlbumEdit)
+	group.Post("/user/albums/edit/:id", middleware.RequireAuth, controllers.HandleUserAlbumEdit)
+	group.Get("/user/albums/delete/:id", middleware.RequireAuth, controllers.HandleUserAlbumDelete)
+	group.Post("/user/albums/:id/add-image", middleware.RequireAuth, controllers.HandleUserAlbumAddImage)
+	group.Post("/user/albums/:id/set-cover", middleware.RequireAuth, controllers.HandleUserAlbumSetCover)
+	group.Get("/user/albums/:id/remove-image/:image_id", middleware.RequireAuth, controllers.HandleUserAlbumRemoveImage)
 	// Image Reports (CSRF protected, guests allowed)
 	group.Get("/image/:uuid/report", loggedInMiddleware, controllers.HandleImageReportForm)
 	group.Post("/image/:uuid/report", loggedInMiddleware, controllers.HandleImageReportSubmit)
 	// Admin Page Management Routes (CSRF protected)
-	group.Get("/admin/pages", RequireAdminMiddleware, controllers.HandleAdminPages)
-	group.Get("/admin/pages/create", RequireAdminMiddleware, controllers.HandleAdminPageCreate)
-	group.Post("/admin/pages/store", RequireAdminMiddleware, controllers.HandleAdminPageStore)
-	group.Get("/admin/pages/edit/:id", RequireAdminMiddleware, controllers.HandleAdminPageEdit)
-	group.Post("/admin/pages/update/:id", RequireAdminMiddleware, controllers.HandleAdminPageUpdate)
-	group.Get("/admin/pages/delete/:id", RequireAdminMiddleware, controllers.HandleAdminPageDelete)
+	group.Get("/admin/pages", middleware.RequireAdmin, controllers.HandleAdminPages)
+	group.Get("/admin/pages/create", middleware.RequireAdmin, controllers.HandleAdminPageCreate)
+	group.Post("/admin/pages/store", middleware.RequireAdmin, controllers.HandleAdminPageStore)
+	group.Get("/admin/pages/edit/:id", middleware.RequireAdmin, controllers.HandleAdminPageEdit)
+	group.Post("/admin/pages/update/:id", middleware.RequireAdmin, controllers.HandleAdminPageUpdate)
+	group.Get("/admin/pages/delete/:id", middleware.RequireAdmin, controllers.HandleAdminPageDelete)
 	// Admin Settings Routes (CSRF protected)
-	group.Get("/admin/settings", RequireAdminMiddleware, controllers.HandleAdminSettings)
-	group.Post("/admin/settings", RequireAdminMiddleware, controllers.HandleAdminSettingsUpdate)
+	group.Get("/admin/settings", middleware.RequireAdmin, controllers.HandleAdminSettings)
+	group.Post("/admin/settings", middleware.RequireAdmin, controllers.HandleAdminSettingsUpdate)
 	// Admin Storage Pool Management Routes (CSRF protected)
-	group.Get("/admin/storage/create", RequireAdminMiddleware, controllers.HandleAdminCreateStoragePool)
-	group.Post("/admin/storage/create", RequireAdminMiddleware, controllers.HandleAdminCreateStoragePoolPost)
-	group.Get("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePool)
-	group.Post("/admin/storage/edit/:id", RequireAdminMiddleware, controllers.HandleAdminEditStoragePoolPost)
-	group.Get("/admin/storage/move/:id", RequireAdminMiddleware, controllers.HandleAdminMoveStoragePool)
-	group.Post("/admin/storage/move/:id", RequireAdminMiddleware, controllers.HandleAdminMoveStoragePoolPost)
+	group.Get("/admin/storage/create", middleware.RequireAdmin, controllers.HandleAdminCreateStoragePool)
+	group.Post("/admin/storage/create", middleware.RequireAdmin, controllers.HandleAdminCreateStoragePoolPost)
+	group.Get("/admin/storage/edit/:id", middleware.RequireAdmin, controllers.HandleAdminEditStoragePool)
+	group.Post("/admin/storage/edit/:id", middleware.RequireAdmin, controllers.HandleAdminEditStoragePoolPost)
+	group.Get("/admin/storage/move/:id", middleware.RequireAdmin, controllers.HandleAdminMoveStoragePool)
+	group.Post("/admin/storage/move/:id", middleware.RequireAdmin, controllers.HandleAdminMoveStoragePoolPost)
 	// Admin Reports (CSRF protected)
-	group.Get("/admin/reports", RequireAdminMiddleware, controllers.HandleAdminReports)
-	group.Get("/admin/reports/:id", RequireAdminMiddleware, controllers.HandleAdminReportShow)
-	group.Post("/admin/reports/:id/resolve", RequireAdminMiddleware, controllers.HandleAdminReportResolve)
-	group.Post("/admin/reports/:id/dismiss", RequireAdminMiddleware, controllers.HandleAdminReportDismiss)
+	group.Get("/admin/reports", middleware.RequireAdmin, controllers.HandleAdminReports)
+	group.Get("/admin/reports/:id", middleware.RequireAdmin, controllers.HandleAdminReportShow)
+	group.Post("/admin/reports/:id/resolve", middleware.RequireAdmin, controllers.HandleAdminReportResolve)
+	group.Post("/admin/reports/:id/dismiss", middleware.RequireAdmin, controllers.HandleAdminReportDismiss)
 }
 
 func NewHttpRouter() *HttpRouter {
@@ -220,27 +213,4 @@ func loggedInMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-func requireAuthMiddleware(c *fiber.Ctx) error {
-	// UserContextMiddleware already parsed session data
-	// Just check if user is logged in, redirect if not
-	if !c.Locals(controllers.FROM_PROTECTED).(bool) {
-		return c.Redirect("/login", fiber.StatusSeeOther)
-	}
-
-	return c.Next()
-}
-
-func RequireAdminMiddleware(c *fiber.Ctx) error {
-	// UserContextMiddleware already parsed session data
-	// Check if user is logged in
-	if !c.Locals(controllers.FROM_PROTECTED).(bool) {
-		return c.Redirect("/login", fiber.StatusSeeOther)
-	}
-
-	// Check if user is admin
-	if !c.Locals(controllers.USER_IS_ADMIN).(bool) {
-		return c.Redirect("/", fiber.StatusSeeOther)
-	}
-
-	return c.Next()
-}
+// Auth middlewares moved to internal/pkg/middleware/auth.go

@@ -32,6 +32,12 @@ generate-api:
 	cd $(PROJECT_ROOT) && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen -config oapi-codegen.yaml public/docs/v1/openapi.yml
 	@echo "✅ API Code wurde erfolgreich generiert!"
 
+.PHONY: generate-api-internal
+generate-api-internal:
+	@echo "🔧 Generiere INTERNAL API Models aus OpenAPI Spec..."
+	cd $(PROJECT_ROOT) && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen -config oapi-codegen-internal.yaml public/docs/internal/openapi.yml
+	@echo "✅ INTERNAL API Models wurden erfolgreich generiert!"
+
 .PHONY: prepare-env-local
 prepare-env-local:
 	@echo "🔧 Kopiere $(ENV_LOCAL_FILE) nach $(ENV_FILE) (Testumgebung)"

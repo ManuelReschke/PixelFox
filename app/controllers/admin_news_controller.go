@@ -84,7 +84,7 @@ func (anc *AdminNewsController) HandleAdminNewsCreate(c *fiber.Ctx) error {
 // HandleAdminNewsStore handles news creation using repository pattern
 func (anc *AdminNewsController) HandleAdminNewsStore(c *fiber.Ctx) error {
 	// Get user from session
-	userID := uint64(c.Locals(USER_ID).(uint))
+	userID := uint64(c.Locals(usercontext.KeyUserID).(uint))
 
 	// Parse form
 	title := c.FormValue("title")

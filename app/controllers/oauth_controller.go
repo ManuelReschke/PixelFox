@@ -12,6 +12,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 )
 
 // HandleOAuthCallback completes the provider flow and logs the user in
@@ -97,10 +98,10 @@ func HandleOAuthCallback(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("session init failed")
 	}
-	sess.Set(AUTH_KEY, true)
-	sess.Set(USER_ID, appUser.ID)
-	sess.Set(USER_NAME, appUser.Name)
-	sess.Set(USER_IS_ADMIN, appUser.Role == "admin")
+	sess.Set(usercontext.AuthKey, true)
+	sess.Set(usercontext.KeyUserID, appUser.ID)
+	sess.Set(usercontext.KeyUsername, appUser.Name)
+	sess.Set(usercontext.KeyIsAdmin, appUser.Role == "admin")
 	// Cache user plan in session for navbar/entitlements
 	if us, err := models.GetOrCreateUserSettings(db, appUser.ID); err == nil && us != nil {
 		if us.Plan == "" {

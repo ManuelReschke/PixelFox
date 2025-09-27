@@ -3,11 +3,15 @@ package router
 import (
 	apiv1 "github.com/ManuelReschke/PixelFox/internal/api/v1"
 
-	"github.com/ManuelReschke/PixelFox/app/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"strings"
 	"time"
+
+	"github.com/ManuelReschke/PixelFox/app/controllers"
+	"github.com/ManuelReschke/PixelFox/app/models"
+	appmw "github.com/ManuelReschke/PixelFox/internal/pkg/middleware"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
 type ApiRouter struct {
@@ -27,9 +31,6 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 			if strings.HasPrefix(p, "/api/internal/") {
 				return true
 			}
-			if strings.HasPrefix(p, "/api/v1/image/status/") {
-				return true
-			}
 			// If Max == 0 => unlimited
 			if max == 0 {
 				return true
@@ -46,7 +47,52 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 	// API v1 routes
 	v1 := api.Group("/v1")
 	apiServer := apiv1.NewAPIServer()
-	apiv1.RegisterHandlers(v1, apiServer)
+
+	// Attach conditional API key auth only for protected endpoints
+	// Keep /ping public
+	apiv1.RegisterHandlersWithOptions(v1, apiServer, apiv1.FiberServerOptions{
+		Middlewares: []apiv1.MiddlewareFunc{
+			func(c *fiber.Ctx) error {
+				p := c.Path()
+				// Endpoints requiring API key
+				if strings.HasPrefix(p, "/api/v1/user/") || strings.HasPrefix(p, "/api/v1/upload/") {
+					return appmw.APIKeyAuthMiddleware()(c)
+				}
+				return c.Next()
+			},
+		},
+	})
+
+	// Internal API routes (private app APIs)
+	internalAPI := api.Group("/internal")
+	// Storage upload endpoints
+	// Use API-session auth that returns JSON 401 instead of browser redirects
+	internalAPI.Post("/upload/sessions", appmw.RequireAPISessionAuth, controllers.HandleCreateUploadSession)
+	internalAPI.Post("/upload/batches", appmw.RequireAPISessionAuth, controllers.HandleCreateUploadBatch)
+	internalAPI.Post("/upload", cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowHeaders:     "Authorization, Content-Type",
+		AllowMethods:     "POST, OPTIONS",
+		AllowCredentials: false,
+	}), controllers.HandleStorageDirectUpload)
+	internalAPI.Head("/upload", controllers.HandleStorageUploadHead)
+	internalAPI.Put("/replicate", controllers.HandleStorageReplicate)
+
+	// Session-based endpoints used by the web app (safe auth check via usercontext)
+	//internalAuth := func(c *fiber.Ctx) error {
+	//	if !usercontext.IsLoggedIn(c) {
+	//		// Return 401 JSON for internal API
+	//		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized", "message": "login required"})
+	//	}
+	//	// Ensure legacy locals are populated for downstream handlers that may expect them
+	//	uc := usercontext.GetUserContext(c)
+	//	c.Locals(controllers.FROM_PROTECTED, true)
+	//	c.Locals(controllers.USER_NAME, uc.Username)
+	//	c.Locals(controllers.USER_ID, uc.UserID)
+	//	c.Locals(controllers.USER_IS_ADMIN, uc.IsAdmin)
+	//	return c.Next()
+	//}
+	internalAPI.Get("/image/status/:uuid", controllers.HandleImageStatusJSON)
 }
 
 func NewApiRouter() *ApiRouter {

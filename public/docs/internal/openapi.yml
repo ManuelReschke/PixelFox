@@ -1,0 +1,375 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0-internal
+  title: PixelFox Internal API
+  description: Internal app API used by the web UI and storage nodes. Not public.
+  contact:
+    name: PixelFox Team
+    url: https://pixelfox.cc
+
+servers:
+  - url: http://localhost:8080/api/internal
+    description: Development server
+  - url: https://pixelfox.cc/api/internal
+    description: Production server
+
+tags:
+  - name: Upload
+    description: Direct-to-storage uploads and sessions
+  - name: Status
+    description: Image processing status
+  - name: Replication
+    description: Server-to-server replication endpoints
+
+paths:
+  /upload:
+    post:
+      summary: Direct storage upload
+      description: Uploads an image file directly to storage using a time-limited upload token.
+      tags: [Upload]
+      security:
+        - UploadTokenAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: "Bearer <UPLOAD_TOKEN>. Alternative: submit as multipart field 'token'"
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                token:
+                  type: string
+                  description: "Alternative to Authorization header: pass upload token as multipart field"
+              required: [file]
+      responses:
+        '200':
+          description: Upload accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageUploadResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    head:
+      summary: Upload endpoint health
+      description: Returns 204 No Content if the endpoint is reachable.
+      tags: [Upload]
+      responses:
+        '204':
+          description: No Content
+
+  /upload/sessions:
+    post:
+      summary: Create upload session (session-based)
+      description: Issues a time-limited direct upload token for the current logged-in user.
+      tags: [Upload]
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadSessionRequest'
+      responses:
+        '200':
+          description: Upload session issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSessionResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /upload/batches:
+    post:
+      summary: Create multi-upload batch (session-based)
+      description: Stores a temporary batch result for the current user and returns a batch_id.
+      tags: [Upload]
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      responses:
+        '200':
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /image/status/{uuid}:
+    get:
+      summary: Get processing status
+      description: Returns whether the image processing is complete and the view URL if available.
+      tags: [Status]
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  complete:
+                    type: boolean
+                  view_url:
+                    type: string
+                    nullable: true
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /replicate:
+    put:
+      summary: Replicate file to a pool
+      description: Accepts server-to-server replication to store a specific file path in a target pool.
+      tags: [Replication]
+      security:
+        - ReplicateBearerAuth: []
+        - ReplicateHeaderAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                pool_id:
+                  type: integer
+                  format: int64
+                stored_path:
+                  type: string
+                  description: Preferred absolute relative path within storage (e.g. original/yyyy/mm/dd/file.ext)
+                relative_path:
+                  type: string
+                file_name:
+                  type: string
+                size:
+                  type: integer
+                  format: int64
+                sha256:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+              required: [pool_id, file]
+      responses:
+        '200':
+          description: Replication ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  skipped:
+                    type: boolean
+                  reason:
+                    type: string
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '507':
+          description: Insufficient Storage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500': { $ref: '#/components/responses/InternalError' }
+
+components:
+  securitySchemes:
+    UploadTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Time-limited upload token
+    ReplicateBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: "Replication shared secret via Authorization: Bearer"
+    ReplicateHeaderAuth:
+      type: apiKey
+      in: header
+      name: X-Replicate-Secret
+      description: Replication secret via header
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Session cookie for logged-in user
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PayloadTooLarge:
+      description: Payload too large
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: Unsupported media type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailable:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Error type code
+          example: bad_request
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid request body
+        details:
+          type: string
+          nullable: true
+          description: Additional details
+
+    UploadSessionRequest:
+      type: object
+      required: [file_size]
+      properties:
+        file_size:
+          type: integer
+          format: int64
+          minimum: 1
+          description: File size in bytes
+
+    UploadSessionResponse:
+      type: object
+      required: [upload_url, token, pool_id, expires_at, max_bytes]
+      properties:
+        upload_url:
+          type: string
+          format: uri
+        token:
+          type: string
+        pool_id:
+          type: integer
+          format: int64
+        expires_at:
+          type: integer
+          format: int64
+          description: Unix timestamp (seconds)
+        max_bytes:
+          type: integer
+          format: int64
+
+    StorageUploadResponse:
+      type: object
+      properties:
+        image_uuid:
+          type: string
+        view_url:
+          type: string
+        duplicate:
+          type: boolean
+
+    BatchItem:
+      type: object
+      properties:
+        uuid:
+          type: string
+        view_url:
+          type: string
+        duplicate:
+          type: boolean
+
+    BatchRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchItem'
+
+    BatchResponse:
+      type: object
+      required: [batch_id, expires_at]
+      properties:
+        batch_id:
+          type: string
+        expires_at:
+          type: integer
+          format: int64
+          description: Unix timestamp (seconds)

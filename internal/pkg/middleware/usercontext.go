@@ -3,7 +3,6 @@ package middleware
 import (
 	"strings"
 
-	"github.com/ManuelReschke/PixelFox/app/controllers"
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
@@ -29,13 +28,13 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 			IsAdmin:    false,
 		})
 		// Set legacy compatibility locals
-		c.Locals(controllers.FROM_PROTECTED, false)
-		c.Locals(controllers.USER_IS_ADMIN, false)
+		c.Locals(usercontext.KeyFromProtected, false)
+		c.Locals(usercontext.KeyIsAdmin, false)
 		return c.Next()
 	}
 
 	// Get user ID from session
-	userID := sess.Get(controllers.USER_ID)
+	userID := sess.Get(usercontext.KeyUserID)
 	if userID == nil {
 		// Anonymous user - no session data
 		c.Locals("USER_CONTEXT", usercontext.UserContext{
@@ -43,14 +42,18 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 			IsAdmin:    false,
 		})
 		// Set legacy compatibility locals
-		c.Locals(controllers.FROM_PROTECTED, false)
-		c.Locals(controllers.USER_IS_ADMIN, false)
+		c.Locals(usercontext.KeyFromProtected, false)
+		c.Locals(usercontext.KeyIsAdmin, false)
 		return c.Next()
 	}
 
 	// User is logged in - get additional data
-	username := session.GetSessionValue(c, controllers.USER_NAME)
-	isAdmin := sess.Get(controllers.USER_IS_ADMIN)
+	username := session.GetSessionValue(c, usercontext.KeyUsername)
+	isAdminRaw := sess.Get(usercontext.KeyIsAdmin)
+	isAdminBool := false
+	if b, ok := isAdminRaw.(bool); ok {
+		isAdminBool = b
+	}
 
 	// Determine plan with session-first strategy
 	plan := session.GetSessionValue(c, "user_plan")
@@ -69,19 +72,19 @@ func UserContextMiddleware(c *fiber.Ctx) error {
 		UserID:     userID.(uint),
 		Username:   username,
 		IsLoggedIn: true,
-		IsAdmin:    isAdmin != nil && isAdmin.(bool),
+		IsAdmin:    isAdminBool,
 		Plan:       plan,
 	}
 	c.Locals("USER_CONTEXT", userCtx)
 
 	// Legacy compatibility - keep existing Locals for backward compatibility
-	c.Locals(controllers.FROM_PROTECTED, true)
-	c.Locals(controllers.USER_NAME, username)
-	c.Locals(controllers.USER_ID, userID.(uint))
-	c.Locals(controllers.USER_IS_ADMIN, userCtx.IsAdmin)
+	c.Locals(usercontext.KeyFromProtected, true)
+	c.Locals(usercontext.KeyUsername, username)
+	c.Locals(usercontext.KeyUserID, userID.(uint))
+	c.Locals(usercontext.KeyIsAdmin, userCtx.IsAdmin)
 
 	// Store username in user's individual session (multi-user safe)
-	session.SetSessionValue(c, controllers.USER_NAME, username)
+	session.SetSessionValue(c, usercontext.KeyUsername, username)
 
 	return c.Next()
 }

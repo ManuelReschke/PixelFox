@@ -246,7 +246,7 @@ function initUploadForm() {
             uploadStatus.textContent = 'Session...';
 
             // 1) Request upload session
-            const sessRes = await fetch('/api/v1/upload/sessions', {
+            const sessRes = await fetch('/api/internal/upload/sessions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -314,7 +314,7 @@ function initUploadForm() {
                 const poll = setInterval(async () => {
                     attempts++;
                     try {
-                        const r = await fetch(`/api/v1/image/status/${maybeUUID}`, { credentials: 'include' });
+                        const r = await fetch(`/api/internal/image/status/${maybeUUID}`, { credentials: 'include' });
                         if (r.ok) {
                             const js = await r.json();
                             if (js.complete) {
@@ -352,18 +352,26 @@ function initUploadForm() {
             try {
                 let msg = '';
                 if (err && err.body) {
-                    try { const obj = JSON.parse(err.body); msg = (obj && obj.error) || ''; } catch(_) {}
+                    try { const obj = JSON.parse(err.body); msg = (obj && (obj.message || obj.error)) || ''; } catch(_) {}
                 }
                 if (msg) {
                     window.location.href = '/flash/upload-error?msg=' + encodeURIComponent(msg);
                     return;
                 }
             } catch(_e) {}
-            // Fallback to original App upload
+            // Fallback to original App upload with normal browser submit
             console.error('Direct upload failed, fallback to App upload:', err);
             progressContainer.classList.add('hidden');
             try { uploadForm.removeAttribute('data-direct-upload'); } catch(e) {}
-            uploadForm.submit();
+            try { uploadForm.removeAttribute('data-hx-disable'); } catch(_) {}
+            try { uploadForm.removeAttribute('hx-post'); } catch(_) {}
+            try { uploadForm.removeAttribute('hx-encoding'); } catch(_) {}
+            // Ensure native form submit to /upload (not HTMX)
+            if (!uploadForm.getAttribute('action')) uploadForm.setAttribute('action', '/upload');
+            uploadForm.setAttribute('method', 'POST');
+            uploadForm.setAttribute('enctype', 'multipart/form-data');
+            uploadForm.setAttribute('data-fallback-submit', 'true');
+            try { uploadForm.submit(); } catch(_) { window.location.href = '/'; }
         }
     }
 
@@ -381,7 +389,7 @@ function initUploadForm() {
                 uploadStatus.textContent = `(${i+1}/${files.length}) Session...`;
 
                 // 1) Session
-                const sessRes = await fetch('/api/v1/upload/sessions', {
+                const sessRes = await fetch('/api/internal/upload/sessions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -433,7 +441,7 @@ function initUploadForm() {
 
             // 3) Create batch
             uploadStatus.textContent = 'Ergebnis sammeln...';
-            const bres = await fetch('/api/v1/upload/batches', {
+            const bres = await fetch('/api/internal/upload/batches', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -457,7 +465,7 @@ function initUploadForm() {
             try {
                 const items = window.__pxf_multi_items || [];
                 if (items.length > 0) {
-                    const bres = await fetch('/api/v1/upload/batches', {
+                    const bres = await fetch('/api/internal/upload/batches', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ items })
                     });
                     if (bres.ok) {
@@ -469,7 +477,7 @@ function initUploadForm() {
             // Otherwise, show generic error
             try {
                 let msg = '';
-                if (err && err.body) { try { const obj = JSON.parse(err.body); msg = (obj && obj.error) || ''; } catch(_) {} }
+                if (err && err.body) { try { const obj = JSON.parse(err.body); msg = (obj && (obj.message || obj.error)) || ''; } catch(_) {} }
                 if (msg) { window.location.href = '/flash/upload-error?msg=' + encodeURIComponent(msg); return; }
             } catch(_) {}
             progressContainer.classList.add('hidden');
@@ -480,6 +488,10 @@ function initUploadForm() {
 
     // Intercept submit when direct upload enabled
     uploadForm.addEventListener('submit', function(e) {
+        // If we're in fallback mode, let the browser submit normally
+        if (uploadForm.getAttribute('data-fallback-submit') === 'true') {
+            return;
+        }
         if (!fileInput.files.length) return;
         // Always intercept when multi-selected, regardless of directUpload setting
         if (fileInput.multiple && fileInput.files.length > 1) {
@@ -770,6 +782,7 @@ function initCopyShareLinks() {
         });
     });
 }
+
 
 // Live-Validierung: Profiledit Passwort-Felder (HTMX-safe, idempotent)
 function initProfilePasswordValidation() {

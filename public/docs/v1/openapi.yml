@@ -19,8 +19,8 @@ servers:
 tags:
   - name: Health
     description: Health check endpoints
-  - name: Images
-    description: Image management
+  - name: Upload
+    description: Upload sessions and direct upload helpers
   - name: Users
     description: User management
   - name: Albums
@@ -41,15 +41,200 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pong'
-        '500':
-          description: Internal server error
+        '500': { $ref: '#/components/responses/InternalError' }
+  /user/profile:
+    get:
+      summary: Get authenticated user profile
+      description: Gibt Kontoinformationen, Nutzungsstatistiken und Limits für den authentifizierten Benutzer zurück.
+      operationId: getUserProfile
+      tags:
+        - Users
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Benutzerprofil erfolgreich geladen
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/UserAccount'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /upload/sessions:
+    post:
+      summary: Issue direct upload session
+      description: >-
+        Erstellt eine direkte Upload-Session und liefert einen temporären Token,
+        mit dem Dateien direkt zum Storage-Endpunkt (`/api/internal/upload`)
+        übertragen werden können.
+      operationId: postUserUploadSession
+      tags:
+        - Upload
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadSessionRequest'
+      responses:
+        '200':
+          description: Upload session issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSessionResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+
+  /upload:
+    post:
+      summary: Direct storage upload
+      description: >-
+        Uploads an image file directly to storage using a time-limited upload token.
+        Use the `upload_url` returned by `POST /upload/sessions` as the target URL.
+      operationId: postDirectUpload
+      tags:
+        - Upload
+      servers:
+        - url: http://localhost:8080/api/internal
+          description: Internal storage upload server (development)
+        - url: https://pixelfox.cc/api/internal
+          description: Internal storage upload server (production)
+      security:
+        - UploadTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                token:
+                  type: string
+                  description: "Alternative to Authorization header: pass upload token as multipart field"
+              required: [file]
+      responses:
+        '200':
+          description: Upload accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageUploadResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /image/status/{uuid}:
+    get:
+      summary: Get processing status
+      description: Returns whether the image processing is complete and the view URL if available.
+      operationId: getImageStatus
+      tags:
+        - Upload
+      servers:
+        - url: http://localhost:8080/api/internal
+          description: Internal status endpoint (development)
+        - url: https://pixelfox.cc/api/internal
+          description: Internal status endpoint (production)
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  complete:
+                    type: boolean
+                  view_url:
+                    type: string
+                    nullable: true
+        '400': { $ref: '#/components/responses/BadRequest' }
 
 components:
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Account not allowed to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PayloadTooLarge:
+      description: Requested file size exceeds plan or quota limits
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: Unsupported media type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailable:
+      description: Service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
   schemas:
+    StorageUploadResponse:
+      type: object
+      properties:
+        image_uuid:
+          type: string
+        view_url:
+          type: string
+        duplicate:
+          type: boolean
     # Health check schemas
     Pong:
       type: object
@@ -81,6 +266,197 @@ components:
           description: Additional error details
           example: "Database connection failed"
 
+    UploadSessionRequest:
+      type: object
+      required:
+        - file_size
+      properties:
+        file_size:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Größe der Datei in Bytes.
+
+    UploadSessionResponse:
+      type: object
+      required:
+        - upload_url
+        - token
+        - pool_id
+        - expires_at
+        - max_bytes
+      properties:
+        upload_url:
+          type: string
+          format: uri
+          description: Vollständige URL zum Storage-Endpunkt.
+        token:
+          type: string
+          description: Zeitlich begrenzter Upload-Token (Bearer Token).
+        pool_id:
+          type: integer
+          format: int64
+          description: Interne ID des Storage-Pools.
+        expires_at:
+          type: integer
+          format: int64
+          description: Ablaufzeit als Unix-Timestamp (Sekunden).
+        max_bytes:
+          type: integer
+          format: int64
+          description: Maximale Dateigröße in Bytes, die mit diesem Token akzeptiert wird.
+
+    UserAccount:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - status
+        - plan
+        - is_admin
+        - created_at
+        - stats
+        - limits
+        - preferences
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Benutzer-ID
+          example: 42
+        username:
+          type: string
+          description: Anzeigename des Benutzers
+          example: pixelpete
+        email:
+          type: string
+          format: email
+          description: Verknüpfte E-Mail-Adresse
+          example: pete@example.com
+        status:
+          type: string
+          description: Kontostatus
+          example: active
+        plan:
+          type: string
+          description: Aktueller Paketplan
+          example: premium
+        is_admin:
+          type: boolean
+          description: Kennzeichnet Administratoren
+        created_at:
+          type: string
+          format: date-time
+          description: Registrierungszeitpunkt
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der letzten Anmeldung (falls vorhanden)
+        api_key_last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Letzte Verwendung des aktuellen API-Schlüssels
+        stats:
+          $ref: '#/components/schemas/UserAccountStats'
+        limits:
+          $ref: '#/components/schemas/UserAccountLimits'
+        preferences:
+          $ref: '#/components/schemas/UserAccountPreferences'
+
+    UserAccountStats:
+      type: object
+      required:
+        - images
+        - albums
+      properties:
+        images:
+          type: object
+          required:
+            - count
+            - storage_used_bytes
+          properties:
+            count:
+              type: integer
+              format: int64
+              description: Anzahl gespeicherter Bilder
+              example: 128
+            storage_used_bytes:
+              type: integer
+              format: int64
+              description: Belegter Speicher in Bytes
+              example: 734003200
+            storage_remaining_bytes:
+              type: integer
+              format: int64
+              nullable: true
+              description: Verbleibender Speicherplatz (null bei unbegrenzt)
+        albums:
+          type: object
+          required:
+            - count
+          properties:
+            count:
+              type: integer
+              format: int64
+              description: Anzahl erstellter Alben
+              example: 12
+
+    UserAccountLimits:
+      type: object
+      required:
+        - max_upload_bytes
+        - storage_quota_bytes
+        - can_multi_upload
+        - image_upload_enabled
+        - direct_upload_enabled
+        - allowed_thumbnail_formats
+      properties:
+        max_upload_bytes:
+          type: integer
+          format: int64
+          description: Maximale Uploadgröße pro Datei (in Bytes)
+          example: 52428800
+        storage_quota_bytes:
+          type: integer
+          format: int64
+          nullable: true
+          description: Gesamtverfügbarer Speicher (null bei unbegrenzt)
+        can_multi_upload:
+          type: boolean
+          description: Darf Mehrfach-Uploads durchführen
+        image_upload_enabled:
+          type: boolean
+          description: Globale Einstellung für Bild-Uploads
+        direct_upload_enabled:
+          type: boolean
+          description: Globale Einstellung für Direkt-Uploads
+        allowed_thumbnail_formats:
+          type: array
+          items:
+            type: string
+          description: Verfügbare Thumbnail-Formate
+          example: ["original", "webp"]
+
+    UserAccountPreferences:
+      type: object
+      required:
+        - thumbnail_original
+        - thumbnail_webp
+        - thumbnail_avif
+      properties:
+        thumbnail_original:
+          type: boolean
+          description: Bevorzugt Original-Thumbnails
+        thumbnail_webp:
+          type: boolean
+          description: Bevorzugt WebP-Thumbnails
+        thumbnail_avif:
+          type: boolean
+          description: Bevorzugt AVIF-Thumbnails
+
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
@@ -92,6 +468,11 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT token authentication
+    UploadTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: Time-limited upload token for direct storage upload
 
 security:
   - ApiKeyAuth: []

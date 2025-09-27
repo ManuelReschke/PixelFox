@@ -20,7 +20,12 @@ import (
 
 // GET /image/:uuid/report – show report form
 func HandleImageReportForm(c *fiber.Ctx) error {
-	fromProtected := c.Locals(FROM_PROTECTED).(bool)
+	fromProtected := false
+	if v := c.Locals(usercontext.KeyFromProtected); v != nil {
+		if b, ok := v.(bool); ok {
+			fromProtected = b
+		}
+	}
 	csrfToken := c.Locals("csrf").(string)
 	uuid := c.Params("uuid")
 

@@ -29,7 +29,7 @@ func APIPage() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"mx-auto w-fit flex flex-col gap-8 text-center\"><h1 class=\"text-5xl font-bold\">API</h1><span>Unsere API Dokumentation wurde mit OpenAPI Specs v3 erstellt und sind <a href=\"/docs/api/v1\" target=\"_blank\" class=\"text-blue-600 underline hover:no-underline\">hier</a> zu finden</span> <a href=\"/docs/api/v1\" target=\"_blank\"><img src=\"/img/openapi.png\" alt=\"OpenAPI\" class=\"mx-auto w-3/6 flex\"></a></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"mx-auto w-fit flex flex-col gap-8 text-center\"><h1 class=\"text-5xl font-bold\">API</h1><div class=\"flex flex-col gap-2\"><span>Unsere API Dokumentation basiert auf OpenAPI v3.</span><div class=\"flex justify-center gap-3\"><a href=\"/docs/api/v1\" target=\"_blank\" class=\"btn btn-primary btn-outline\">Public v1</a></div></div><a href=\"/docs/api/v1\" target=\"_blank\"><img src=\"/img/openapi.png\" alt=\"OpenAPI\" class=\"mx-auto w-3/6 flex\"></a></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

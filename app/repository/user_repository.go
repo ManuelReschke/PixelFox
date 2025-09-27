@@ -54,6 +54,37 @@ func (r *userRepository) GetByActivationToken(token string) (*models.User, error
 	return &user, nil
 }
 
+// GetByAPIKeyHash resolves an active API key hash to its user and user settings.
+func (r *userRepository) GetByAPIKeyHash(hash string) (*models.User, *models.UserSettings, error) {
+	trimmed := strings.TrimSpace(hash)
+	if trimmed == "" {
+		return nil, nil, gorm.ErrRecordNotFound
+	}
+	var settings models.UserSettings
+	query := r.db.Where("api_key_hash = ? AND api_key_hash <> '' AND api_key_revoked_at IS NULL", trimmed)
+	if err := query.First(&settings).Error; err != nil {
+		return nil, nil, err
+	}
+	var user models.User
+	if err := r.db.First(&user, settings.UserID).Error; err != nil {
+		return nil, nil, err
+	}
+	return &user, &settings, nil
+}
+
+// GetStatsByUserID returns aggregate statistics for the given user.
+func (r *userRepository) GetStatsByUserID(userID uint) (*UserStats, error) {
+	stats, err := r.getUserStats(userID)
+	if err != nil {
+		return nil, err
+	}
+	return &UserStats{
+		ImageCount:   stats.ImageCount,
+		AlbumCount:   stats.AlbumCount,
+		StorageUsage: stats.StorageUsage,
+	}, nil
+}
+
 // Update updates an existing user in the database
 func (r *userRepository) Update(user *models.User) error {
 	return r.db.Save(user).Error

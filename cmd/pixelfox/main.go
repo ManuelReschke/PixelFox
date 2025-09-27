@@ -147,13 +147,21 @@ func NewApplication() *fiber.App {
 		MaxAge:        604800, // 7 days
 	})
 
-	// SWAGGER / OPENAPI
+	// SWAGGER / OPENAPI (Public v1)
 	openAPICfg := swagger.Config{
 		BasePath: "/docs/api/",
 		FilePath: basePath + "public/docs/v1/openapi.yml",
 		Path:     "v1",
 	}
 	app.Use(swagger.New(openAPICfg))
+
+	// SWAGGER / OPENAPI (Internal)
+	internalOpenAPICfg := swagger.Config{
+		BasePath: "/docs/api/",
+		FilePath: basePath + "public/docs/internal/openapi.yml",
+		Path:     "internal",
+	}
+	app.Use(swagger.New(internalOpenAPICfg))
 
 	// ROUTER
 	router.InstallRouter(app)

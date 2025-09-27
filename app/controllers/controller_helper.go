@@ -1,23 +1,24 @@
 package controllers
 
 import (
+	icuser "github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/gofiber/fiber/v2"
 	"strings"
 )
 
 func isLoggedIn(c *fiber.Ctx) bool {
-	var fromProtected bool
-	if protectedValue := c.Locals(FROM_PROTECTED); protectedValue != nil {
-		fromProtected = protectedValue.(bool)
+	if protectedValue := c.Locals(icuser.KeyFromProtected); protectedValue != nil {
+		if b, ok := protectedValue.(bool); ok {
+			return b
+		}
 	}
-
-	return fromProtected
+	return false
 }
 
 // ExtractUsername gets the username from Locals (set by middleware)
 func ExtractUsername(c *fiber.Ctx) string {
 	// Get from Locals (set by authentication middleware)
-	if userNameValue := c.Locals(USER_NAME); userNameValue != nil {
+	if userNameValue := c.Locals(icuser.KeyUsername); userNameValue != nil {
 		if userName, ok := userNameValue.(string); ok {
 			return userName
 		}

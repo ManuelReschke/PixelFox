@@ -13,6 +13,8 @@ type UserRepository interface {
 	GetByID(id uint) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
 	GetByActivationToken(token string) (*models.User, error)
+	GetByAPIKeyHash(hash string) (*models.User, *models.UserSettings, error)
+	GetStatsByUserID(userID uint) (*UserStats, error)
 	Update(user *models.User) error
 	Delete(id uint) error
 	List(offset, limit int) ([]models.User, error)
@@ -133,6 +135,13 @@ type QueueRepository interface {
 // UserWithStats represents a user with additional statistics
 type UserWithStats struct {
 	User         models.User
+	ImageCount   int64
+	AlbumCount   int64
+	StorageUsage int64
+}
+
+// UserStats provides aggregated counts for a single user (images, albums, storage usage).
+type UserStats struct {
 	ImageCount   int64
 	AlbumCount   int64
 	StorageUsage int64

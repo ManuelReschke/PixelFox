@@ -2,6 +2,8 @@ package session
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,16 +18,22 @@ var sessionStore *session.Store
 func NewSessionStore() *session.Store {
 	// Get Redis client configuration from existing cache setup
 	cacheClient := cache.GetClient()
-	cacheOpts := cacheClient.Options()
-
-	// Extract host and port from Redis address (format: "host:port")
-	addr := cacheOpts.Addr
-	host := addr[:len(addr)-5] // Remove ":6379"
+	host := "localhost"
+	port := 6379
+	if cacheClient != nil {
+		addr := cacheClient.Options().Addr
+		if h, p, err := net.SplitHostPort(addr); err == nil {
+			host = h
+			if v, err := strconv.Atoi(p); err == nil {
+				port = v
+			}
+		}
+	}
 
 	// Create Redis storage for sessions using database 1 (cache uses DB 0)
 	storage := redis.New(redis.Config{
 		Host:     host,
-		Port:     6379,
+		Port:     port,
 		Database: 1, // Separate database for sessions
 		Reset:    false,
 	})

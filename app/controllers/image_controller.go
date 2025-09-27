@@ -214,7 +214,7 @@ func HandleUpload(c *fiber.Ctx) error {
 	defer src.Close()
 
 	// Check for duplicate files by this user
-	userID := c.Locals(USER_ID).(uint)
+	userID := c.Locals(usercontext.KeyUserID).(uint)
 	imageRepo := repository.GetGlobalFactory().GetImageRepository()
 	existingImage, err := imageRepo.GetByUserIDAndFileHash(userID, fileHash)
 	if err == nil {
@@ -355,7 +355,7 @@ func HandleUpload(c *fiber.Ctx) error {
 
 	image := models.Image{
 		UUID:          imageUUID,
-		UserID:        c.Locals(USER_ID).(uint),
+		UserID:        c.Locals(usercontext.KeyUserID).(uint),
 		StoragePoolID: selectedPool.ID,
 		FileName:      fileName,
 		FilePath:      filepath.Join("original", relativePath), // Store relative path within the pool

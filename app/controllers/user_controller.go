@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
@@ -26,6 +27,8 @@ import (
 	email_views "github.com/ManuelReschke/PixelFox/views/email_views"
 	user_views "github.com/ManuelReschke/PixelFox/views/user"
 )
+
+const sessionNewAPIKey = "user_new_api_key"
 
 func HandleUserProfile(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
@@ -73,6 +76,25 @@ func HandleUserSettings(c *fiber.Ctx) error {
 	// Load or create user settings
 	db := database.GetDB()
 	us, _ := models.GetOrCreateUserSettings(db, userCtx.UserID)
+	newAPIKey := session.GetSessionValue(c, sessionNewAPIKey)
+	if newAPIKey != "" {
+		if err := session.SetSessionValue(c, sessionNewAPIKey, ""); err != nil {
+			log.Printf("failed to clear api key session value for user %d: %v", userCtx.UserID, err)
+		}
+	}
+	hasAPIKey := us.HasActiveAPIKey()
+	maskedAPIKey := ""
+	if hasAPIKey && us.APIKeyPrefix != "" {
+		maskedAPIKey = fmt.Sprintf("%s********", us.APIKeyPrefix)
+	}
+	apiKeyCreated := ""
+	if us.APIKeyCreatedAt != nil {
+		apiKeyCreated = us.APIKeyCreatedAt.In(time.Local).Format("02.01.2006 15:04")
+	}
+	apiKeyLastUsed := ""
+	if us.APIKeyLastUsedAt != nil {
+		apiKeyLastUsed = us.APIKeyLastUsedAt.In(time.Local).Format("02.01.2006 15:04")
+	}
 	// Compute entitlements against app settings
 	app := models.GetAppSettings()
 	allowedOrig, allowedWebp, allowedAvif := entitlements.AllowedThumbs(entitlements.Plan(us.Plan))
@@ -83,7 +105,8 @@ func HandleUserSettings(c *fiber.Ctx) error {
 
 	settingsIndex := user_views.SettingsIndex(username, csrfToken, us.Plan,
 		allowedOrig && adminOrig, allowedWebp && adminWebp, allowedAvif && adminAvif,
-		us.PrefThumbOriginal, us.PrefThumbWebP, us.PrefThumbAVIF)
+		us.PrefThumbOriginal, us.PrefThumbWebP, us.PrefThumbAVIF,
+		newAPIKey, hasAPIKey, maskedAPIKey, apiKeyCreated, apiKeyLastUsed)
 	settings := user_views.Settings(
 		" | Einstellungen", userCtx.IsLoggedIn, false, flash.Get(c), username, us.Plan, settingsIndex, isAdmin,
 	)
@@ -122,6 +145,65 @@ func HandleUserSettingsPost(c *fiber.Ctx) error {
 		return c.Redirect("/user/settings")
 	}
 	flash.WithSuccess(c, fiber.Map{"message": "Einstellungen gespeichert"})
+	return c.Redirect("/user/settings")
+}
+
+// HandleUserAPIKeyGenerate issues or rotates the user's API key.
+func HandleUserAPIKeyGenerate(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
+	if !userCtx.IsLoggedIn {
+		return c.Redirect("/login")
+	}
+	db := database.GetDB()
+	us, err := models.GetOrCreateUserSettings(db, userCtx.UserID)
+	if err != nil {
+		flash.WithError(c, fiber.Map{"message": "API-Einstellungen konnten nicht geladen werden"})
+		return c.Redirect("/user/settings")
+	}
+	rawKey, err := us.IssueAPIKey()
+	if err != nil {
+		log.Printf("failed to issue api key for user %d: %v", userCtx.UserID, err)
+		flash.WithError(c, fiber.Map{"message": "API-Schlüssel konnte nicht erstellt werden"})
+		return c.Redirect("/user/settings")
+	}
+	if err := db.Save(us).Error; err != nil {
+		log.Printf("failed to persist api key for user %d: %v", userCtx.UserID, err)
+		flash.WithError(c, fiber.Map{"message": "API-Schlüssel konnte nicht gespeichert werden"})
+		return c.Redirect("/user/settings")
+	}
+	if err := session.SetSessionValue(c, sessionNewAPIKey, rawKey); err != nil {
+		log.Printf("failed to stash api key in session for user %d: %v", userCtx.UserID, err)
+	}
+	flash.WithSuccess(c, fiber.Map{"message": "Neuer API-Schlüssel erstellt. Bitte sicher speichern."})
+	return c.Redirect("/user/settings")
+}
+
+// HandleUserAPIKeyRevoke removes the current API key and marks it as revoked.
+func HandleUserAPIKeyRevoke(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
+	if !userCtx.IsLoggedIn {
+		return c.Redirect("/login")
+	}
+	db := database.GetDB()
+	us, err := models.GetOrCreateUserSettings(db, userCtx.UserID)
+	if err != nil {
+		flash.WithError(c, fiber.Map{"message": "API-Einstellungen konnten nicht geladen werden"})
+		return c.Redirect("/user/settings")
+	}
+	if !us.HasActiveAPIKey() {
+		flash.WithInfo(c, fiber.Map{"message": "Es ist kein aktiver API-Schlüssel vorhanden."})
+		return c.Redirect("/user/settings")
+	}
+	us.RevokeAPIKey()
+	if err := db.Save(us).Error; err != nil {
+		log.Printf("failed to revoke api key for user %d: %v", userCtx.UserID, err)
+		flash.WithError(c, fiber.Map{"message": "API-Schlüssel konnte nicht widerrufen werden"})
+		return c.Redirect("/user/settings")
+	}
+	if err := session.SetSessionValue(c, sessionNewAPIKey, ""); err != nil {
+		log.Printf("failed to clear api key session value for user %d: %v", userCtx.UserID, err)
+	}
+	flash.WithSuccess(c, fiber.Map{"message": "API-Schlüssel wurde entfernt."})
 	return c.Redirect("/user/settings")
 }
 
@@ -476,7 +558,7 @@ func handleProfileUpdate(c *fiber.Ctx, user *models.User) error {
 	// Update session if name changed
 	if newName != user.Name {
 		sess, _ := session.GetSessionStore().Get(c)
-		sess.Set(USER_NAME, newName)
+		sess.Set(usercontext.KeyUsername, newName)
 		sess.Save()
 	}
 

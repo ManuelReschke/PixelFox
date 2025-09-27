@@ -49,12 +49,12 @@ func readToken(c *fiber.Ctx) string {
 func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	token := readToken(c)
 	if token == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "missing token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized", "message": "missing token"})
 	}
 	// Use env secret
 	claims, err := security.VerifyUploadToken(token, env.GetEnv("UPLOAD_TOKEN_SECRET", ""))
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized", "message": "invalid token"})
 	}
 
 	// IP-based rate limit: apply only for anonymous/unauthenticated tokens.
@@ -94,7 +94,7 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 						c.Set("X-Rate-TTL", fmt.Sprintf("%ds", int(ttl.Seconds())))
 					}
 					if int(n) > limit {
-						return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "rate limit exceeded"})
+						return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "too_many_requests", "message": "rate limit exceeded"})
 					}
 				}
 			}
@@ -144,7 +144,7 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 						c.Set("X-Rate-TTL", fmt.Sprintf("%ds", int(ttl.Seconds())))
 					}
 					if int(n) > userLimit {
-						return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "Du hast dein Upload-Limit erreicht. Bitte warte kurz und versuche es erneut."})
+						return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "too_many_requests", "message": "Du hast dein Upload-Limit erreicht. Bitte warte kurz und versuche es erneut."})
 					}
 				}
 			}
@@ -154,16 +154,16 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	// Parse file
 	form, err := c.MultipartForm()
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid multipart form"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid multipart form"})
 	}
 	defer form.RemoveAll()
 	files := form.File["file"]
 	if len(files) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file missing"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "file missing"})
 	}
 	file := files[0]
 	if file.Size > claims.MaxBytes {
-		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large for session"})
+		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "payload_too_large", "message": "file too large for session"})
 	}
 
 	// Enforce per-plan storage quota for the user
@@ -180,7 +180,8 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 					remaining = 0
 				}
 				return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{
-					"error":     "storage quota exceeded",
+					"error":     "quota_exceeded",
+					"message":   "storage quota exceeded",
 					"remaining": remaining,
 					"needed":    file.Size,
 				})
@@ -191,11 +192,11 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	// Validate filename extension and MIME by sniffing the first bytes
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if ext == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid file name"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid file name"})
 	}
 	sniff, err := file.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to open file"})
 	}
 	head := make([]byte, 512)
 	n, _ := io.ReadFull(sniff, head)
@@ -204,25 +205,25 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	}
 	sniff.Close()
 	if _, verr := upload.ValidateImageBySniff(file.Filename, head); verr != nil {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(fiber.Map{"error": verr.Error()})
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(fiber.Map{"error": "unsupported_media_type", "message": verr.Error()})
 	}
 
 	// Open file to compute hash and then persist
 	src, err := file.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to open file"})
 	}
 	defer src.Close()
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, src); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to read file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to read file"})
 	}
 	fileHash := hex.EncodeToString(hash.Sum(nil))
 	src.Close()
 	src, err = file.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to reopen file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to reopen file"})
 	}
 	defer src.Close()
 
@@ -236,7 +237,7 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	sm := storage.NewStorageManager()
 	pool, err := models.FindStoragePoolByID(database.GetDB(), claims.PoolID)
 	if err != nil || pool == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid pool"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid pool"})
 	}
 
 	// Build relative path and file name
@@ -249,7 +250,7 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	op, err := sm.SaveFile(src, filepath.Join("original", relativePath, fileName), pool.ID)
 	if err != nil || !op.Success {
 		fiberlog.Errorf("SaveFile error: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to store file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to store file"})
 	}
 
 	// Persist image record
@@ -269,7 +270,7 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		IPv6:          ipv6,
 	}
 	if err := imgRepo.Create(&image); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create image record"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to create image record"})
 	}
 
 	// Enqueue processing
@@ -290,7 +291,7 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	secret := strings.TrimSpace(env.GetEnv("REPLICATION_SECRET", ""))
 	if secret == "" {
 		fiberlog.Warnf("[Replicate] Missing REPLICATION_SECRET; endpoint disabled")
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "replication disabled"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized", "message": "replication disabled"})
 	}
 	// Auth check
 	auth := c.Get("Authorization")
@@ -306,12 +307,12 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	}
 	if !ok {
 		fiberlog.Warnf("[Replicate] Unauthorized attempt from %s", c.IP())
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized", "message": "invalid replication secret"})
 	}
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid multipart form"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid multipart form"})
 	}
 	defer form.RemoveAll()
 
@@ -321,10 +322,10 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 		if pid, perr := strconv.ParseUint(strings.TrimSpace(vals[0]), 10, 64); perr == nil {
 			poolID = pid
 		} else {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid pool_id"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid pool_id"})
 		}
 	} else {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing pool_id"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "missing pool_id"})
 	}
 
 	// stored_path (preferred) or relative_path + file_name
@@ -341,7 +342,7 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 			name = strings.Trim(strings.TrimSpace(v[0]), "/")
 		}
 		if rel == "" || name == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing stored_path"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "missing stored_path"})
 		}
 		storedPath = path.Join(rel, name)
 	}
@@ -351,12 +352,12 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	cleanStored = strings.TrimPrefix(cleanStored, "/")
 	if strings.HasPrefix(cleanStored, "../") || strings.Contains(cleanStored, "/../") || strings.HasPrefix(cleanStored, "..") {
 		fiberlog.Warnf("[Replicate] Rejected traversal path from %s: %s", c.IP(), storedPath)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid stored_path"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid stored_path"})
 	}
 	// Optional: restrict to known roots
 	if !(strings.HasPrefix(cleanStored, "original/") || strings.HasPrefix(cleanStored, "variants/")) {
 		fiberlog.Warnf("[Replicate] Rejected invalid root from %s: %s", c.IP(), cleanStored)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid path root"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid path root"})
 	}
 	storedPath = cleanStored
 
@@ -370,7 +371,7 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 
 	files := form.File["file"]
 	if len(files) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file missing"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "file missing"})
 	}
 	fh := files[0]
 	// optional checksum
@@ -378,7 +379,7 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	if vals, ok := form.Value["sha256"]; ok && len(vals) > 0 {
 		wantSum = strings.TrimSpace(vals[0])
 		if wantSum != "" && len(wantSum) != 64 {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid sha256"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid sha256"})
 		}
 	}
 
@@ -388,11 +389,11 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 		if pool, err := models.FindStoragePoolByID(database.GetDB(), uint(poolID)); err == nil && pool != nil {
 			if !pool.IsHealthy() {
 				fiberlog.Warnf("[Replicate] Target pool unhealthy (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
-				return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "target pool unhealthy"})
+				return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "service_unavailable", "message": "target pool unhealthy"})
 			}
 			if !pool.CanAcceptFile(expectedSize) {
 				fiberlog.Warnf("[Replicate] Insufficient capacity (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, expectedSize, c.IP())
-				return c.Status(fiber.StatusInsufficientStorage).JSON(fiber.Map{"error": "insufficient capacity"})
+				return c.Status(fiber.StatusInsufficientStorage).JSON(fiber.Map{"error": "insufficient_storage", "message": "insufficient capacity"})
 			}
 		}
 	}
@@ -416,7 +417,7 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	// Open uploaded file and store
 	src, err := fh.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to open file"})
 	}
 	defer src.Close()
 
@@ -425,14 +426,14 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	tee := io.TeeReader(src, hasher)
 	if _, err := sm.SaveFile(tee, storedPath, uint(poolID)); err != nil {
 		fiberlog.Errorf("Replicate SaveFile error: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to store file"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to store file"})
 	}
 
 	// Enforce checksum by admin setting
 	requireChecksum := models.GetAppSettings().IsReplicationChecksumRequired()
 	if requireChecksum && wantSum == "" {
 		fiberlog.Warnf("[Replicate] Missing required checksum (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "checksum required"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "checksum required"})
 	}
 
 	if wantSum != "" {
@@ -441,7 +442,7 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 			// Remove corrupted file and report error
 			_, _ = sm.DeleteFile(storedPath, uint(poolID))
 			fiberlog.Warnf("[Replicate] Checksum mismatch (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
-			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "checksum mismatch"})
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "unprocessable_entity", "message": "checksum mismatch"})
 		}
 	}
 
