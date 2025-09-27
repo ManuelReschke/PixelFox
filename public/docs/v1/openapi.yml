@@ -314,7 +314,6 @@ components:
         - email
         - status
         - plan
-        - is_admin
         - created_at
         - stats
         - limits
@@ -342,9 +341,7 @@ components:
           type: string
           description: Aktueller Paketplan
           example: premium
-        is_admin:
-          type: boolean
-          description: Kennzeichnet Administratoren
+        
         created_at:
           type: string
           format: date-time

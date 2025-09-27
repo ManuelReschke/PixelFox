@@ -82,7 +82,6 @@ func HandleGetUserAccount(c *fiber.Ctx) error {
 		"email":                account.Email,
 		"status":               account.Status,
 		"plan":                 settings.Plan,
-		"is_admin":             account.Role == models.ROLE_ADMIN,
 		"created_at":           account.CreatedAt.UTC().Format(time.RFC3339),
 		"last_login_at":        formatTimePtr(account.LastLoginAt),
 		"api_key_last_used_at": formatTimePtr(settings.APIKeyLastUsedAt),
