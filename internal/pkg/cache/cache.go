@@ -18,11 +18,12 @@ var (
 func SetupCache() {
 	host := env.GetEnv("CACHE_HOST", "localhost")
 	port := env.GetEnv("CACHE_PORT", "6379")
+	password := env.GetEnv("CACHE_PASSWORD", "")
 
 	client = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", host, port),
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Password: password,
+		DB:       0, // use default DB
 	})
 
 	// Test the connection

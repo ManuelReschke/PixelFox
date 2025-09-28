@@ -1,0 +1,32 @@
+stages: [build]
+
+variables:
+  DOCKER_TLS_CERTDIR: ""      # Required for Docker-in-Docker on GitLab SaaS
+  DOCKER_DRIVER: overlay2
+  # Registry image path; default to project registry
+  IMAGE: "$CI_REGISTRY_IMAGE/app"
+
+build:app-image:
+  stage: build
+  image: docker:26
+  services:
+    - name: docker:26-dind
+      command: ["--mtu=1460"]
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker version
+    - docker info
+  script:
+    - export TAG="$CI_COMMIT_SHORT_SHA"
+    - docker buildx create --use --name builder || docker buildx use builder
+    - docker buildx inspect --bootstrap
+    - docker buildx build \
+        --platform linux/amd64 \
+        -f docker/golang/Dockerfile \
+        -t "$IMAGE:$TAG" \
+        -t "$IMAGE:latest" \
+        --push .
+  only:
+    - main
+    - tags
+

@@ -1,0 +1,19 @@
+services:
+  proxy:
+    image: caddy:2
+    container_name: pxlfox-proxy
+    restart: always
+    # Use host networking so Caddy can bind 80/443 and proxy to localhost:4000
+    network_mode: host
+    environment:
+      # Optional: used by Caddy for ACME registration
+      - EMAIL=${CADDY_EMAIL:-}
+      # Optional: if using a DNS provider plugin (custom image required)
+      # - CLOUDFLARE_API_TOKEN=
+    volumes:
+      # Provide your Caddyfile on the host
+      - ${CADDYFILE_PATH:-/srv/caddy/Caddyfile}:/etc/caddy/Caddyfile:ro
+      # Persist Caddy certs/config
+      - ${CADDY_DATA_DIR:-/srv/caddy/data}:/data
+      - ${CADDY_CONFIG_DIR:-/srv/caddy/config}:/config
+

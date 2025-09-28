@@ -184,7 +184,8 @@ watch-css:
 .PHONY: help
 help:
 	@echo "Verfügbare Befehle:"
-	@echo "  make prepare-env-test   - Kopiere .env.dev nach .env (Testumgebung)"
+	@echo "  make prepare-env-local   - Kopiere .env.dev nach .env (Testumgebung)"
+	@echo "  make prepare-env-dev   - Kopiere .env.dev nach .env (Testumgebung)"
 	@echo "  make prepare-env-prod   - Kopiere .env.prod nach .env (Produktionsumgebung)"
 	@echo "  make start              - Starte Docker Compose für Testumgebung"
 	@echo "  make start-build        - Starte Docker Compose für Testumgebung & Build"

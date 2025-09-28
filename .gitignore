@@ -4,6 +4,8 @@
 .claude
 .env
 .env.local
+.gocache
+.gomodcache
 node_modules
 tmp/
 pixelfox-app

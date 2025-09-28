@@ -1,0 +1,14 @@
+services:
+  cache:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    container_name: pxlfox-cache
+    restart: always
+    command: ["dragonfly", "--cache_mode=true"]
+    ports:
+      # Expose on 6379; restrict access via firewall to App host only
+      - "6379:6379"
+    volumes:
+      - ${CACHE_DATA_DIR:-/srv/dragonfly/data}:/data
+    env_file:
+      - .env
+

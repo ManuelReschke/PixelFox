@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/storage/redis"
 
 	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 )
 
 var sessionStore *session.Store
@@ -20,6 +21,7 @@ func NewSessionStore() *session.Store {
 	cacheClient := cache.GetClient()
 	host := "localhost"
 	port := 6379
+	password := env.GetEnv("CACHE_PASSWORD", "")
 	if cacheClient != nil {
 		addr := cacheClient.Options().Addr
 		if h, p, err := net.SplitHostPort(addr); err == nil {
@@ -28,12 +30,17 @@ func NewSessionStore() *session.Store {
 				port = v
 			}
 		}
+		// Prefer password from the underlying client if present
+		if p := cacheClient.Options().Password; p != "" {
+			password = p
+		}
 	}
 
 	// Create Redis storage for sessions using database 1 (cache uses DB 0)
 	storage := redis.New(redis.Config{
 		Host:     host,
 		Port:     port,
+		Password: password,
 		Database: 1, // Separate database for sessions
 		Reset:    false,
 	})

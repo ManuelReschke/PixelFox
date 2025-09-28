@@ -1,0 +1,15 @@
+services:
+  app:
+    image: ${APP_IMAGE:-registry.example.com/pixelfox/app:latest}
+    container_name: pxlfox-app
+    restart: always
+    # Bind to localhost; reverse proxy should talk to 127.0.0.1:4000 on this host
+    ports:
+      - "127.0.0.1:4000:4000"
+    env_file:
+      - .env
+    volumes:
+      - ${UPLOADS_DIR:-/srv/pixelfox/uploads}:/app/uploads
+      - ${TMP_DIR:-/srv/pixelfox/tmp}:/app/tmp
+    # No DB/Cache here; connect over network using DB_HOST/CACHE_HOST from .env
+
