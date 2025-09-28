@@ -217,13 +217,20 @@ After first app start, defaults for the storage pool are applied from `PUBLIC_DO
 - DB: use managed MySQL or add read replicas (app is mostly write‑light)
 
 ## Deployment Workflow (CI/CD Suggestion)
-1) CI Build (GitLab): `.gitlab-ci.yml` builds and pushes `docker/golang/Dockerfile` to the project registry as `$CI_REGISTRY_IMAGE/app:<SHA>` and `:latest`.
-2) Deploy (manual on App VPS):
-   - Copy/update Caddy config (if needed) and ensure Caddy is healthy.
-   - Use helper script to pull & recreate app:
-     - `bash scripts/deploy_app.sh -f /srv/pixelfox/docker-compose.yml -e /srv/pixelfox/.env -i $CI_REGISTRY_IMAGE/app:<SHA>`
-   - Verify `GET /api/v1/ping` and a test login/upload.
-3) Rollback: rerun deploy with previous tag.
+GitHub Actions and GitLab CI templates are included. Use the one matching your host.
+
+- GitHub Actions: `.github/workflows/docker-build.yml` builds and pushes `docker/golang/Dockerfile` to GHCR as `ghcr.io/<owner>/<repo>:<SHA>` and `:latest`.
+- GitLab CI: `.gitlab-ci.yml` builds and pushes to GitLab's Container Registry as `$CI_REGISTRY_IMAGE/app:<SHA>` and `:latest`.
+
+Deploy (manual on App VPS):
+- With GHCR tag:
+  - `bash scripts/deploy_app.sh -f /srv/pixelfox/docker-compose.yml -e /srv/pixelfox/.env -i ghcr.io/<owner>/<repo>:<SHA>`
+- With GitLab tag:
+  - `bash scripts/deploy_app.sh -f /srv/pixelfox/docker-compose.yml -e /srv/pixelfox/.env -i $CI_REGISTRY_IMAGE/app:<SHA>`
+
+Verify `GET /api/v1/ping` and a test login/upload.
+
+Rollback: rerun deploy with previous tag.
 
 Optional: proxy updates via helper script:
 - `bash scripts/deploy_proxy.sh -f /srv/caddy/docker-compose.yml -E CADDY_EMAIL=admin@your-domain`
