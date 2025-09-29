@@ -227,8 +227,28 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	}
 	defer src.Close()
 
-	// Duplicate detection for user
+	// Duplicate detection for user with optimistic lock to avoid race-condition double inserts
 	imgRepo := repository.GetGlobalFactory().GetImageRepository()
+	// Acquire short-lived lock on (user_id,file_hash)
+	cli := cache.GetClient()
+	lockKey := fmt.Sprintf("lock:upload:%d:%s", claims.UserID, fileHash)
+	if cli != nil {
+		ctx := context.Background()
+		if ok, _ := cli.SetNX(ctx, lockKey, "1", 60*time.Second).Result(); ok {
+			defer func() { _ = cli.Del(ctx, lockKey).Err() }()
+		} else {
+			// Another upload of the same file is in-flight; brief wait-and-see for existing image
+			deadline := time.Now().Add(3 * time.Second)
+			for time.Now().Before(deadline) {
+				if existing, err := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); err == nil && existing != nil {
+					return c.JSON(fiber.Map{"duplicate": true, "image_uuid": existing.UUID, "view_url": "/i/" + existing.ShareLink})
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+			// Fallthrough: continue without lock (best effort), duplicate check again below
+		}
+	}
+	// Duplicate check before create (fast path)
 	if existing, err := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); err == nil && existing != nil {
 		return c.JSON(fiber.Map{"duplicate": true, "image_uuid": existing.UUID, "view_url": "/i/" + existing.ShareLink})
 	}
@@ -270,6 +290,10 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		IPv6:          ipv6,
 	}
 	if err := imgRepo.Create(&image); err != nil {
+		// Handle concurrent duplicate insert gracefully (no DB constraint required)
+		if existing, gerr := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); gerr == nil && existing != nil {
+			return c.JSON(fiber.Map{"duplicate": true, "image_uuid": existing.UUID, "view_url": "/i/" + existing.ShareLink})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to create image record"})
 	}
 

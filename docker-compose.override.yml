@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # Second app instance acting as a separate Storage node (s01)
   app_s01:

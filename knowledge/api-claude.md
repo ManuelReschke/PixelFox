@@ -109,7 +109,7 @@ GET    /api/v1/images/{uuid}/stats # Get image statistics
 #### Upload System Integration
 ```
 POST   /api/v1/upload/sessions     # Create upload session (already exists)
-GET    /api/v1/image/status/{uuid} # Check processing status (already exists)
+GET    /api/v1/images/{uuid}/status # Check processing status (already exists)
 ```
 
 #### Image Model (API Response)

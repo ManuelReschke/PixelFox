@@ -52,9 +52,10 @@ func HandleCreateUploadBatch(c *fiber.Ctx) error {
 	if len(payload.Items) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "no items"})
 	}
-	// sanitize: cap items length to a safe bound
-	if len(payload.Items) > 100 {
-		payload.Items = payload.Items[:100]
+	// Sanitize: cap by plan-based batch limit to avoid excessive multi-uploads
+	max := entitlements.MaxFilesPerBatch(entitlements.Plan(user.Plan))
+	if max > 0 && len(payload.Items) > max {
+		payload.Items = payload.Items[:max]
 	}
 
 	batch := batchStored{

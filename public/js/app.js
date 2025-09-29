@@ -112,6 +112,7 @@ function initUploadForm() {
     const uploadForm = document.getElementById('upload_form');
     if (!uploadForm) return;
     const directUploadEnabled = (uploadForm.dataset.directUpload || '').toLowerCase() === 'true';
+    const maxFiles = parseInt(uploadForm.dataset.maxFiles || '0', 10) || 0;
     
     // Scope queries to the upload form to avoid conflicts after HTMX swaps
     const fileInput = uploadForm.querySelector('#file-input');
@@ -136,11 +137,25 @@ function initUploadForm() {
         return;
     }
 
+    // Prevent double-submits/race conditions
+    let uploading = false;
+
     // Datei-Input-Event-Listener
     fileInput.addEventListener('change', function() {
         if (this.files.length > 0) {
             // Multi-Upload: nur Dateiname(n) anzeigen
             if (fileInput.multiple && this.files.length > 1) {
+                // Enforce max files per batch (client-side)
+                if (maxFiles > 0 && this.files.length > maxFiles) {
+                    try {
+                        const dt = new DataTransfer();
+                        const arr = Array.from(this.files).slice(0, maxFiles);
+                        arr.forEach(f => dt.items.add(f));
+                        this.files = dt.files;
+                    } catch(_) {
+                        // Fallback: show warning and block submit implicitly by not enabling button
+                    }
+                }
                 fileName.textContent = `${this.files.length} Dateien ausgewählt`;
                 uploadButton.disabled = false;
                 dropArea.classList.add('border-primary');
@@ -212,8 +227,18 @@ function initUploadForm() {
 
     function handleDrop(e) {
         const dt = e.dataTransfer;
-        const files = dt.files;
-        fileInput.files = files;
+        let files = Array.from(dt.files);
+        // Enforce batch cap on drop as well
+        if (fileInput.multiple && maxFiles > 0 && files.length > maxFiles) {
+            files = files.slice(0, maxFiles);
+        }
+        try {
+            const dtn = new DataTransfer();
+            files.forEach(f => dtn.items.add(f));
+            fileInput.files = dtn.files;
+        } catch(_) {
+            // best-effort: ignore if not supported
+        }
         
         // Trigger change event manually
         const event = new Event('change');
@@ -304,8 +329,8 @@ function initUploadForm() {
             const maybeUUID = (uploadResultData && uploadResultData.image_uuid) || '';
             const maybeView = (uploadResultData && uploadResultData.view_url) || '';
             if (isDuplicate && maybeView) {
-                // Redirect via flash helper to show info message
-                window.location.href = '/flash/upload-duplicate?view=' + encodeURIComponent(maybeView);
+                // Navigate directly without showing a misleading cross-account flash
+                window.location.href = maybeView;
                 return;
             }
             if (maybeUUID) {
@@ -314,7 +339,7 @@ function initUploadForm() {
                 const poll = setInterval(async () => {
                     attempts++;
                     try {
-                        const r = await fetch(`/api/internal/image/status/${maybeUUID}`, { credentials: 'include' });
+                        const r = await fetch(`/api/internal/images/${maybeUUID}/status`, { credentials: 'include' });
                         if (r.ok) {
                             const js = await r.json();
                             if (js.complete) {
@@ -362,6 +387,8 @@ function initUploadForm() {
             // Fallback to original App upload with normal browser submit
             console.error('Direct upload failed, fallback to App upload:', err);
             progressContainer.classList.add('hidden');
+            // Clear uploading flag to allow native submit fallback
+            uploading = false;
             try { uploadForm.removeAttribute('data-direct-upload'); } catch(e) {}
             try { uploadForm.removeAttribute('data-hx-disable'); } catch(_) {}
             try { uploadForm.removeAttribute('hx-post'); } catch(_) {}
@@ -381,6 +408,11 @@ function initUploadForm() {
             progressContainer.classList.remove('hidden');
             uploadButton.disabled = true;
             uploadStatus.textContent = 'Vorbereitung...';
+
+            // Enforce batch cap again just in case
+            if (maxFiles > 0 && files.length > maxFiles) {
+                files = files.slice(0, maxFiles);
+            }
 
             const items = [];
             window.__pxf_multi_items = items;
@@ -483,6 +515,8 @@ function initUploadForm() {
             progressContainer.classList.add('hidden');
             errorMessage && errorMessage.classList.remove('hidden');
             errorText && (errorText.textContent = 'Fehler beim Multi-Upload');
+            // Allow user to retry
+            uploading = false;
         }
     }
 
@@ -490,6 +524,11 @@ function initUploadForm() {
     uploadForm.addEventListener('submit', function(e) {
         // If we're in fallback mode, let the browser submit normally
         if (uploadForm.getAttribute('data-fallback-submit') === 'true') {
+            return;
+        }
+        // Guard against double submissions
+        if (uploading) {
+            e.preventDefault();
             return;
         }
         if (!fileInput.files.length) return;
@@ -500,13 +539,18 @@ function initUploadForm() {
             try { uploadForm.setAttribute('data-hx-disable', 'true'); } catch(_) {}
             try { uploadForm.removeAttribute('hx-post'); } catch(_) {}
             try { uploadForm.removeAttribute('hx-encoding'); } catch(_) {}
+            uploading = true;
             const files = Array.from(fileInput.files);
             directUploadFiles(files);
             return;
         }
         // Single file: only intercept if direct upload is enabled
-        if (!directUploadEnabled) return; // let HTMX handle
+        if (!directUploadEnabled) { // let HTMX handle
+            uploading = true;
+            return;
+        }
         e.preventDefault();
+        uploading = true;
         directUpload(fileInput.files[0]);
     });
 
@@ -546,6 +590,8 @@ function initUploadForm() {
             // Wir müssen hier nichts tun
             return;
         }
+        // Request finished successfully
+        uploading = false;
     });
 
     // Fehler beim Upload
@@ -563,6 +609,7 @@ function initUploadForm() {
         
         // Upload-Button wieder aktivieren
         uploadButton.disabled = false;
+        uploading = false;
     });
 
     // Bei allen anderen Fehlern (z.B. Netzwerkfehler)
@@ -580,6 +627,7 @@ function initUploadForm() {
         
         // Upload-Button wieder aktivieren
         uploadButton.disabled = false;
+        uploading = false;
     });
 
     // Bei Abbruch des Uploads
@@ -592,6 +640,7 @@ function initUploadForm() {
         
         // Upload-Button wieder aktivieren
         uploadButton.disabled = false;
+        uploading = false;
     });
 }
 

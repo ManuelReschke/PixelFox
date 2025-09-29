@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/app/repository"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
@@ -213,10 +215,32 @@ func HandleUpload(c *fiber.Ctx) error {
 	}
 	defer src.Close()
 
-	// Check for duplicate files by this user
+	// Check for duplicate files by this user with short-lived lock to avoid race duplicates
 	userID := c.Locals(usercontext.KeyUserID).(uint)
 	imageRepo := repository.GetGlobalFactory().GetImageRepository()
-	existingImage, err := imageRepo.GetByUserIDAndFileHash(userID, fileHash)
+	var existingImage *models.Image
+	// Acquire short-lived lock on (user_id,file_hash)
+	if cli := cache.GetClient(); cli != nil {
+		ctx := context.Background()
+		lockKey := fmt.Sprintf("lock:upload:%d:%s", userID, fileHash)
+		if ok, _ := cli.SetNX(ctx, lockKey, "1", 60*time.Second).Result(); ok {
+			defer func() { _ = cli.Del(ctx, lockKey).Err() }()
+		} else {
+			// If another upload is in-flight, wait briefly for the other to persist
+			deadline := time.Now().Add(3 * time.Second)
+			for time.Now().Before(deadline) {
+				if ex, e2 := imageRepo.GetByUserIDAndFileHash(userID, fileHash); e2 == nil && ex != nil {
+					existingImage = ex
+					err = nil
+					break
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+		}
+	}
+	if existingImage == nil {
+		existingImage, err = imageRepo.GetByUserIDAndFileHash(userID, fileHash)
+	}
 	if err == nil {
 		// Duplicate found! Return user-friendly response
 		fiberlog.Info(fmt.Sprintf("[Upload] Duplicate file detected for user %d, redirecting to existing image %s", userID, existingImage.UUID))
@@ -371,6 +395,23 @@ func HandleUpload(c *fiber.Ctx) error {
 
 		// Clean up the file if database insertion fails
 		os.Remove(originalSavePath)
+
+		// Handle concurrent duplicate insert (unique constraint) as friendly duplicate
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") {
+			if existing, gerr := imageRepo.GetByUserIDAndFileHash(c.Locals(usercontext.KeyUserID).(uint), fileHash); gerr == nil && existing != nil {
+				fm := fiber.Map{
+					"type":           "info",
+					"message":        "Du hast dieses Bild bereits hochgeladen!",
+					"existing_image": existing.UUID,
+					"existing_title": existing.Title,
+				}
+				flash.WithInfo(c, fm)
+				if c.Get("HX-Request") == "true" {
+					return c.Redirect("/image/" + existing.UUID)
+				}
+				return c.Redirect("/image/" + existing.UUID)
+			}
+		}
 
 		fm := fiber.Map{
 			"type":    "error",

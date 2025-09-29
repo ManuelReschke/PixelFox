@@ -196,7 +196,7 @@ Erreicht (fertig):
 - Direct‑to‑Storage Upload end‑to‑end
   - `POST /api/v1/upload/sessions` (App) gibt `upload_url` + signiertes Token aus.
   - `POST /api/internal/upload` (Storage) validiert Token und speichert Datei im gewählten Pool.
-  - Frontend: Direct‑Upload mit XHR‑Progress, Polling auf `/api/v1/image/status/:uuid` bis fertig.
+  - Frontend: Direct‑Upload mit XHR‑Progress, Polling auf `/api/v1/images/{uuid}/status` bis fertig.
 - Worker‑Routing pro Node (bereit)
   - Jobs werden anhand von `NODE_ID`/`pool.node_id` gefiltert; bei Mismatch Requeue.
 - URL‑Generierung (Downloads) node‑bewusst

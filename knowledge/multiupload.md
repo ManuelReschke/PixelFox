@@ -84,7 +84,7 @@ Ziel: Für Nutzer mit Plan „premium“ und „premium_max“ Multi‑Upload au
 5) Normaler Viewer `/i/<share>` bleibt bestehen; nur der Auto‑Redirect nach Upload führt zur Batch‑Seite.
 
 ## Daten/Varianten‑Status
-- Thumbnails sind ggf. noch in Verarbeitung. In der Batch‑Seite pro Item Polling optional: `GET /api/v1/image/status/:uuid` existiert → zeigt „verarbeitet“ und aktualisiert Vorschau.
+- Thumbnails sind ggf. noch in Verarbeitung. In der Batch‑Seite pro Item Polling optional: `GET /api/v1/images/{uuid}/status` existiert → zeigt „verarbeitet“ und aktualisiert Vorschau.
 
 ## Fehlerfälle
 - Rate‑Limit (IP/User) → bestehende Flash/Redirects erhalten; JS behandelt 429/413/415 bereits. Bei Multi‑Upload: pro Datei behandeln und als „fehlgeschlagen“ markieren.

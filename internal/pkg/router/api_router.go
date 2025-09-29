@@ -92,7 +92,7 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 	//	c.Locals(controllers.USER_IS_ADMIN, uc.IsAdmin)
 	//	return c.Next()
 	//}
-	internalAPI.Get("/image/status/:uuid", controllers.HandleImageStatusJSON)
+	internalAPI.Get("/images/:uuid/status", controllers.HandleImageStatusJSON)
 }
 
 func NewApiRouter() *ApiRouter {

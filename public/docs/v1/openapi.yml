@@ -25,6 +25,8 @@ tags:
     description: User management
   - name: Albums
     description: Album management
+  - name: Images
+    description: Image resources and processing status
 
 paths:
   /ping:
@@ -135,13 +137,13 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '500': { $ref: '#/components/responses/InternalError' }
 
-  /image/status/{uuid}:
+  /images/{uuid}/status:
     get:
       summary: Get processing status
       description: Returns whether the image processing is complete and the view URL if available.
       operationId: getImageStatus
       tags:
-        - Upload
+        - Images
       servers:
         - url: http://localhost:8080/api/internal
           description: Internal status endpoint (development)

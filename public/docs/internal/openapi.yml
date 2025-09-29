@@ -121,7 +121,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/InternalError' }
 
-  /image/status/{uuid}:
+  /images/{uuid}/status:
     get:
       summary: Get processing status
       description: Returns whether the image processing is complete and the view URL if available.

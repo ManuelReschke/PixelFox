@@ -32,7 +32,8 @@ templ HomeIndex(fromProtected bool, csrfToken string, plan string, stats statist
 			</div>
 		} else {
 			if models.GetAppSettings().IsImageUploadEnabled() {
-				<form id="upload_form" hx-encoding="multipart/form-data" hx-post="/upload" data-direct-upload={ fmt.Sprintf("%t", models.GetAppSettings().IsDirectUploadEnabled()) } class="flex flex-col items-center gap-6 max-w-md mx-auto p-8 border border-base-300 shadow-lg rounded-xl bg-base-100">
+            		{{ maxBatch := entitlements.MaxFilesPerBatch(entitlements.Plan(plan)) }}
+            		<form id="upload_form" hx-encoding="multipart/form-data" hx-post="/upload" data-direct-upload={ fmt.Sprintf("%t", models.GetAppSettings().IsDirectUploadEnabled()) } data-max-files={ fmt.Sprintf("%d", maxBatch) } class="flex flex-col items-center gap-6 max-w-md mx-auto p-8 border border-base-300 shadow-lg rounded-xl bg-base-100">
               <div class="text-center mb-2">
                 <h3 class="text-xl font-semibold">Bild hochladen</h3>
                 <p class="text-sm text-base-content/70">Wähle ein Bild zum Hochladen aus</p>
@@ -65,7 +66,7 @@ templ HomeIndex(fromProtected bool, csrfToken string, plan string, stats statist
                     }}
                     <p class="text-xs text-base-content/70">Maximale Dateigröße: { fmt.Sprintf("%d MB", limitMB) }</p>
                     if mu {
-                        <p class="text-xs text-primary mt-1">Mehrere Dateien gleichzeitig auswählen (Premium)</p>
+                        <p class="text-xs text-primary mt-1">Mehrere Dateien gleichzeitig auswählen (Premium, max { fmt.Sprintf("%d", maxBatch) })</p>
                     }
                   </div>
                 </div>

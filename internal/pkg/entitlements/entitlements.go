@@ -94,7 +94,7 @@ func MaxFilesPerBatch(plan Plan) int {
 	case PlanPremiumMax:
 		return 50
 	case PlanPremium:
-		return 20
+		return 25
 	default:
 		return 1
 	}

@@ -223,9 +223,9 @@ func ImageContent(model viewmodel.Image) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
-			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("/image/status/" + model.UUID)
+			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs("/images/" + model.UUID + "/status")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 43, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 43, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -1997,9 +1997,9 @@ func ImageViewerWithUser(model viewmodel.Image, currentUserID uint, imageOwnerID
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var111 string
-			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs("/image/status/" + model.UUID)
+			templ_7745c5c3_Var111, templ_7745c5c3_Err = templ.JoinStringErrs("/images/" + model.UUID + "/status")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 566, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/view.templ`, Line: 566, Col: 48}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var111))
 			if templ_7745c5c3_Err != nil {
