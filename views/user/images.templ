@@ -1,10 +1,10 @@
 package user_views
 
 import (
-	"fmt"
-	"github.com/ManuelReschke/PixelFox/views"
-	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
-	"github.com/gofiber/fiber/v2"
+    "fmt"
+    "github.com/ManuelReschke/PixelFox/views"
+    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+    "github.com/gofiber/fiber/v2"
 )
 
 type GalleryImage struct {
@@ -21,6 +21,15 @@ type GalleryImage struct {
     Width            int
     Height           int
     FileSize         int64
+    // Grouping helpers for section headers
+    GroupLabel       string
+    SuppressHeader   bool
+    RenderHeader     bool
+}
+
+type ImageGroup struct {
+    Label string
+    Items []GalleryImage
 }
 
 templ Images(
@@ -47,12 +56,12 @@ templ Images(
     }
 }
 
-templ ImagesGallery(username string, images []GalleryImage) {
+templ ImagesGallery(username string, groups []ImageGroup, total int) {
     <div class="container mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-2xl font-bold mb-1">Meine Bilder</h1>
-                <p class="text-sm text-gray-500 mb-0">{ fmt.Sprintf("%d Bilder", len(images)) }</p>
+                <p class="text-sm text-gray-500 mb-0">{ fmt.Sprintf("%d Bilder", total) }</p>
             </div>
             <a href="/" class="btn btn-primary gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -61,17 +70,17 @@ templ ImagesGallery(username string, images []GalleryImage) {
                 Bild hochladen
             </a>
         </div>
-		
-        <!-- Photo gallery with masonry layout and HTMX infinite scroll -->
-		<div id="gallery-container" class="masonry-container">
-			if len(images) > 0 {
-				@GalleryItems(images, 1)
-			} else {
-				<div class="empty-gallery">
-					<div class="flex flex-col items-center justify-center">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-4 text-gray-400">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-						</svg>
+
+        <!-- Photo gallery grouped with HTMX infinite scroll -->
+        <div id="gallery-container" class="masonry-container">
+            if len(groups) > 0 {
+                @GalleryGroups(groups, 1, "")
+            } else {
+                <div class="empty-gallery">
+                    <div class="flex flex-col items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-4 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
 						<h3 class="text-xl font-semibold mb-2">Keine Bilder gefunden</h3>
 						<p class="text-gray-500 mb-4">Du hast noch keine Bilder hochgeladen.</p>
 						<a href="/" class="btn btn-primary">
@@ -88,18 +97,24 @@ templ ImagesGallery(username string, images []GalleryImage) {
 
 	<!-- CSS for gallery -->
 	<style>
-		/* True masonry layout with CSS columns */
-		.masonry-container {
-			column-count: 5;
-			column-gap: 15px;
-			width: 100%;
-		}
+        /* True masonry layout with CSS columns */
+        .masonry-container {
+            column-count: 5;
+            column-gap: 15px;
+            width: 100%;
+        }
 
-		.masonry-item {
-			break-inside: avoid;
-			margin-bottom: 15px;
-			display: block;
-		}
+        /* Section header spanning all columns */
+        .masonry-header {
+            column-span: all;
+            margin: 16px 0 8px;
+        }
+
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 15px;
+            display: block;
+        }
 
 		.img-container {
 			position: relative;
@@ -233,60 +248,75 @@ templ ImagesGallery(username string, images []GalleryImage) {
     <!-- Moved JS to app.js -->
 }
 
-// Template for gallery items with pagination
-templ GalleryItems(images []GalleryImage, page int) {
-	for _, image := range images {
-        <div class="masonry-item">
-            <div class="img-container relative">
-                <a href="#" class="block image-view-btn" data-image-src={ image.OriginalPath } data-title={ image.Title } data-width={ fmt.Sprintf("%d", image.Width) } data-height={ fmt.Sprintf("%d", image.Height) } data-size={ fmt.Sprintf("%d", image.FileSize) }>
-                    <img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
-                </a>
-				
-				<!-- Status Badge oben links -->
-				<div class="absolute top-2 left-2 flex gap-1">
-					if image.IsPublic {
-						<div class="badge badge-success badge-xs">Öffentlich</div>
-					} else {
-						<div class="badge badge-warning badge-xs flex items-center gap-1">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-							</svg>
-						</div>
-					}
-				</div>
-				
-                <div class="overlay">
-                    <div class="image-title-overlay">{ image.Title }</div>
-                    <div class="overlay-content flex flex-row gap-2">
-                        <!-- Share button -->
-                        <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="view-btn" title="Teilen">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25a2.25 2.25 0 0 1 2.25-2.25h12a2.25 2.25 0 0 1 2.25 2.25v4.5a2.25 2.25 0 0 1-2.25 2.25h-12A2.25 2.25 0 0 1 3.75 9.75v-4.5Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v7.5m0 0l-3-3m3 3l3-3" />
-                            </svg>
-                        </a>
-                        <!-- Edit button -->
-                        <a href={ templ.URL("/user/images/edit/" + image.UUID) } class="view-btn" title="Bearbeiten">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z" />
-                            </svg>
-                        </a>
+// Render grouped gallery blocks, each with its own masonry container
+templ GalleryGroups(groups []ImageGroup, page int, lastGroup string) {
+    {{ var total int }}
+    {{ lastIndex := len(groups) - 1 }}
+    for gi, g := range groups {
+        {{ total = total + len(g.Items) }}
+        if !(page > 1 && gi == 0 && g.Label == lastGroup) {
+            <div class="masonry-item masonry-header">
+                <div class="text-sm font-semibold text-base-content/70 uppercase tracking-wide">{ g.Label }</div>
+            </div>
+        }
+        // Append images (continuation or new group) inside the same masonry container
+        for _, image := range g.Items {
+            @GalleryImageItem(image)
+        }
+        if gi == lastIndex && total >= 25 {
+            <div id="load-more-trigger"
+                hx-get={ fmt.Sprintf("/user/images/load?page=%d", page+1) }
+                hx-vals={ fmt.Sprintf("{\"last_group\":\"%s\"}", g.Label) }
+                hx-trigger="revealed"
+                hx-swap="afterend"
+                hx-target="#load-more-trigger"
+                class="loading-indicator">
+                <div class="loading-spinner"></div>
+            </div>
+        }
+    }
+}
+
+// Single image tile (card)
+templ GalleryImageItem(image GalleryImage) {
+    <div class="masonry-item">
+        <div class="img-container relative">
+            <a href="#" class="block image-view-btn" data-image-src={ image.OriginalPath } data-title={ image.Title } data-width={ fmt.Sprintf("%d", image.Width) } data-height={ fmt.Sprintf("%d", image.Height) } data-size={ fmt.Sprintf("%d", image.FileSize) }>
+                <img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
+            </a>
+
+            <!-- Status Badge oben links -->
+            <div class="absolute top-2 left-2 flex gap-1">
+                if image.IsPublic {
+                    <div class="badge badge-success badge-xs">Öffentlich</div>
+                } else {
+                    <div class="badge badge-warning badge-xs flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
                     </div>
+                }
+            </div>
+
+            <div class="overlay">
+                <div class="image-title-overlay">{ image.Title }</div>
+                <div class="overlay-content flex flex-row gap-2">
+                    <!-- Share button -->
+                    <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="view-btn" title="Teilen">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25a2.25 2.25 0 0 1 2.25-2.25h12a2.25 2.25 0 0 1 2.25 2.25v4.5a2.25 2.25 0 0 1-2.25 2.25h-12A2.25 2.25 0 0 1 3.75 9.75v-4.5Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v7.5m0 0l-3-3m3 3l3-3" />
+                        </svg>
+                    </a>
+                    <!-- Edit button -->
+                    <a href={ templ.URL("/user/images/edit/" + image.UUID) } class="view-btn" title="Bearbeiten">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z" />
+                        </svg>
+                    </a>
                 </div>
             </div>
         </div>
-	}
-	
-	<!-- Load more trigger with HTMX -->
-	if len(images) >= 25 {
-		<div id="load-more-trigger"
-			hx-get={ fmt.Sprintf("/user/images/load?page=%d", page+1) }
-			hx-trigger="revealed"
-			hx-swap="afterend"
-			hx-target="#load-more-trigger"
-			class="loading-indicator">
-			<div class="loading-spinner"></div>
-		</div>
-	}
+    </div>
 }

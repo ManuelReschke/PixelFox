@@ -30,6 +30,27 @@ import (
 
 const sessionNewAPIKey = "user_new_api_key"
 
+// groupLabelForTime returns a human-friendly bucket label for the image timestamp
+// Buckets: Heute, Gestern, Ältere (using local time)
+func groupLabelForTime(t time.Time) string {
+	now := time.Now().In(time.Local)
+	y0, m0, d0 := now.Date()
+	today := time.Date(y0, m0, d0, 0, 0, 0, 0, time.Local)
+
+	tl := t.In(time.Local)
+	y1, m1, d1 := tl.Date()
+	day := time.Date(y1, m1, d1, 0, 0, 0, 0, time.Local)
+
+	switch {
+	case day.Equal(today):
+		return "Heute"
+	case day.Equal(today.AddDate(0, 0, -1)):
+		return "Gestern"
+	default:
+		return "Ältere"
+	}
+}
+
 func HandleUserProfile(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
 	userID := userCtx.UserID
@@ -213,8 +234,13 @@ func HandleUserImages(c *fiber.Ctx) error {
 	username := userCtx.Username
 	isAdmin := userCtx.IsAdmin
 
+	// Total count for header
+	var totalCount int64
+	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Count(&totalCount)
+
+	// Initial page: load first 25 items (rest via HTMX)
 	var images []models.Image
-	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Find(&images)
+	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Limit(25).Find(&images)
 	if result.Error != nil {
 		// Fehler beim Laden der Bilder
 		flash.WithError(c, fiber.Map{"message": "Fehler beim Laden der Bilder: " + result.Error.Error()})
@@ -223,7 +249,8 @@ func HandleUserImages(c *fiber.Ctx) error {
 
 	// Bereite die Bilderpfade für die Galerie vor
 	var galleryImages []user_views.GalleryImage
-	for _, img := range images {
+	prevGroup := ""
+	for i, img := range images {
 		// Use centralized helper for a cross-node absolute preview URL
 		previewPath := imageprocessor.GetBestPreviewURL(&img)
 
@@ -233,6 +260,9 @@ func HandleUserImages(c *fiber.Ctx) error {
 		}
 		// Absolute original URL
 		originalPath := imageprocessor.GetImageAbsoluteURL(&img, "original", "")
+		group := groupLabelForTime(img.CreatedAt)
+		renderHeader := i == 0 || group != prevGroup
+
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,
@@ -246,10 +276,29 @@ func HandleUserImages(c *fiber.Ctx) error {
 			Width:        img.Width,
 			Height:       img.Height,
 			FileSize:     img.FileSize,
+			GroupLabel:   group,
+			RenderHeader: renderHeader,
 		})
+		prevGroup = group
 	}
 
-	imagesGallery := user_views.ImagesGallery(username, galleryImages)
+	// Group into fixed bucket order to guarantee visual order: Heute, Gestern, Ältere
+	buckets := map[string][]user_views.GalleryImage{
+		"Heute":   {},
+		"Gestern": {},
+		"Ältere":  {},
+	}
+	for _, gi := range galleryImages {
+		buckets[gi.GroupLabel] = append(buckets[gi.GroupLabel], gi)
+	}
+	groups := make([]user_views.ImageGroup, 0, 3)
+	for _, label := range []string{"Heute", "Gestern", "Ältere"} {
+		if items := buckets[label]; len(items) > 0 {
+			groups = append(groups, user_views.ImageGroup{Label: label, Items: items})
+		}
+	}
+
+	imagesGallery := user_views.ImagesGallery(username, groups, int(totalCount))
 	imagesPage := user_views.Images(
 		" | Meine Bilder", userCtx.IsLoggedIn, false, flash.Get(c), username, userCtx.Plan, imagesGallery, isAdmin,
 	)
@@ -277,8 +326,12 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Laden der Bilder")
 	}
 
+	// Last rendered group from the previous batch (for header suppression at boundary)
+	lastGroup := c.Query("last_group", "")
+
 	var galleryImages []user_views.GalleryImage
-	for _, img := range images {
+	prevGroup := ""
+	for i, img := range images {
 		previewPath := imageprocessor.GetBestPreviewURL(&img)
 
 		title := img.FileName
@@ -287,6 +340,9 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 		}
 
 		originalPath := imageprocessor.GetImageAbsoluteURL(&img, "original", "")
+		group := groupLabelForTime(img.CreatedAt)
+		renderHeader := (i == 0 && group != lastGroup) || (i > 0 && group != prevGroup)
+
 		galleryImages = append(galleryImages, user_views.GalleryImage{
 			ID:           img.ID,
 			UUID:         img.UUID,
@@ -300,10 +356,28 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 			Width:        img.Width,
 			Height:       img.Height,
 			FileSize:     img.FileSize,
+			GroupLabel:   group,
+			RenderHeader: renderHeader,
 		})
+		prevGroup = group
+	}
+	// Group into fixed bucket order to guarantee visual order for subsequent pages as well
+	buckets := map[string][]user_views.GalleryImage{
+		"Heute":   {},
+		"Gestern": {},
+		"Ältere":  {},
+	}
+	for _, gi := range galleryImages {
+		buckets[gi.GroupLabel] = append(buckets[gi.GroupLabel], gi)
+	}
+	groups := make([]user_views.ImageGroup, 0, 3)
+	for _, label := range []string{"Heute", "Gestern", "Ältere"} {
+		if items := buckets[label]; len(items) > 0 {
+			groups = append(groups, user_views.ImageGroup{Label: label, Items: items})
+		}
 	}
 
-	return user_views.GalleryItems(galleryImages, page).Render(c.Context(), c.Response().BodyWriter())
+	return user_views.GalleryGroups(groups, page, lastGroup).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // HandleUserImageEdit allows users to edit their own images
