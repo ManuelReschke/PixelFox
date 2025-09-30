@@ -234,18 +234,42 @@ func HandleUserImages(c *fiber.Ctx) error {
 	username := userCtx.Username
 	isAdmin := userCtx.IsAdmin
 
+	// Optional year filter
+	selectedYear := 0
+	if y := c.Query("year", ""); y != "" {
+		if yi, err := strconv.Atoi(y); err == nil && yi > 0 {
+			selectedYear = yi
+		}
+	}
+
 	// Total count for header
 	var totalCount int64
-	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Count(&totalCount)
+	countQuery := database.DB.Model(&models.Image{}).Where("user_id = ?", userID)
+	if selectedYear > 0 {
+		countQuery = countQuery.Where("YEAR(created_at) = ?", selectedYear)
+	}
+	countQuery.Count(&totalCount)
 
 	// Initial page: load first 25 items (rest via HTMX)
 	var images []models.Image
-	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Limit(25).Find(&images)
+	query := database.DB.Preload("StoragePool").Where("user_id = ?", userID)
+	if selectedYear > 0 {
+		query = query.Where("YEAR(created_at) = ?", selectedYear)
+	}
+	result := query.Order("created_at DESC").Limit(25).Find(&images)
 	if result.Error != nil {
 		// Fehler beim Laden der Bilder
 		flash.WithError(c, fiber.Map{"message": "Fehler beim Laden der Bilder: " + result.Error.Error()})
 		return c.Redirect("/")
 	}
+
+	// Distinct years for quick filter (descending)
+	years := []int{}
+	_ = database.DB.Model(&models.Image{}).
+		Where("user_id = ?", userID).
+		Select("DISTINCT YEAR(created_at) as y").
+		Order("y DESC").
+		Pluck("y", &years).Error
 
 	// Bereite die Bilderpfade für die Galerie vor
 	var galleryImages []user_views.GalleryImage
@@ -298,7 +322,7 @@ func HandleUserImages(c *fiber.Ctx) error {
 		}
 	}
 
-	imagesGallery := user_views.ImagesGallery(username, groups, int(totalCount))
+	imagesGallery := user_views.ImagesGallery(username, groups, int(totalCount), years, selectedYear)
 	imagesPage := user_views.Images(
 		" | Meine Bilder", userCtx.IsLoggedIn, false, flash.Get(c), username, userCtx.Plan, imagesGallery, isAdmin,
 	)
@@ -320,8 +344,20 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	const imagesPerPage = 25
 	offset := (page - 1) * imagesPerPage
 
+	// Optional year filter
+	selectedYear := 0
+	if y := c.Query("year", ""); y != "" {
+		if yi, err := strconv.Atoi(y); err == nil && yi > 0 {
+			selectedYear = yi
+		}
+	}
+
 	var images []models.Image
-	result := database.DB.Preload("StoragePool").Where("user_id = ?", userID).Order("created_at DESC").Offset(offset).Limit(imagesPerPage).Find(&images)
+	query := database.DB.Preload("StoragePool").Where("user_id = ?", userID)
+	if selectedYear > 0 {
+		query = query.Where("YEAR(created_at) = ?", selectedYear)
+	}
+	result := query.Order("created_at DESC").Offset(offset).Limit(imagesPerPage).Find(&images)
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Fehler beim Laden der Bilder")
 	}
@@ -377,7 +413,7 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 		}
 	}
 
-	return user_views.GalleryGroups(groups, page, lastGroup).Render(c.Context(), c.Response().BodyWriter())
+	return user_views.GalleryGroups(groups, page, lastGroup, selectedYear).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // HandleUserImageEdit allows users to edit their own images

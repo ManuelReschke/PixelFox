@@ -63,8 +63,7 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 		},
 	})
 
-	// Manual route for image resource details (returns same info as upload response)
-	v1.Get("/images/:uuid", controllers.HandleGetImageResourceAPI)
+	// Route is provided by generated handlers via RegisterHandlersWithOptions
 
 	// Internal API routes (private app APIs)
 	internalAPI := api.Group("/internal")

@@ -42,6 +42,13 @@ func (s *APIServer) PostDirectUpload(c *fiber.Ctx) error {
 	})
 }
 
+// GetImage returns metadata for an image resource by UUID (API key protected).
+// Delegates to the existing controller for consistent response shape.
+func (s *APIServer) GetImage(c *fiber.Ctx, uuid string) error {
+	// Controller reads uuid from route params; wrapper already set it.
+	return controllers.HandleGetImageResourceAPI(c)
+}
+
 // GetImageStatus returns processing status for an image (JSON)
 func (s *APIServer) GetImageStatus(c *fiber.Ctx, uuid string) error {
 	if uuid == "" {
