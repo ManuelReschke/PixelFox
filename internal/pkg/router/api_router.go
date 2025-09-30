@@ -55,13 +55,16 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 			func(c *fiber.Ctx) error {
 				p := c.Path()
 				// Endpoints requiring API key
-				if strings.HasPrefix(p, "/api/v1/user/") || strings.HasPrefix(p, "/api/v1/upload/") {
+				if strings.HasPrefix(p, "/api/v1/user/") || strings.HasPrefix(p, "/api/v1/upload/") || strings.HasPrefix(p, "/api/v1/images/") {
 					return appmw.APIKeyAuthMiddleware()(c)
 				}
 				return c.Next()
 			},
 		},
 	})
+
+	// Manual route for image resource details (returns same info as upload response)
+	v1.Get("/images/:uuid", controllers.HandleGetImageResourceAPI)
 
 	// Internal API routes (private app APIs)
 	internalAPI := api.Group("/internal")

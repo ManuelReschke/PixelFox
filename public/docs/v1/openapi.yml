@@ -170,6 +170,31 @@ paths:
                     nullable: true
         '400': { $ref: '#/components/responses/BadRequest' }
 
+  /images/{uuid}:
+    get:
+      summary: Get image resource
+      description: Returns direct URL and available variant links for the image.
+      operationId: getImage
+      tags:
+        - Images
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageResource'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   responses:
     BadRequest:
@@ -228,15 +253,109 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    # Upload result now can include direct URL and variant links
     StorageUploadResponse:
       type: object
       properties:
         image_uuid:
           type: string
+          description: UUID of the uploaded image
         view_url:
           type: string
+          description: Share page URL (HTML view)
+        url:
+          type: string
+          format: uri
+          description: Direct URL to the original image file
         duplicate:
           type: boolean
+          description: Indicates the uploaded file already exists for this user
+        available_variants:
+          type: array
+          description: List of available variant-families for this image
+          items:
+            type: string
+            enum: ["original", "webp", "avif"]
+        variants:
+          type: object
+          description: URLs of available variants grouped by family
+          properties:
+            original:
+              $ref: '#/components/schemas/FormatVariants'
+            webp:
+              $ref: '#/components/schemas/FormatVariants'
+            avif:
+              $ref: '#/components/schemas/FormatVariants'
+          additionalProperties: false
+
+    # Canonical image resource (shared structure with StorageUploadResponse sans duplicate)
+    ImageResource:
+      type: object
+      required: [image_uuid]
+      properties:
+        image_uuid:
+          type: string
+        view_url:
+          type: string
+          description: Share page URL (HTML view)
+        url:
+          type: string
+          format: uri
+          description: Direct URL to the original image file
+        available_variants:
+          type: array
+          description: List of available variant-families for this image
+          items:
+            type: string
+            enum: ["original", "webp", "avif"]
+        variants:
+          type: object
+          description: URLs of available variants grouped by family
+          properties:
+            original:
+              $ref: '#/components/schemas/FormatVariants'
+            webp:
+              $ref: '#/components/schemas/FormatVariants'
+            avif:
+              $ref: '#/components/schemas/FormatVariants'
+          additionalProperties: false
+
+    # Variant schemas (generalized: families original/webp/avif; sizes original/medium/small)
+    VariantSize:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+        width:
+          type: integer
+          description: Pixel width if known
+        height:
+          type: integer
+          description: Pixel height if known
+        bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          description: File size in bytes if known
+        mime_type:
+          type: string
+          description: MIME type of this asset
+        animated:
+          type: boolean
+          description: Whether this asset is animated (e.g., GIF/WebP)
+
+    FormatVariants:
+      type: object
+      properties:
+        original:
+          $ref: '#/components/schemas/VariantSize'
+        medium:
+          $ref: '#/components/schemas/VariantSize'
+        small:
+          $ref: '#/components/schemas/VariantSize'
+      additionalProperties: false
     # Health check schemas
     Pong:
       type: object

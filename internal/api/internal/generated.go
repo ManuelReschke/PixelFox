@@ -14,6 +14,13 @@ const (
 	UploadTokenAuthScopes     = "UploadTokenAuth.Scopes"
 )
 
+// Defines values for StorageUploadResponseAvailableVariants.
+const (
+	Avif     StorageUploadResponseAvailableVariants = "avif"
+	Original StorageUploadResponseAvailableVariants = "original"
+	Webp     StorageUploadResponseAvailableVariants = "webp"
+)
+
 // BatchItem defines model for BatchItem.
 type BatchItem struct {
 	Duplicate *bool   `json:"duplicate,omitempty"`
@@ -46,12 +53,40 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// FormatVariants defines model for FormatVariants.
+type FormatVariants struct {
+	Medium   *VariantSize `json:"medium,omitempty"`
+	Original *VariantSize `json:"original,omitempty"`
+	Small    *VariantSize `json:"small,omitempty"`
+}
+
 // StorageUploadResponse defines model for StorageUploadResponse.
 type StorageUploadResponse struct {
-	Duplicate *bool   `json:"duplicate,omitempty"`
+	// AvailableVariants List of available variant-families for this image
+	AvailableVariants *[]StorageUploadResponseAvailableVariants `json:"available_variants,omitempty"`
+
+	// Duplicate Indicates the uploaded file already exists for this user
+	Duplicate *bool `json:"duplicate,omitempty"`
+
+	// ImageUuid UUID of the uploaded image
 	ImageUuid *string `json:"image_uuid,omitempty"`
-	ViewUrl   *string `json:"view_url,omitempty"`
+
+	// Url Direct URL to the original image file
+	Url *string `json:"url,omitempty"`
+
+	// Variants URLs of available variants grouped by family
+	Variants *struct {
+		Avif     *FormatVariants `json:"avif,omitempty"`
+		Original *FormatVariants `json:"original,omitempty"`
+		Webp     *FormatVariants `json:"webp,omitempty"`
+	} `json:"variants,omitempty"`
+
+	// ViewUrl Share page URL (HTML view)
+	ViewUrl *string `json:"view_url,omitempty"`
 }
+
+// StorageUploadResponseAvailableVariants defines model for StorageUploadResponse.AvailableVariants.
+type StorageUploadResponseAvailableVariants string
 
 // UploadSessionRequest defines model for UploadSessionRequest.
 type UploadSessionRequest struct {
@@ -67,6 +102,25 @@ type UploadSessionResponse struct {
 	PoolId    int64  `json:"pool_id"`
 	Token     string `json:"token"`
 	UploadUrl string `json:"upload_url"`
+}
+
+// VariantSize defines model for VariantSize.
+type VariantSize struct {
+	// Animated Whether this asset is animated (e.g., GIF/WebP)
+	Animated *bool `json:"animated,omitempty"`
+
+	// Bytes File size in bytes if known
+	Bytes *int64 `json:"bytes,omitempty"`
+
+	// Height Pixel height if known
+	Height *int `json:"height,omitempty"`
+
+	// MimeType MIME type of this asset
+	MimeType *string `json:"mime_type,omitempty"`
+	Url      string  `json:"url"`
+
+	// Width Pixel width if known
+	Width *int `json:"width,omitempty"`
 }
 
 // BadRequest defines model for BadRequest.

@@ -23,6 +23,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/security"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
@@ -241,7 +242,10 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 			deadline := time.Now().Add(3 * time.Second)
 			for time.Now().Before(deadline) {
 				if existing, err := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); err == nil && existing != nil {
-					return c.JSON(fiber.Map{"duplicate": true, "image_uuid": existing.UUID, "view_url": "/i/" + existing.ShareLink})
+					// Enrich response with direct URL and variants if available
+					enriched := buildUploadResponseExtras(existing)
+					enriched["duplicate"] = true
+					return c.JSON(enriched)
 				}
 				time.Sleep(200 * time.Millisecond)
 			}
@@ -250,7 +254,9 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	}
 	// Duplicate check before create (fast path)
 	if existing, err := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); err == nil && existing != nil {
-		return c.JSON(fiber.Map{"duplicate": true, "image_uuid": existing.UUID, "view_url": "/i/" + existing.ShareLink})
+		enriched := buildUploadResponseExtras(existing)
+		enriched["duplicate"] = true
+		return c.JSON(enriched)
 	}
 
 	// Storage path
@@ -292,7 +298,9 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	if err := imgRepo.Create(&image); err != nil {
 		// Handle concurrent duplicate insert gracefully (no DB constraint required)
 		if existing, gerr := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); gerr == nil && existing != nil {
-			return c.JSON(fiber.Map{"duplicate": true, "image_uuid": existing.UUID, "view_url": "/i/" + existing.ShareLink})
+			enriched := buildUploadResponseExtras(existing)
+			enriched["duplicate"] = true
+			return c.JSON(enriched)
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to create image record"})
 	}
@@ -302,10 +310,97 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		fiberlog.Errorf("enqueue error: %v", err)
 	}
 
-	return c.JSON(fiber.Map{
-		"image_uuid": image.UUID,
-		"view_url":   "/i/" + image.ShareLink,
-	})
+	// Build minimal variant info (original only) for immediate use
+	extras := buildUploadResponseExtras(&image)
+	// Mark as non-duplicate for fresh uploads
+	extras["duplicate"] = false
+	return c.JSON(extras)
+}
+
+// buildUploadResponseExtras constructs the enriched upload response including direct URL
+// and available variant links when present. It preserves backward-compatible fields.
+func buildUploadResponseExtras(img *models.Image) fiber.Map {
+	// Ensure storage pool is loaded for correct absolute URL resolution
+	if img != nil && img.StoragePoolID > 0 && img.StoragePool == nil {
+		if pool, err := models.FindStoragePoolByID(database.GetDB(), img.StoragePoolID); err == nil && pool != nil {
+			img.StoragePool = pool
+		}
+	}
+
+	basePayload := fiber.Map{
+		"image_uuid": img.UUID,
+		"view_url":   "/i/" + img.ShareLink,
+	}
+
+	// Direct URL to original
+	directOriginal := imageprocessor.GetImageAbsoluteURL(img, "original", "")
+	if directOriginal != "" {
+		basePayload["url"] = directOriginal
+	}
+
+	// Variants map
+	variants := fiber.Map{}
+	available := make([]string, 0, 3)
+
+	// original family (always include at least original link)
+	origFamily := fiber.Map{}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "original", ""); u != "" {
+		origFamily["original"] = fiber.Map{"url": u}
+	}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "original", "medium"); u != "" {
+		origFamily["medium"] = fiber.Map{"url": u}
+	}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "original", "small"); u != "" {
+		origFamily["small"] = fiber.Map{"url": u}
+	}
+	if len(origFamily) > 0 {
+		variants["original"] = origFamily
+		available = append(available, "original")
+	}
+
+	// webp family
+	webpFamily := fiber.Map{}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "webp", ""); u != "" {
+		webpFamily["original"] = fiber.Map{"url": u}
+	}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "webp", "medium"); u != "" {
+		webpFamily["medium"] = fiber.Map{"url": u}
+	}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "webp", "small"); u != "" {
+		webpFamily["small"] = fiber.Map{"url": u}
+	}
+	if len(webpFamily) > 0 {
+		variants["webp"] = webpFamily
+		available = append(available, "webp")
+	}
+
+	// avif family
+	avifFamily := fiber.Map{}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "avif", ""); u != "" {
+		avifFamily["original"] = fiber.Map{"url": u}
+	}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "avif", "medium"); u != "" {
+		avifFamily["medium"] = fiber.Map{"url": u}
+	}
+	if u := imageprocessor.GetImageAbsoluteURL(img, "avif", "small"); u != "" {
+		avifFamily["small"] = fiber.Map{"url": u}
+	}
+	if len(avifFamily) > 0 {
+		variants["avif"] = avifFamily
+		available = append(available, "avif")
+	}
+
+	if len(variants) > 0 {
+		basePayload["variants"] = variants
+	}
+	if len(available) > 0 {
+		basePayload["available_variants"] = available
+	}
+
+	// If not actually a duplicate (new upload path), correct the flag
+	// Heuristic: when ShareLink equals computed view_url but request path sets this as new
+	// The caller can override by resetting duplicate=false before returning.
+	return basePayload
 }
 
 // HandleStorageReplicate accepts server-to-server replication of a single file into a target pool.
