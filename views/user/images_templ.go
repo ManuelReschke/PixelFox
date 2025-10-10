@@ -387,14 +387,14 @@ func GalleryGroups(groups []ImageGroup, page int, lastGroup string, selectedYear
 				if selectedYear > 0 {
 					loadURL = fmt.Sprintf("/user/images/load?page=%d&year=%d", page+1, selectedYear)
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " <div id=\"load-more-trigger\" hx-get=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " <!-- Infinite scroll sentinel: replace itself to avoid duplicate IDs & auto-looping loads --> <div id=\"load-more-trigger\" hx-get=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(loadURL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 308, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 309, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -407,13 +407,13 @@ func GalleryGroups(groups []ImageGroup, page int, lastGroup string, selectedYear
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("{\"last_group\":\"%s\"}", g.Label))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 309, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/images.templ`, Line: 310, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-trigger=\"revealed\" hx-swap=\"afterend\" hx-target=\"#load-more-trigger\" class=\"loading-indicator\"><div class=\"loading-spinner\"></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" hx-trigger=\"revealed\" hx-swap=\"outerHTML\" class=\"loading-indicator\"><div class=\"loading-spinner\"></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

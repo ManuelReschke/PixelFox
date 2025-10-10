@@ -304,12 +304,12 @@ templ GalleryGroups(groups []ImageGroup, page int, lastGroup string, selectedYea
             if selectedYear > 0 {
                 {{ loadURL = fmt.Sprintf("/user/images/load?page=%d&year=%d", page+1, selectedYear) }}
             }
+            <!-- Infinite scroll sentinel: replace itself to avoid duplicate IDs & auto-looping loads -->
             <div id="load-more-trigger"
                 hx-get={ loadURL }
                 hx-vals={ fmt.Sprintf("{\"last_group\":\"%s\"}", g.Label) }
                 hx-trigger="revealed"
-                hx-swap="afterend"
-                hx-target="#load-more-trigger"
+                hx-swap="outerHTML"
                 class="loading-indicator">
                 <div class="loading-spinner"></div>
             </div>
