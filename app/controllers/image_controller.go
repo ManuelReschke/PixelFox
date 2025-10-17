@@ -26,6 +26,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/imageprocessor"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/jobqueue"
+	metrics "github.com/ManuelReschke/PixelFox/internal/pkg/metrics/counter"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/upload"
@@ -509,6 +510,8 @@ func HandleImageViewer(c *fiber.Ctx) error {
 
 	// Increase the view counter
 	imageRepo.UpdateViewCount(image.ID)
+	// Touch last viewed at (Redis -> periodic DB flush)
+	_ = metrics.AddImageLastViewed(image.ID)
 
 	// Korrekte URL-Konstruktion (absolut) für das Original-Bild
 	filePathComplete := imageprocessor.GetImageURL(image, "original", "")

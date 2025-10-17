@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	imageViewsKey     = "image:counters:views"
-	imageDownloadsKey = "image:counters:downloads"
-	albumViewsKey     = "album:counters:views"
+	imageViewsKey      = "image:counters:views"
+	imageDownloadsKey  = "image:counters:downloads"
+	albumViewsKey      = "album:counters:views"
+	imageLastViewedKey = "image:counters:last_viewed"
 )
 
 // AddImageView increments the pending view counter for an image in Redis
@@ -41,6 +42,9 @@ func FlushAll() error {
 		return err
 	}
 	if err := flushHashToTable(albumViewsKey, "albums", "view_count"); err != nil {
+		return err
+	}
+	if err := flushLastViewed(imageLastViewedKey); err != nil {
 		return err
 	}
 	return nil
@@ -138,4 +142,81 @@ func AddAlbumView(albumID uint) error {
 	ctx := context.Background()
 	field := strconv.FormatUint(uint64(albumID), 10)
 	return cache.GetClient().HIncrBy(ctx, albumViewsKey, field, 1).Err()
+}
+
+// AddImageLastViewed records the latest view timestamp for an image (epoch seconds) in Redis.
+// On flush, DB gets updated to the greatest of existing and provided timestamp.
+func AddImageLastViewed(imageID uint) error {
+	ctx := context.Background()
+	field := strconv.FormatUint(uint64(imageID), 10)
+	now := time.Now().Unix()
+	// We store the maximum of existing and now to avoid going backwards within the hash.
+	// HSET is fine; during flush we use GREATEST() anyway.
+	return cache.GetClient().HSet(ctx, imageLastViewedKey, field, now).Err()
+}
+
+// flushLastViewed drains last_viewed timestamps and updates images.last_viewed_at in batch.
+func flushLastViewed(redisKey string) error {
+	ctx := context.Background()
+	rdb := cache.GetClient()
+
+	tmpKey := fmt.Sprintf("%s:tmp:%d", redisKey, time.Now().UnixNano())
+	if err := rdb.Do(ctx, "RENAME", redisKey, tmpKey).Err(); err != nil {
+		if strings.Contains(err.Error(), "no such key") || strings.ToLower(err.Error()) == "redis: nil" {
+			return nil
+		}
+		return err
+	}
+	defer rdb.Del(ctx, tmpKey)
+
+	data, err := rdb.HGetAll(ctx, tmpKey).Result()
+	if err != nil || len(data) == 0 {
+		return err
+	}
+
+	type pair struct {
+		id uint64
+		ts int64
+	}
+	pairs := make([]pair, 0, len(data))
+	for k, v := range data {
+		id, perr := strconv.ParseUint(k, 10, 64)
+		if perr != nil {
+			continue
+		}
+		ts, terr := strconv.ParseInt(v, 10, 64)
+		if terr != nil {
+			continue
+		}
+		pairs = append(pairs, pair{id: id, ts: ts})
+	}
+	if len(pairs) == 0 {
+		return nil
+	}
+	sort.Slice(pairs, func(i, j int) bool { return pairs[i].id < pairs[j].id })
+
+	// UPDATE images SET last_viewed_at = GREATEST(COALESCE(last_viewed_at,'1970-01-01'), FROM_UNIXTIME(CASE id WHEN ? THEN ? ... END)) WHERE id IN (...)
+	var b strings.Builder
+	args := make([]interface{}, 0, len(pairs)*2+len(pairs))
+	b.WriteString("UPDATE images SET last_viewed_at = GREATEST(COALESCE(last_viewed_at, '1970-01-01 00:00:00'), FROM_UNIXTIME(CASE id ")
+	for _, p := range pairs {
+		b.WriteString(" WHEN ? THEN ?")
+		args = append(args, p.id, p.ts)
+	}
+	b.WriteString(" END)) WHERE id IN (")
+	for i, p := range pairs {
+		if i > 0 {
+			b.WriteString(",")
+		}
+		b.WriteString("?")
+		args = append(args, p.id)
+	}
+	b.WriteString(")")
+
+	sql := b.String()
+	db := database.GetDB()
+	if err := db.Exec(sql, args...).Error; err != nil {
+		return err
+	}
+	return nil
 }

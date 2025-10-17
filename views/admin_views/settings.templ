@@ -127,6 +127,88 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 					</label>
 				</div>
 
+				<!-- Tiering (Hot/Warm/Cold) Phase A -->
+				<div class="divider">Automatisches Tiering (Hot → Warm/Cold)</div>
+
+				<div class="form-control">
+					<label class="label cursor-pointer">
+						<span class="label-text font-semibold">Tiering aktivieren</span>
+						<input
+							type="checkbox"
+							name="tiering_enabled"
+							class="checkbox"
+							if settings.TieringEnabled {
+								checked
+							}
+						/>
+					</label>
+					<label class="label">
+						<span class="label-text-alt">Inaktive Bilder werden automatisch aus Hot‑Storage in niedrigere Tiers verschoben.</span>
+					</label>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Mindestaufenthalt in Hot nach Upload (Tage)</span>
+						</label>
+						<input type="number" name="hot_keep_days_after_upload" value={ fmt.Sprintf("%d", settings.HotKeepDaysAfterUpload) } class="input input-bordered w-full" placeholder="7" min="0" max="3650" required />
+						<label class="label"><span class="label-text-alt">Bilder verbleiben mindestens so lange in Hot, unabhängig von Views.</span></label>
+					</div>
+
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Demote wenn keine Views seit (Tage)</span>
+						</label>
+						<input type="number" name="demote_if_no_views_days" value={ fmt.Sprintf("%d", settings.DemoteIfNoViewsDays) } class="input input-bordered w-full" placeholder="30" min="0" max="3650" required />
+						<label class="label"><span class="label-text-alt">Wenn seit X Tagen keine Views stattfanden (oder nie), demote in Warm/Cold.</span></label>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Min. Verweildauer je Tier (Tage)</span>
+						</label>
+						<input type="number" name="min_dwell_days_per_tier" value={ fmt.Sprintf("%d", settings.MinDwellDaysPerTier) } class="input input-bordered w-full" placeholder="7" min="0" max="3650" required />
+						<label class="label"><span class="label-text-alt">Schutz vor Ping‑Pong (künftige Verwendung, Phase B).</span></label>
+					</div>
+
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Hot Watermark HIGH (%)</span>
+						</label>
+						<input type="number" name="hot_watermark_high" value={ fmt.Sprintf("%d", settings.HotWatermarkHigh) } class="input input-bordered w-full" placeholder="80" min="1" max="100" required />
+						<label class="label"><span class="label-text-alt">Ab dieser Hot‑Auslastung wird zusätzlich demotet (Hysterese).</span></label>
+					</div>
+
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Hot Watermark LOW (%)</span>
+						</label>
+						<input type="number" name="hot_watermark_low" value={ fmt.Sprintf("%d", settings.HotWatermarkLow) } class="input input-bordered w-full" placeholder="65" min="0" max="100" required />
+						<label class="label"><span class="label-text-alt">Unterhalb dieses Werts endet der Demote‑Druck (nächste Sweeps).</span></label>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Max. Kandidaten pro Sweep</span>
+						</label>
+						<input type="number" name="max_tiering_candidates_per_sweep" value={ fmt.Sprintf("%d", settings.MaxTieringCandidatesPerSweep) } class="input input-bordered w-full" placeholder="200" min="1" max="100000" required />
+						<label class="label"><span class="label-text-alt">Begrenzt die Anzahl verschobener Bilder pro Sweep (Backpressure).</span></label>
+					</div>
+
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-semibold">Sweep Intervall (Minuten)</span>
+						</label>
+						<input type="number" name="tiering_sweep_interval_minutes" value={ fmt.Sprintf("%d", settings.TieringSweepIntervalMinutes) } class="input input-bordered w-full" placeholder="15" min="1" max="1440" required />
+						<label class="label"><span class="label-text-alt">Wie oft soll das Tiering prüfen/demoten?</span></label>
+					</div>
+				</div>
+
 				<!-- API Einstellungen -->
 				<div class="divider">API</div>
 				<div class="form-control">

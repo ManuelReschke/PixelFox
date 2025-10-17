@@ -67,16 +67,20 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 
 	// Internal API routes (private app APIs)
 	internalAPI := api.Group("/internal")
+	// Apply CORS for internal endpoints to support preflight (OPTIONS) and cross-node upload/replication
+	internalAPI.Use(cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowHeaders:     "Authorization, Content-Type",
+		AllowMethods:     "POST, PUT, HEAD, OPTIONS",
+		AllowCredentials: false,
+	}))
 	// Storage upload endpoints
 	// Use API-session auth that returns JSON 401 instead of browser redirects
 	internalAPI.Post("/upload/sessions", appmw.RequireAPISessionAuth, controllers.HandleCreateUploadSession)
 	internalAPI.Post("/upload/batches", appmw.RequireAPISessionAuth, controllers.HandleCreateUploadBatch)
-	internalAPI.Post("/upload", cors.New(cors.Config{
-		AllowOrigins:     "*",
-		AllowHeaders:     "Authorization, Content-Type",
-		AllowMethods:     "POST, OPTIONS",
-		AllowCredentials: false,
-	}), controllers.HandleStorageDirectUpload)
+	internalAPI.Post("/upload", controllers.HandleStorageDirectUpload)
+	// Preflight handler for upload endpoint
+	internalAPI.Options("/upload", controllers.HandleStorageUploadHead)
 	internalAPI.Head("/upload", controllers.HandleStorageUploadHead)
 	internalAPI.Put("/replicate", controllers.HandleStorageReplicate)
 

@@ -21,6 +21,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
+	"gorm.io/gorm"
 )
 
 // processPoolMoveEnqueueJob scans images in source pool and enqueues per-image move jobs in batches
@@ -74,6 +75,11 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 	// Load image, preloading current pool
 	var image models.Image
 	if err := db.Preload("StoragePool").First(&image, payload.ImageID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Image was deleted or no longer available; treat as a no-op and do not retry
+			log.Warnf("[MoveImage] Image %d not found; skipping job %s", payload.ImageID, job.ID)
+			return nil
+		}
 		return fmt.Errorf("image not found: %w", err)
 	}
 
@@ -308,5 +314,14 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 	}
 
 	log.Infof("[MoveImage] Moved image %d from pool %d to %d", image.ID, payload.SourcePoolID, payload.TargetPoolID)
+
+	// Enqueue a reconciliation job to move any late-created variants after processing completes
+	if _, err := q.EnqueueJob(JobTypeReconcileVariants, ReconcileVariantsJobPayload{
+		ImageID:      image.ID,
+		ImageUUID:    image.UUID,
+		TargetPoolID: payload.TargetPoolID,
+	}.ToMap()); err != nil {
+		log.Warnf("[MoveImage] Failed to enqueue reconcile variants job for image %d: %v", image.ID, err)
+	}
 	return nil
 }

@@ -122,6 +122,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/storage/health-check/:id", controllers.HandleAdminStoragePoolHealthCheck)
 	adminGroup.Post("/storage/recalculate-usage/:id", controllers.HandleAdminRecalculateStorageUsage)
 	adminGroup.Get("/storage/delete/:id", controllers.HandleAdminDeleteStoragePool)
+	adminGroup.Post("/storage/tiering/sweep", controllers.HandleAdminTieringSweep)
 	// Admin Page Management Routes (moved to CSRF protected routes below)
 
 	csrfConf := csrf.Config{

@@ -285,6 +285,8 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 		err = q.processMoveImageJob(job)
 	case JobTypeDeleteImage:
 		err = q.processDeleteImageJob(ctx, job)
+	case JobTypeReconcileVariants:
+		err = q.processReconcileVariantsJob(job)
 	default:
 		err = fmt.Errorf("unknown job type: %s", job.Type)
 	}

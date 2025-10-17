@@ -141,6 +141,38 @@ func (asc *AdminStorageController) HandleAdminStorageManagement(c *fiber.Ctx) er
 	return handler(c)
 }
 
+// HandleAdminTieringSweep runs a manual tiering sweep once and redirects back with a flash message.
+func (asc *AdminStorageController) HandleAdminTieringSweep(c *fiber.Ctx) error {
+	// CSRF already enforced by router; Require admin via group
+	mgr := jobqueue.GetManager()
+	if mgr == nil {
+		fm := fiber.Map{"type": "error", "message": "Tiering: Manager nicht verfügbar"}
+		// If HTMX request, use HX-Redirect to avoid partial page inject
+		if c.Get("HX-Request") == "true" {
+			flash.WithError(c, fm)
+			c.Set("HX-Redirect", "/admin/storage")
+			return c.SendString("Tiering: Manager nicht verfügbar")
+		}
+		return flash.WithError(c, fm).Redirect("/admin/storage")
+	}
+	if err := mgr.RunTieringSweepOnce(); err != nil {
+		fm := fiber.Map{"type": "error", "message": fmt.Sprintf("Tiering-Sweep fehlgeschlagen: %v", err)}
+		if c.Get("HX-Request") == "true" {
+			flash.WithError(c, fm)
+			c.Set("HX-Redirect", "/admin/storage")
+			return c.SendString("Tiering-Sweep fehlgeschlagen")
+		}
+		return flash.WithError(c, fm).Redirect("/admin/storage")
+	}
+	fm := fiber.Map{"type": "success", "message": "Tiering-Sweep ausgeführt. Kandidaten wurden in die Queue gestellt."}
+	if c.Get("HX-Request") == "true" {
+		flash.WithSuccess(c, fm)
+		c.Set("HX-Redirect", "/admin/storage")
+		return c.SendString("Tiering-Sweep ausgeführt")
+	}
+	return flash.WithSuccess(c, fm).Redirect("/admin/storage")
+}
+
 // HandleAdminCreateStoragePool shows the create storage pool form using repository pattern
 func (asc *AdminStorageController) HandleAdminCreateStoragePool(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)

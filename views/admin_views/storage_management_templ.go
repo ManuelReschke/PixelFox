@@ -58,14 +58,14 @@ func StorageManagement(data struct {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-3xl font-bold\">Speicherverwaltung</h1><a href=\"/admin/storage/create\" class=\"btn btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" viewBox=\"0 0 20 20\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z\" clip-rule=\"evenodd\"></path></svg> Neuer Speicherpool</a></div><!-- Overview Statistics --><div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6\"><div class=\"stat bg-base-100 shadow rounded-lg\"><div class=\"stat-figure text-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-8 h-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 7v10c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4V7c0-2.21-1.79-4-4-4H8c-2.21 0-4 1.79-4 4z\"></path></svg></div><div class=\"stat-title\">Speicherpools</div><div class=\"stat-value text-primary\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-3xl font-bold\">Speicherverwaltung</h1><div class=\"flex gap-2\"><button hx-post=\"/admin/storage/tiering/sweep\" hx-include=\"[name=_csrf]\" class=\"btn btn-outline btn-sm\">Tiering‑Sweep ausführen</button> <a href=\"/admin/storage/create\" class=\"btn btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" viewBox=\"0 0 20 20\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z\" clip-rule=\"evenodd\"></path></svg> Neuer Speicherpool</a></div></div><!-- Overview Statistics --><div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6\"><div class=\"stat bg-base-100 shadow rounded-lg\"><div class=\"stat-figure text-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-8 h-8\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 7v10c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4V7c0-2.21-1.79-4-4-4H8c-2.21 0-4 1.79-4 4z\"></path></svg></div><div class=\"stat-title\">Speicherpools</div><div class=\"stat-value text-primary\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.TotalPoolsCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 48, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 51, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -78,7 +78,7 @@ func StorageManagement(data struct {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.HealthyPoolsCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 49, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 52, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -91,7 +91,7 @@ func StorageManagement(data struct {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.1f%%", data.TotalUsagePercentage))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 58, Col: 93}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 61, Col: 93}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -104,7 +104,7 @@ func StorageManagement(data struct {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(data.TotalUsedSize))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 59, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 62, Col: 60}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -117,7 +117,7 @@ func StorageManagement(data struct {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(data.TotalMaxSize))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 59, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 62, Col: 97}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -130,7 +130,7 @@ func StorageManagement(data struct {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(data.TotalImageCount, 10))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 68, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 71, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -143,7 +143,7 @@ func StorageManagement(data struct {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(data.TotalVariantCount, 10))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 78, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 81, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -161,7 +161,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(stats.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 107, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 110, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -180,7 +180,7 @@ func StorageManagement(data struct {
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(pool.Description)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 110, Col: 101}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 113, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -203,7 +203,7 @@ func StorageManagement(data struct {
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(pool.NodeID)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 114, Col: 114}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 117, Col: 114}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -222,7 +222,7 @@ func StorageManagement(data struct {
 					var templ_7745c5c3_Var12 templ.SafeURL
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(pool.PublicBaseURL))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 117, Col: 91}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 120, Col: 91}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -235,7 +235,7 @@ func StorageManagement(data struct {
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(pool.PublicBaseURL)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 117, Col: 168}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 120, Col: 168}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -248,7 +248,7 @@ func StorageManagement(data struct {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(strings.TrimPrefix(strings.TrimPrefix(pool.PublicBaseURL, "https://"), "http://"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 118, Col: 139}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 121, Col: 139}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -267,7 +267,7 @@ func StorageManagement(data struct {
 					var templ_7745c5c3_Var15 string
 					templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(strings.TrimPrefix(strings.TrimPrefix(pool.UploadAPIURL, "https://"), "http://"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 122, Col: 194}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 125, Col: 194}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 					if templ_7745c5c3_Err != nil {
@@ -354,7 +354,7 @@ func StorageManagement(data struct {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(pool.StorageType)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 163, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 166, Col: 64}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -389,7 +389,7 @@ func StorageManagement(data struct {
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(getTierDisplayName(pool.StorageTier))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 164, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 167, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -407,7 +407,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%.1f%%", stats.UsagePercentage))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 170, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 173, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -422,7 +422,7 @@ func StorageManagement(data struct {
 				stats.UsagePercentage,
 				getUsageColor(stats.UsagePercentage)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 176, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 179, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -435,7 +435,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(stats.UsedSize))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 180, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 183, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -448,7 +448,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(stats.MaxSize))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 180, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 183, Col: 74}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -461,7 +461,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(stats.ImageCount, 10))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 186, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 189, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -474,7 +474,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(stats.VariantCount, 10))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 187, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 190, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -492,7 +492,7 @@ func StorageManagement(data struct {
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(pool.Priority))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 192, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 195, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
@@ -510,7 +510,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/storage/health-check/%d", stats.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 199, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 202, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -523,7 +523,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/admin/storage/recalculate-usage/%d", stats.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 207, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 210, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -536,7 +536,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var29 templ.SafeURL
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/admin/storage/edit/%d", stats.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 213, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 216, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -549,7 +549,7 @@ func StorageManagement(data struct {
 			var templ_7745c5c3_Var30 templ.SafeURL
 			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/admin/storage/move/%d", stats.ID)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 218, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 221, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -567,7 +567,7 @@ func StorageManagement(data struct {
 				var templ_7745c5c3_Var31 string
 				templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(int(stats.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 227, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 230, Col: 55}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 				if templ_7745c5c3_Err != nil {
@@ -580,7 +580,7 @@ func StorageManagement(data struct {
 				var templ_7745c5c3_Var32 string
 				templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(stats.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 228, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/storage_management.templ`, Line: 231, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 				if templ_7745c5c3_Err != nil {

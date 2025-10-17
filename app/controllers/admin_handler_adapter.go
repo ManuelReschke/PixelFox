@@ -207,6 +207,11 @@ func HandleAdminMoveStoragePoolPost(c *fiber.Ctx) error {
 	return GetAdminStorageController().HandleAdminMoveStoragePoolPost(c)
 }
 
+// HandleAdminTieringSweep - Adapter for manual tiering sweep
+func HandleAdminTieringSweep(c *fiber.Ctx) error {
+	return GetAdminStorageController().HandleAdminTieringSweep(c)
+}
+
 // Page Management - Repository Pattern Functions using dedicated AdminPageController
 
 // HandleAdminPages - Adapter for page management

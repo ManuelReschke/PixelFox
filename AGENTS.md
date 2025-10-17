@@ -25,6 +25,7 @@
 - Check build status via logs: `docker-compose logs -f app` or `docker logs -f pxlfox-app` (use `--tail 200` for recent output).
 
 ## Frameworks
+- we use HTMX in the frontend (and hyperscript)
 - we use a-h/templ as template engine.
 - we use fiber as web framework.
 - we use gorm.io/gorm as ORM.

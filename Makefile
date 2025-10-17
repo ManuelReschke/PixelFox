@@ -66,6 +66,18 @@ start-build: prepare-env-local
 	@echo "🚀 Starte Docker Compose (Testumgebung)..."
 	cd $(PROJECT_ROOT) && docker-compose up -d --build
 
+.PHONY: start-multi
+start-multi: prepare-env-local
+	@echo "🚀 Starte Multi-Node (Hot/Warm) mit Override..."
+	mkdir -p uploads_s01 uploads_s02 tmp
+	cd $(PROJECT_ROOT) && docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+
+.PHONY: start-multi-build
+start-multi-build: prepare-env-local
+	@echo "🚀 Starte Multi-Node (Hot/Warm) mit Build..."
+	mkdir -p uploads_s01 uploads_s02 tmp
+	cd $(PROJECT_ROOT) && docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d --build
+
 
 # Docker Compose Build und Start für Produktionsumgebung
 .PHONY: prod-start
@@ -78,6 +90,11 @@ prod-start: prepare-env-prod
 docker-down:
 	@echo "🛑 Stoppe Docker Compose..."
 	cd $(PROJECT_ROOT) && docker-compose down
+
+.PHONY: docker-down-multi
+docker-down-multi:
+	@echo "🛑 Stoppe Multi-Node (mit Override)..."
+	cd $(PROJECT_ROOT) && docker-compose -f docker-compose.yml -f docker-compose.override.yml down
 
 # Docker Compose herunterfahren und Volumes entfernen
 .PHONY: docker-clean
@@ -189,8 +206,11 @@ help:
 	@echo "  make prepare-env-prod   - Kopiere .env.prod nach .env (Produktionsumgebung)"
 	@echo "  make start              - Starte Docker Compose für Testumgebung"
 	@echo "  make start-build        - Starte Docker Compose für Testumgebung & Build"
+	@echo "  make start-multi        - Starte Multi-Node (app + s01 + s02) mit Override"
+	@echo "  make start-multi-build  - Starte Multi-Node (mit Build)"
 	@echo "  make start-prod         - Starte Docker Compose für Produktionsumgebung"
 	@echo "  make docker-down        - Stoppe Docker Compose"
+	@echo "  make docker-down-multi  - Stoppe Multi-Node (mit Override)"
 	@echo "  make docker-clean       - Entferne Docker Volumes und Container"
 	@echo "  make stop               - Stopppe Docker Container"
 	@echo "  make restart            - Neustarten der Container"

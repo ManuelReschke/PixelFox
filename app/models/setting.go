@@ -43,7 +43,16 @@ type AppSettings struct {
 	APIRateLimitPerMinute int `json:"api_rate_limit_per_minute" validate:"min=0,max=100000"` // Global API limiter for /api routes (0 = unlimited)
 	// Replication/Storage settings
 	ReplicationRequireChecksum bool `json:"replication_require_checksum"`
-	mu                         sync.RWMutex
+	// Tiering (Phase A)
+	TieringEnabled               bool `json:"tiering_enabled"`
+	HotKeepDaysAfterUpload       int  `json:"hot_keep_days_after_upload" validate:"min=0,max=3650"`
+	DemoteIfNoViewsDays          int  `json:"demote_if_no_views_days" validate:"min=1,max=3650"`
+	MinDwellDaysPerTier          int  `json:"min_dwell_days_per_tier" validate:"min=0,max=3650"`
+	HotWatermarkHigh             int  `json:"hot_watermark_high" validate:"min=1,max=100"`
+	HotWatermarkLow              int  `json:"hot_watermark_low" validate:"min=0,max=100"`
+	MaxTieringCandidatesPerSweep int  `json:"max_tiering_candidates_per_sweep" validate:"min=1,max=100000"`
+	TieringSweepIntervalMinutes  int  `json:"tiering_sweep_interval_minutes" validate:"min=1,max=1440"`
+	mu                           sync.RWMutex
 }
 
 // Global settings instance
@@ -82,6 +91,15 @@ func LoadSettings(db *gorm.DB) error {
 		JobQueueWorkerCount:          5,    // Default: 5 workers
 		APIRateLimitPerMinute:        120,  // Default: 120 requests / minute for /api routes
 		ReplicationRequireChecksum:   true, // Default: enforce checksum for replication
+		// Tiering defaults (Phase A)
+		TieringEnabled:               true,
+		HotKeepDaysAfterUpload:       7,
+		DemoteIfNoViewsDays:          30,
+		MinDwellDaysPerTier:          7,
+		HotWatermarkHigh:             80,
+		HotWatermarkLow:              65,
+		MaxTieringCandidatesPerSweep: 200,
+		TieringSweepIntervalMinutes:  15,
 	}
 
 	// Load settings from database
@@ -139,6 +157,36 @@ func LoadSettings(db *gorm.DB) error {
 			}
 		case "replication_require_checksum":
 			appSettings.ReplicationRequireChecksum = setting.Value == "true"
+		case "tiering_enabled":
+			appSettings.TieringEnabled = setting.Value == "true"
+		case "hot_keep_days_after_upload":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.HotKeepDaysAfterUpload = v
+			}
+		case "demote_if_no_views_days":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.DemoteIfNoViewsDays = v
+			}
+		case "min_dwell_days_per_tier":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.MinDwellDaysPerTier = v
+			}
+		case "hot_watermark_high":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.HotWatermarkHigh = v
+			}
+		case "hot_watermark_low":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.HotWatermarkLow = v
+			}
+		case "max_tiering_candidates_per_sweep":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.MaxTieringCandidatesPerSweep = v
+			}
+		case "tiering_sweep_interval_minutes":
+			if v, err := strconv.Atoi(setting.Value); err == nil {
+				appSettings.TieringSweepIntervalMinutes = v
+			}
 		}
 	}
 
@@ -173,6 +221,15 @@ func SaveSettings(db *gorm.DB, settings *AppSettings) error {
 		"job_queue_worker_count":            fmt.Sprintf("%d", settings.JobQueueWorkerCount),
 		"api_rate_limit_per_minute":         fmt.Sprintf("%d", settings.APIRateLimitPerMinute),
 		"replication_require_checksum":      fmt.Sprintf("%t", settings.ReplicationRequireChecksum),
+		// Tiering
+		"tiering_enabled":                  fmt.Sprintf("%t", settings.TieringEnabled),
+		"hot_keep_days_after_upload":       fmt.Sprintf("%d", settings.HotKeepDaysAfterUpload),
+		"demote_if_no_views_days":          fmt.Sprintf("%d", settings.DemoteIfNoViewsDays),
+		"min_dwell_days_per_tier":          fmt.Sprintf("%d", settings.MinDwellDaysPerTier),
+		"hot_watermark_high":               fmt.Sprintf("%d", settings.HotWatermarkHigh),
+		"hot_watermark_low":                fmt.Sprintf("%d", settings.HotWatermarkLow),
+		"max_tiering_candidates_per_sweep": fmt.Sprintf("%d", settings.MaxTieringCandidatesPerSweep),
+		"tiering_sweep_interval_minutes":   fmt.Sprintf("%d", settings.TieringSweepIntervalMinutes),
 	}
 
 	// Save each setting
@@ -213,11 +270,9 @@ func getSettingType(key string) string {
 	switch key {
 	case "site_title", "site_description":
 		return "string"
-	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled", "replication_require_checksum", "s3_backup_enabled":
+	case "image_upload_enabled", "direct_upload_enabled", "thumbnail_original_enabled", "thumbnail_webp_enabled", "thumbnail_avif_enabled", "replication_require_checksum", "s3_backup_enabled", "tiering_enabled":
 		return "boolean"
-	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count", "upload_rate_limit_per_minute", "upload_user_rate_limit_per_minute":
-		return "integer"
-	case "api_rate_limit_per_minute":
+	case "s3_backup_delay_minutes", "s3_backup_check_interval", "s3_retry_interval", "job_queue_worker_count", "upload_rate_limit_per_minute", "upload_user_rate_limit_per_minute", "hot_keep_days_after_upload", "demote_if_no_views_days", "min_dwell_days_per_tier", "hot_watermark_high", "hot_watermark_low", "max_tiering_candidates_per_sweep", "tiering_sweep_interval_minutes", "api_rate_limit_per_minute":
 		return "integer"
 	default:
 		return "string"
@@ -354,4 +409,53 @@ func (s *AppSettings) IsS3BackupEnabled() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.S3BackupEnabled
+}
+
+// Tiering getters
+func (s *AppSettings) IsTieringEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.TieringEnabled
+}
+
+func (s *AppSettings) GetHotKeepDaysAfterUpload() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.HotKeepDaysAfterUpload
+}
+
+func (s *AppSettings) GetDemoteIfNoViewsDays() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.DemoteIfNoViewsDays
+}
+
+func (s *AppSettings) GetMinDwellDaysPerTier() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.MinDwellDaysPerTier
+}
+
+func (s *AppSettings) GetHotWatermarkHigh() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.HotWatermarkHigh
+}
+
+func (s *AppSettings) GetHotWatermarkLow() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.HotWatermarkLow
+}
+
+func (s *AppSettings) GetMaxTieringCandidatesPerSweep() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.MaxTieringCandidatesPerSweep
+}
+
+func (s *AppSettings) GetTieringSweepIntervalMinutes() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.TieringSweepIntervalMinutes
 }

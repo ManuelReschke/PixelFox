@@ -26,6 +26,7 @@ type Image struct {
 	IsPublic      bool         `gorm:"default:false" json:"is_public"`
 	ViewCount     int          `gorm:"default:0" json:"view_count"`
 	DownloadCount int          `gorm:"default:0" json:"download_count"`
+	LastViewedAt  *time.Time   `gorm:"index" json:"last_viewed_at,omitempty"`
 	IPv4          string       `gorm:"type:varchar(15);default:null" json:"-"`                                                   // IPv4 address of the uploader
 	IPv6          string       `gorm:"type:varchar(45);default:null" json:"-"`                                                   // IPv6 address of the uploader
 	FileHash      string       `gorm:"type:varchar(64);not null;default:'';index:idx_user_file_hash,composite" json:"file_hash"` // SHA-256 hash for duplicate detection

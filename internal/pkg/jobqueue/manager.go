@@ -15,6 +15,7 @@ type Manager struct {
 	retryTicker         *time.Ticker
 	delayedBackupTicker *time.Ticker
 	counterFlushTicker  *time.Ticker
+	tieringTicker       *time.Ticker
 	stopCh              chan struct{}
 	wg                  sync.WaitGroup
 	mu                  sync.Mutex
@@ -86,6 +87,17 @@ func (m *Manager) Start() {
 	m.wg.Add(1)
 	go m.counterFlushWorker()
 
+	// Tiering sweeper (Phase A)
+	tieringInterval := 15 * time.Minute
+	if settings := getAppSettings(); settings != nil {
+		if v := settings.GetTieringSweepIntervalMinutes(); v > 0 {
+			tieringInterval = time.Duration(v) * time.Minute
+		}
+	}
+	m.tieringTicker = time.NewTicker(tieringInterval)
+	m.wg.Add(1)
+	go m.tieringWorker()
+
 	log.Info("[JobQueue Manager] Started successfully")
 }
 
@@ -112,6 +124,9 @@ func (m *Manager) Stop() {
 
 	if m.counterFlushTicker != nil {
 		m.counterFlushTicker.Stop()
+	}
+	if m.tieringTicker != nil {
+		m.tieringTicker.Stop()
 	}
 
 	// Signal workers to stop
@@ -189,6 +204,22 @@ func (m *Manager) counterFlushWorker() {
 	}
 }
 
+// tieringWorker periodically runs Phase A tiering sweep to demote inactive images from hot to warm/cold.
+func (m *Manager) tieringWorker() {
+	defer m.wg.Done()
+	for {
+		select {
+		case <-m.stopCh:
+			log.Info("[JobQueue Manager] Tiering worker stopping")
+			return
+		case <-m.tieringTicker.C:
+			if err := m.runTieringSweepOnce(); err != nil {
+				log.Errorf("[JobQueue Manager] Tiering sweep error: %v", err)
+			}
+		}
+	}
+}
+
 func (m *Manager) flushCountersOnce() error {
 	// Flush Redis -> DB (batched CASE update)
 	return metrics.FlushAll()
@@ -204,4 +235,9 @@ func (m *Manager) IsRunning() bool {
 // getAppSettings safely returns the current app settings
 func getAppSettings() *models.AppSettings {
 	return models.GetAppSettings()
+}
+
+// RunTieringSweepOnce exposes a manual trigger for a single tiering sweep (admin use).
+func (m *Manager) RunTieringSweepOnce() error {
+	return m.runTieringSweepOnce()
 }

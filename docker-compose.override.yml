@@ -23,7 +23,30 @@ services:
     networks:
       - pxlfox-network
 
+  # Third app instance acting as warm storage node (s02)
+  app_s02:
+    build:
+      context: .
+      dockerfile: docker/golang/${DOCKERFILE}
+    container_name: pxlfox-app-s02
+    env_file: ".env"
+    environment:
+      - NODE_ID=s02
+      # Disable workers here so only s01 runs tiering/processing in tests (optional)
+      - DISABLE_JOB_WORKERS=0
+      - APP_PORT=4000
+    ports:
+      - "8083:4000"
+    volumes:
+      - .:/app
+      - ./uploads_s02:/app/uploads_s02
+      - ./uploads_s02:/app/uploads
+    depends_on:
+      - db
+      - cache
+    networks:
+      - pxlfox-network
+
 networks:
   pxlfox-network:
     external: false
-

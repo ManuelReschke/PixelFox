@@ -544,6 +544,58 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 		apiRateLimitPerMinute = 100000
 	}
 
+	// Tiering (Phase A)
+	tieringEnabled := c.FormValue("tiering_enabled") == "on"
+	hotKeepDaysAfterUpload, _ := strconv.Atoi(c.FormValue("hot_keep_days_after_upload"))
+	if hotKeepDaysAfterUpload < 0 {
+		hotKeepDaysAfterUpload = 0
+	}
+	if hotKeepDaysAfterUpload > 3650 {
+		hotKeepDaysAfterUpload = 3650
+	}
+	demoteIfNoViewsDays, _ := strconv.Atoi(c.FormValue("demote_if_no_views_days"))
+	if demoteIfNoViewsDays < 1 {
+		demoteIfNoViewsDays = 1
+	}
+	if demoteIfNoViewsDays > 3650 {
+		demoteIfNoViewsDays = 3650
+	}
+	minDwellDaysPerTier, _ := strconv.Atoi(c.FormValue("min_dwell_days_per_tier"))
+	if minDwellDaysPerTier < 0 {
+		minDwellDaysPerTier = 0
+	}
+	if minDwellDaysPerTier > 3650 {
+		minDwellDaysPerTier = 3650
+	}
+	hotWatermarkHigh, _ := strconv.Atoi(c.FormValue("hot_watermark_high"))
+	if hotWatermarkHigh < 1 {
+		hotWatermarkHigh = 1
+	}
+	if hotWatermarkHigh > 100 {
+		hotWatermarkHigh = 100
+	}
+	hotWatermarkLow, _ := strconv.Atoi(c.FormValue("hot_watermark_low"))
+	if hotWatermarkLow < 0 {
+		hotWatermarkLow = 0
+	}
+	if hotWatermarkLow > 100 {
+		hotWatermarkLow = 100
+	}
+	maxTieringCandidatesPerSweep, _ := strconv.Atoi(c.FormValue("max_tiering_candidates_per_sweep"))
+	if maxTieringCandidatesPerSweep < 1 {
+		maxTieringCandidatesPerSweep = 1
+	}
+	if maxTieringCandidatesPerSweep > 100000 {
+		maxTieringCandidatesPerSweep = 100000
+	}
+	tieringSweepIntervalMinutes, _ := strconv.Atoi(c.FormValue("tiering_sweep_interval_minutes"))
+	if tieringSweepIntervalMinutes < 1 {
+		tieringSweepIntervalMinutes = 1
+	}
+	if tieringSweepIntervalMinutes > 1440 {
+		tieringSweepIntervalMinutes = 1440
+	}
+
 	// Create new settings
 	newSettings := &models.AppSettings{
 		SiteTitle:                    siteTitle,
@@ -562,6 +614,15 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 		JobQueueWorkerCount:          jobQueueWorkerCount,
 		APIRateLimitPerMinute:        apiRateLimitPerMinute,
 		ReplicationRequireChecksum:   replicationRequireChecksum,
+		// Tiering
+		TieringEnabled:               tieringEnabled,
+		HotKeepDaysAfterUpload:       hotKeepDaysAfterUpload,
+		DemoteIfNoViewsDays:          demoteIfNoViewsDays,
+		MinDwellDaysPerTier:          minDwellDaysPerTier,
+		HotWatermarkHigh:             hotWatermarkHigh,
+		HotWatermarkLow:              hotWatermarkLow,
+		MaxTieringCandidatesPerSweep: maxTieringCandidatesPerSweep,
+		TieringSweepIntervalMinutes:  tieringSweepIntervalMinutes,
 	}
 
 	// Save settings using repository
