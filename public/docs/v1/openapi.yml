@@ -36,6 +36,7 @@ paths:
       operationId: getPing
       tags:
         - Health
+      security: []
       responses:
         '200':
           description: Successful health check response

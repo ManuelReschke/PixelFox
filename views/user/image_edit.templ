@@ -35,9 +35,10 @@ templ ImageEditContent(image models.Image, csrfToken string) {
             <!-- Image Preview -->
             <div class="bg-base-100 shadow-md rounded-lg p-6">
                 <h2 class="text-lg font-semibold mb-4 text-base-content">Bildvorschau</h2>
+                {{ previewURL := imageprocessor.GetBestPreviewURL(&image) }}
                 <div class="flex justify-center">
                     <img class="max-w-full h-auto rounded-lg" 
-                        src={ imageprocessor.GetImageURL(&image, "webp", "medium") } 
+                        src={ previewURL } 
                         alt={ image.Title }/>
                 </div>
                 

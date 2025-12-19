@@ -18,8 +18,10 @@ services:
       - ./uploads_s01:/app/uploads_s01
       - ./uploads_s01:/app/uploads
     depends_on:
-      - db
-      - cache
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
     networks:
       - pxlfox-network
 
@@ -42,8 +44,10 @@ services:
       - ./uploads_s02:/app/uploads_s02
       - ./uploads_s02:/app/uploads
     depends_on:
-      - db
-      - cache
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
     networks:
       - pxlfox-network
 
