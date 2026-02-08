@@ -8,20 +8,24 @@
 - `assets/` → CSS sources; `public/` → built assets (CSS/JS), docs.
 - `migrations/`: SQL files `NNNNNN_name.up.sql` / `.down.sql`.
 - `docker/`, `docker-compose.yml`: local stack; `.env*` for config.
+- `knowledge/`: architecture notes, rollout plans, and refactoring docs.
 
 ## Build, Test, and Development Commands
 - `make start` / `make docker-down`: run/stop local stack (app, DB, cache).
 - `make start-build`: build images and start stack.
+- `make start-multi` / `make start-multi-build` / `make docker-down-multi`: run/stop multi-node local setup.
 - `make generate-template`: run `templ generate` and rebuild CSS.
 - `make build-frontend` or `npm run build:all`: build CSS and copy JS.
 - `make generate-api`: generate Go code from `public/docs/v1/openapi.yml`.
-- Tests: `make test-local` (host) or `make test-in-docker` (container). Example: `go test ./... -cover`.
-- Migrations: `make migrate-up`, `make migrate-down`, `make migrate-status`, or `make migrate-to version=000001`.
+- `make generate-api-internal`: generate internal API models from `public/docs/internal/openapi.yml`.
+- Tests: `make test-local` (host) or `make test-in-docker` (container). Host tests need CGO + `libwebp` headers installed.
+- Migrations: `make migrate-up`, `make migrate-down`, `make migrate-status`, `make migrate-to version=000001`.
 
 ## Live Reload (Air + Templ)
 - Dev container runs `air` and `templ generate --watch` via `supervisord`.
 - On code changes, `air` rebuilds automatically; no manual build needed.
 - files with ending .fiber.gz are auto generated, and you don't need to touch them.
+- `views/**/*_templ.go` and `internal/api/*/generated.go` are generated artifacts. Prefer editing source templates/specs instead.
 - Check build status via logs: `docker-compose logs -f app` or `docker logs -f pxlfox-app` (use `--tail 200` for recent output).
 
 ## Frameworks
@@ -51,5 +55,7 @@
 - PRs: clear description, linked issues, screenshots for UI, and steps to test. Ensure: tests pass, formatted code, migrations included, and docs updated.
 
 ## Security & Configuration Tips
-- Never commit secrets; use `.env.dev` → `.env` for local (`make prepare-env-dev`).
-- Persistent data lives in Docker volumes; `uploads/` and `tmp/` are runtime dirs.
+- Never commit secrets; use `.env.local` → `.env` for local (`make prepare-env-local`).
+- `.env.dev` / `.env.prod` can be applied via `make prepare-env-dev` / `make prepare-env-prod`.
+- Persistent data lives in Docker volumes; `uploads/`, `uploads_s01/`, `uploads_s02/`, and `tmp/` are runtime dirs.
+- Do not commit local build artifacts like `pixelfox` / `pixelfox-app`.
