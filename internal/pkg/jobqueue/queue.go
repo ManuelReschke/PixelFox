@@ -60,6 +60,9 @@ func (q *Queue) Start() {
 		return
 	}
 
+	// Recreate channels so a queue can be started again after Stop.
+	q.stopCh = make(chan struct{})
+	q.workerPool = make(chan struct{}, q.workers)
 	q.running = true
 	log.Infof("[JobQueue] Starting %d workers", q.workers)
 
@@ -89,7 +92,9 @@ func (q *Queue) Stop() {
 	}
 
 	log.Info("[JobQueue] Stopping workers...")
-	close(q.stopCh)
+	if q.stopCh != nil {
+		close(q.stopCh)
+	}
 	q.running = false
 	q.wg.Wait()
 	log.Info("[JobQueue] All workers stopped")

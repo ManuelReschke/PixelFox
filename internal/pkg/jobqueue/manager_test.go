@@ -63,26 +63,6 @@ func TestManager_IsRunning(t *testing.T) {
 	assert.False(t, manager.IsRunning())
 }
 
-func TestManager_StartStop(t *testing.T) {
-	// Skip this test as it requires Redis connection and workers hang
-	t.Skip("Skipping integration test - workers block on Redis operations")
-}
-
-func TestManager_StartStopConcurrency(t *testing.T) {
-	// Skip this test as it requires Redis connection and workers hang
-	t.Skip("Skipping integration test - workers block on Redis operations")
-}
-
-func TestManager_RetryWorkerLifecycle(t *testing.T) {
-	// Skip this test as it requires Redis connection and workers hang
-	t.Skip("Skipping integration test - workers block on Redis operations")
-}
-
-func TestManager_RetryWorkerTickerInterval(t *testing.T) {
-	// Skip this test as it requires Redis connection and workers hang
-	t.Skip("Skipping integration test - workers block on Redis operations")
-}
-
 func TestManager_StopWithoutStart(t *testing.T) {
 	// Reset the singleton for testing
 	globalManager = nil
@@ -94,16 +74,6 @@ func TestManager_StopWithoutStart(t *testing.T) {
 	assert.False(t, manager.IsRunning())
 	manager.Stop()
 	assert.False(t, manager.IsRunning())
-}
-
-func TestManager_MultipleStartStop(t *testing.T) {
-	// Skip this test as it requires Redis connection and workers hang
-	t.Skip("Skipping integration test - workers block on Redis operations")
-}
-
-func TestManager_ThreadSafety(t *testing.T) {
-	// Skip this test as it requires Redis connection and workers hang
-	t.Skip("Skipping integration test - workers block on Redis operations")
 }
 
 func TestNewManagerStructure(t *testing.T) {

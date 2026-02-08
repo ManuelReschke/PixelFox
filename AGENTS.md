@@ -19,6 +19,7 @@
 - `make generate-api`: generate Go code from `public/docs/v1/openapi.yml`.
 - `make generate-api-internal`: generate internal API models from `public/docs/internal/openapi.yml`.
 - Tests: `make test-local` (host) or `make test-in-docker` (container). Host tests need CGO + `libwebp` headers installed.
+- Integration tests (build tag `integration`): `make test-local-integration` or `make test-in-docker-integration`.
 - Migrations: `make migrate-up`, `make migrate-down`, `make migrate-status`, `make migrate-to version=000001`.
 - Preferred agent workflow for routine local checks: `make start` -> `make generate-template` -> `make test-in-docker`.
 - Prefer Make targets over ad-hoc `docker exec` commands for standard tasks.

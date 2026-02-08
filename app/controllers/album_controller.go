@@ -343,6 +343,10 @@ func HandleUserAlbumAddImage(c *fiber.Ctx) error {
 }
 
 func HandleUserAlbumRemoveImage(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	userCtx := usercontext.GetUserContext(c)
 	userID := userCtx.UserID
 

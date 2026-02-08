@@ -119,11 +119,23 @@ test-local:
 	@echo "🧪 Führe Tests aus..."
 	cd $(PROJECT_ROOT) && go test ./...
 
+# Golang Integration Tests lokal (Build-Tag: integration)
+.PHONY: test-local-integration
+test-local-integration:
+	@echo "🧪 Führe Integrationstests lokal aus..."
+	cd $(PROJECT_ROOT) && go test -v -tags=integration ./...
+
 # Golang Tests ausführen
 .PHONY: test-in-docker
 test-in-docker:
 	@echo "🧪 Führe Tests in Docker aus..."
 	cd $(PROJECT_ROOT) && docker-compose exec -T app go test -v ./...
+
+# Golang Integration Tests in Docker (Build-Tag: integration)
+.PHONY: test-in-docker-integration
+test-in-docker-integration:
+	@echo "🧪 Führe Integrationstests in Docker aus..."
+	cd $(PROJECT_ROOT) && docker-compose exec -T app go test -v -tags=integration ./...
 
 # Golang Tests ausführen
 .PHONY: test-in-docker-internal
@@ -215,7 +227,9 @@ help:
 	@echo "  make stop               - Stopppe Docker Container"
 	@echo "  make restart            - Neustarten der Container"
 	@echo "  make test-local         - Führe Tests lokal aus"
+	@echo "  make test-local-integration - Führe Integrationstests lokal aus (tags=integration)"
 	@echo "  make test-in-docker     - Führe Tests im Docker Container aus"
+	@echo "  make test-in-docker-integration - Führe Integrationstests im Docker Container aus (tags=integration)"
 	@echo "  make test-in-docker-internal - Führe Tests im Docker Container aus nur für Internal pkg"
 	@echo "  make migrate-up         - Führe alle ausstehenden Migrationen aus"
 	@echo "  make migrate-down       - Rolle letzte Migration zurück"

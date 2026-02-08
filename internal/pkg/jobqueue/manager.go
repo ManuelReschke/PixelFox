@@ -106,9 +106,8 @@ func (m *Manager) Start() {
 // Stop stops the job queue and background tasks
 func (m *Manager) Stop() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if !m.running {
+		m.mu.Unlock()
 		return
 	}
 
@@ -131,16 +130,26 @@ func (m *Manager) Stop() {
 		m.tieringTicker.Stop()
 	}
 
-	// Signal workers to stop
-	close(m.stopCh)
-	m.stopCh = nil
+	stopCh := m.stopCh
 	m.running = false
+	m.mu.Unlock()
 
-	// Wait for background workers to finish
+	// Signal workers to stop and wait until all goroutines have exited.
+	if stopCh != nil {
+		close(stopCh)
+	}
 	m.wg.Wait()
 
 	// Stop the job queue
 	m.queue.Stop()
+
+	m.mu.Lock()
+	m.stopCh = nil
+	m.retryTicker = nil
+	m.delayedBackupTicker = nil
+	m.counterFlushTicker = nil
+	m.tieringTicker = nil
+	m.mu.Unlock()
 
 	log.Info("[JobQueue Manager] Stopped successfully")
 }

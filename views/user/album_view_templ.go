@@ -377,145 +377,158 @@ func AlbumViewIndex(username string, csrfToken string, album models.Album, album
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<span class=\"view-btn bg-primary text-white\" title=\"Aktuelles Cover\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12.75 11.25 15 15 9.75M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z\"></path></svg></span> ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<span class=\"view-btn bg-primary text-white\" title=\"Aktuelles Cover\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12.75 11.25 15 15 9.75M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z\"></path></svg></span>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<a href=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<form method=\"POST\" action=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var22 templ.SafeURL
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinURLErrs(templ.URL(fmt.Sprintf("/user/albums/%d/remove-image/%d", album.ID, image.ID)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 122, Col: 119}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 122, Col: 138}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" class=\"view-btn bg-red-500 hover:bg-red-600 text-white\" title=\"Aus Album entfernen\" onclick=\"return confirm('Möchten Sie dieses Bild aus dem Album entfernen?')\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></a></div></div></div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\"><input type=\"hidden\" name=\"_csrf\" value=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var23 string
+				templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 123, Col: 87}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\"> <button type=\"submit\" class=\"view-btn bg-red-500 hover:bg-red-600 text-white\" title=\"Aus Album entfernen\" aria-label=\"Aus Album entfernen\" onclick=\"return confirm('Möchten Sie dieses Bild aus dem Album entfernen?')\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></form></div></div></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"flex flex-col items-center justify-center py-12\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-16 h-16 mb-4 text-gray-400\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg><h3 class=\"text-xl font-semibold mb-2\">Noch keine Bilder im Album</h3><p class=\"text-gray-500 mb-4\">Fügen Sie Bilder zu Ihrem Album hinzu.</p><button class=\"btn btn-primary\" onclick=\"document.getElementById('add-images-modal').showModal()\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 mr-2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Erste Bilder hinzufügen</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"flex flex-col items-center justify-center py-12\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-16 h-16 mb-4 text-gray-400\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z\"></path></svg><h3 class=\"text-xl font-semibold mb-2\">Noch keine Bilder im Album</h3><p class=\"text-gray-500 mb-4\">Fügen Sie Bilder zu Ihrem Album hinzu.</p><button class=\"btn btn-primary\" onclick=\"document.getElementById('add-images-modal').showModal()\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-5 h-5 mr-2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Erste Bilder hinzufügen</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div><!-- Add Images Modal (Multi-Select) --><!-- Share modal via SweetAlert2 (triggered in JS: openAlbumShare) --><dialog id=\"add-images-modal\" class=\"modal\"><div class=\"modal-box w-11/12 max-w-4xl\" id=\"add-images-modal-box\" data-album-id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", album.ID))
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 155, Col: 118}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" data-csrf=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div><!-- Add Images Modal (Multi-Select) --><!-- Share modal via SweetAlert2 (triggered in JS: openAlbumShare) --><dialog id=\"add-images-modal\" class=\"modal\"><div class=\"modal-box w-11/12 max-w-4xl\" id=\"add-images-modal-box\" data-album-id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", album.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 155, Col: 142}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 162, Col: 118}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\"><div class=\"flex justify-between items-center mb-2\"><h3 class=\"font-bold text-lg\">Bilder zum Album hinzufügen</h3><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-6 h-6\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></form></div><div class=\"flex items-center justify-between mb-4\"><p class=\"text-sm text-gray-600\">Mehrfachauswahl möglich – klicke, um zu markieren.</p><div class=\"flex items-center gap-3\"><span class=\"text-sm\">Ausgewählt: <span id=\"selected-count\">0</span></span> <button id=\"add-selected-btn\" type=\"button\" class=\"btn btn-primary btn-sm\" disabled><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-4 h-4 mr-1\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Auswahl hinzufügen</button></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" data-csrf=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 162, Col: 142}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\"><div class=\"flex justify-between items-center mb-2\"><h3 class=\"font-bold text-lg\">Bilder zum Album hinzufügen</h3><form method=\"dialog\"><button class=\"btn btn-sm btn-circle btn-ghost\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-6 h-6\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></form></div><div class=\"flex items-center justify-between mb-4\"><p class=\"text-sm text-gray-600\">Mehrfachauswahl möglich – klicke, um zu markieren.</p><div class=\"flex items-center gap-3\"><span class=\"text-sm\">Ausgewählt: <span id=\"selected-count\">0</span></span> <button id=\"add-selected-btn\" type=\"button\" class=\"btn btn-primary btn-sm\" disabled><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"w-4 h-4 mr-1\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Auswahl hinzufügen</button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if len(userImages) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div class=\"grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div class=\"grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, image := range userImages {
 				if !imageInAlbum(image, albumImages) {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div class=\"relative group selectable-image cursor-pointer\" data-image-id=\"")
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					var templ_7745c5c3_Var25 string
-					templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
-					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 184, Col: 131}
-					}
-					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-					if templ_7745c5c3_Err != nil {
-						return templ_7745c5c3_Err
-					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\"><img src=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<div class=\"relative group selectable-image cursor-pointer\" data-image-id=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var26 string
-					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(image.SmallPreviewPath)
+					templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 185, Col: 65}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 191, Col: 131}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" alt=\"")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><img src=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var27 string
-					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
+					templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(image.SmallPreviewPath)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 186, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 192, Col: 65}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" class=\"w-full h-32 object-cover rounded-lg\"><!-- visual selection ring --><div class=\"absolute inset-0 rounded-lg ring-4 ring-primary selection-ring hidden pointer-events-none\"></div><!-- hover overlay --><div class=\"absolute inset-0 bg-transparent group-hover:bg-white/80 transition-all duration-200 rounded-lg flex items-center justify-center\"><div class=\"opacity-0 group-hover:opacity-100 transition-opacity duration-200\"><span class=\"btn btn-sm\">Auswählen</span></div></div><!-- selected badge --><div class=\"absolute top-2 left-2 selection-badge hidden\"><div class=\"badge badge-primary text-white\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-3 h-3 mr-1\" viewBox=\"0 0 20 20\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M16.707 5.293a1 1 0 010 1.414l-7.5 7.5a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L8.5 12.086l6.793-6.793a1 1 0 011.414 0z\" clip-rule=\"evenodd\"></path></svg> Ausgewählt</div></div><div class=\"absolute bottom-2 left-2 right-2\"><p class=\"text-white text-xs font-medium bg-black/60 rounded px-2 py-1 truncate\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" alt=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var28 string
 					templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 208, Col: 130}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 193, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</p></div></div>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" class=\"w-full h-32 object-cover rounded-lg\"><!-- visual selection ring --><div class=\"absolute inset-0 rounded-lg ring-4 ring-primary selection-ring hidden pointer-events-none\"></div><!-- hover overlay --><div class=\"absolute inset-0 bg-transparent group-hover:bg-white/80 transition-all duration-200 rounded-lg flex items-center justify-center\"><div class=\"opacity-0 group-hover:opacity-100 transition-opacity duration-200\"><span class=\"btn btn-sm\">Auswählen</span></div></div><!-- selected badge --><div class=\"absolute top-2 left-2 selection-badge hidden\"><div class=\"badge badge-primary text-white\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-3 h-3 mr-1\" viewBox=\"0 0 20 20\" fill=\"currentColor\"><path fill-rule=\"evenodd\" d=\"M16.707 5.293a1 1 0 010 1.414l-7.5 7.5a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L8.5 12.086l6.793-6.793a1 1 0 011.414 0z\" clip-rule=\"evenodd\"></path></svg> Ausgewählt</div></div><div class=\"absolute bottom-2 left-2 right-2\"><p class=\"text-white text-xs font-medium bg-black/60 rounded px-2 py-1 truncate\">")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var29 string
+					templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(image.Title)
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/user/album_view.templ`, Line: 215, Col: 130}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</p></div></div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"text-center py-8\"><p class=\"text-gray-500\">Sie haben noch keine Bilder hochgeladen.</p><a href=\"/\" class=\"btn btn-primary mt-4\">Erstes Bild hochladen</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<div class=\"text-center py-8\"><p class=\"text-gray-500\">Sie haben noch keine Bilder hochgeladen.</p><a href=\"/\" class=\"btn btn-primary mt-4\">Erstes Bild hochladen</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</div></dialog><!-- CSS for gallery (reuse from images.templ) --><style>\n\t\t.masonry-container {\n\t\t\tcolumn-count: 5;\n\t\t\tcolumn-gap: 15px;\n\t\t\twidth: 100%;\n\t\t}\n\n\t\t.masonry-item {\n\t\t\tbreak-inside: avoid;\n\t\t\tmargin-bottom: 15px;\n\t\t\tdisplay: block;\n\t\t}\n\n\t\t.img-container {\n\t\t\tposition: relative;\n\t\t\toverflow: hidden;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 2px 4px rgba(0,0,0,0.1);\n\t\t}\n\n\t\t.gallery-img {\n\t\t\twidth: 100%;\n\t\t\tdisplay: block;\n\t\t\ttransition: transform 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .gallery-img {\n\t\t\ttransform: scale(1.03);\n\t\t}\n\n        .overlay {\n            position: absolute;\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom: 0;\n            background: rgba(0,0,0,0);\n            transition: background 0.3s ease;\n            display: flex;\n            flex-direction: column;\n            justify-content: space-between;\n            padding: 12px;\n            pointer-events: none;\n        }\n\n\t\t.img-container:hover .overlay {\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.image-title-overlay {\n\t\t\tcolor: white;\n\t\t\tfont-weight: 500;\n\t\t\ttext-shadow: 0 1px 2px rgba(0,0,0,0.8);\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t\tmax-width: 100%;\n\t\t\toverflow: hidden;\n\t\t\ttext-overflow: ellipsis;\n\t\t\twhite-space: nowrap;\n\t\t\tpadding: 5px;\n\t\t\tborder-radius: 4px;\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.img-container:hover .image-title-overlay {\n\t\t\topacity: 1;\n\t\t}\n\n\t\t.overlay-content {\n\t\t\tdisplay: flex;\n\t\t\tjustify-content: center;\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .overlay-content {\n\t\t\topacity: 1;\n\t\t}\n\n        .view-btn {\n            background: white;\n            border-radius: 50%;\n            width: 36px;\n            height: 36px;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            color: #333;\n            border: none;\n            cursor: pointer;\n            box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n            pointer-events: auto;\n        }\n\n\t\t.view-btn:hover {\n\t\t\tbackground: #f0f0f0;\n\t\t}\n\n\t\t@media (max-width: 1400px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 4;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 1100px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 3;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 768px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 2;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 500px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 1;\n\t\t\t}\n\t\t}\n\t</style>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</div></dialog><!-- CSS for gallery (reuse from images.templ) --><style>\n\t\t.masonry-container {\n\t\t\tcolumn-count: 5;\n\t\t\tcolumn-gap: 15px;\n\t\t\twidth: 100%;\n\t\t}\n\n\t\t.masonry-item {\n\t\t\tbreak-inside: avoid;\n\t\t\tmargin-bottom: 15px;\n\t\t\tdisplay: block;\n\t\t}\n\n\t\t.img-container {\n\t\t\tposition: relative;\n\t\t\toverflow: hidden;\n\t\t\tborder-radius: 8px;\n\t\t\tbox-shadow: 0 2px 4px rgba(0,0,0,0.1);\n\t\t}\n\n\t\t.gallery-img {\n\t\t\twidth: 100%;\n\t\t\tdisplay: block;\n\t\t\ttransition: transform 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .gallery-img {\n\t\t\ttransform: scale(1.03);\n\t\t}\n\n        .overlay {\n            position: absolute;\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom: 0;\n            background: rgba(0,0,0,0);\n            transition: background 0.3s ease;\n            display: flex;\n            flex-direction: column;\n            justify-content: space-between;\n            padding: 12px;\n            pointer-events: none;\n        }\n\n\t\t.img-container:hover .overlay {\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.image-title-overlay {\n\t\t\tcolor: white;\n\t\t\tfont-weight: 500;\n\t\t\ttext-shadow: 0 1px 2px rgba(0,0,0,0.8);\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t\tmax-width: 100%;\n\t\t\toverflow: hidden;\n\t\t\ttext-overflow: ellipsis;\n\t\t\twhite-space: nowrap;\n\t\t\tpadding: 5px;\n\t\t\tborder-radius: 4px;\n\t\t\tbackground: rgba(0,0,0,0.3);\n\t\t}\n\n\t\t.img-container:hover .image-title-overlay {\n\t\t\topacity: 1;\n\t\t}\n\n\t\t.overlay-content {\n\t\t\tdisplay: flex;\n\t\t\tjustify-content: center;\n\t\t\topacity: 0;\n\t\t\ttransition: opacity 0.3s ease;\n\t\t}\n\n\t\t.img-container:hover .overlay-content {\n\t\t\topacity: 1;\n\t\t}\n\n        .view-btn {\n            background: white;\n            border-radius: 50%;\n            width: 36px;\n            height: 36px;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            color: #333;\n            border: none;\n            cursor: pointer;\n            box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n            pointer-events: auto;\n        }\n\n\t\t.view-btn:hover {\n\t\t\tbackground: #f0f0f0;\n\t\t}\n\n\t\t@media (max-width: 1400px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 4;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 1100px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 3;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 768px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 2;\n\t\t\t}\n\t\t}\n\n\t\t@media (max-width: 500px) {\n\t\t\t.masonry-container {\n\t\t\t\tcolumn-count: 1;\n\t\t\t}\n\t\t}\n\t</style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
