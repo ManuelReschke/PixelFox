@@ -49,9 +49,10 @@ func (apc *AdminPageController) HandleAdminPages(c *fiber.Ctx) error {
 	if err != nil {
 		return apc.handleError(c, "Fehler beim Laden der Seiten", err)
 	}
+	csrfToken := c.Locals("csrf").(string)
 
 	// Render page management
-	pageManagement := admin_views.PageManagement(pages)
+	pageManagement := admin_views.PageManagement(pages, csrfToken)
 	home := views.HomeCtx(c, " | Seiten-Verwaltung", userCtx.IsLoggedIn, false, flash.Get(c), pageManagement, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))
@@ -248,6 +249,10 @@ func (apc *AdminPageController) HandleAdminPageUpdate(c *fiber.Ctx) error {
 
 // HandleAdminPageDelete handles page deletion using repository pattern
 func (apc *AdminPageController) HandleAdminPageDelete(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	pageID := c.Params("id")
 	if pageID == "" {
 		return c.Redirect("/admin/pages")

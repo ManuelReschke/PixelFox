@@ -253,6 +253,10 @@ func (anc *AdminNewsController) HandleAdminNewsUpdate(c *fiber.Ctx) error {
 
 // HandleAdminNewsDelete handles news deletion using repository pattern
 func (anc *AdminNewsController) HandleAdminNewsDelete(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	// Get news ID from URL
 	idParam := c.Params("id")
 	if idParam == "" {

@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/ManuelReschke/PixelFox/app/controllers"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/middleware"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/oauth"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/session"
@@ -93,14 +94,13 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/users/edit/:id", controllers.HandleAdminUserEdit)
 	adminGroup.Post("/users/update/:id", controllers.HandleAdminUserUpdate)
 	adminGroup.Post("/users/update-plan/:id", controllers.HandleAdminUserUpdatePlan)
-	adminGroup.Get("/users/delete/:id", controllers.HandleAdminUserDelete)
+	adminGroup.Post("/users/delete/:id", controllers.HandleAdminUserDelete)
 	// Resend activation email
 	adminGroup.Post("/users/resend-activation/:id", controllers.HandleAdminResendActivation)
 	// Admin Image Management Routes
 	adminGroup.Get("/images", controllers.HandleAdminImages)
 	adminGroup.Get("/images/edit/:uuid", controllers.HandleAdminImageEdit)
 	adminGroup.Post("/images/update/:uuid", controllers.HandleAdminImageUpdate)
-	adminGroup.Get("/images/delete/:uuid", controllers.HandleAdminImageDelete)
 	adminGroup.Post("/images/delete/:uuid", controllers.HandleAdminImageDelete)
 	adminGroup.Post("/images/backup/:uuid", controllers.HandleAdminImageStartBackup)
 	adminGroup.Post("/images/backup-delete/:uuid", controllers.HandleAdminImageDeleteBackup)
@@ -110,7 +110,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Post("/news/store", controllers.HandleAdminNewsStore)
 	adminGroup.Get("/news/edit/:id", controllers.HandleAdminNewsEdit)
 	adminGroup.Post("/news/update/:id", controllers.HandleAdminNewsUpdate)
-	adminGroup.Get("/news/delete/:id", controllers.HandleAdminNewsDelete)
+	adminGroup.Post("/news/delete/:id", controllers.HandleAdminNewsDelete)
 	// Admin Search Route
 	adminGroup.Get("/search", controllers.HandleAdminSearch)
 	// Admin Queue Monitor Route
@@ -121,7 +121,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	adminGroup.Get("/storage", controllers.HandleAdminStorageManagement)
 	adminGroup.Get("/storage/health-check/:id", controllers.HandleAdminStoragePoolHealthCheck)
 	adminGroup.Post("/storage/recalculate-usage/:id", controllers.HandleAdminRecalculateStorageUsage)
-	adminGroup.Get("/storage/delete/:id", controllers.HandleAdminDeleteStoragePool)
+	adminGroup.Post("/storage/delete/:id", controllers.HandleAdminDeleteStoragePool)
 	adminGroup.Post("/storage/tiering/sweep", controllers.HandleAdminTieringSweep)
 	// Admin Page Management Routes (moved to CSRF protected routes below)
 
@@ -131,7 +131,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 		CookieName:     "csrf_",
 		CookieSameSite: "Lax",
 		Expiration:     1 * time.Hour,
-		CookieSecure:   false, // Im Entwicklungsmodus auf false setzen
+		CookieSecure:   !env.IsDev(),
 		// Never enforce CSRF on API routes
 		Next: func(c *fiber.Ctx) bool {
 			p := c.Path()
@@ -164,7 +164,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/user/images/load", middleware.RequireAuth, controllers.HandleLoadMoreImages)
 	group.Get("/user/images/edit/:uuid", middleware.RequireAuth, controllers.HandleUserImageEdit)
 	group.Post("/user/images/update/:uuid", middleware.RequireAuth, controllers.HandleUserImageUpdate)
-	group.Get("/user/images/delete/:uuid", middleware.RequireAuth, controllers.HandleUserImageDelete)
+	group.Post("/user/images/delete/:uuid", middleware.RequireAuth, controllers.HandleUserImageDelete)
 	// User Album Routes (CSRF protected)
 	group.Get("/user/albums", middleware.RequireAuth, controllers.HandleUserAlbums)
 	group.Get("/user/albums/create", middleware.RequireAuth, controllers.HandleUserAlbumCreate)
@@ -172,7 +172,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Get("/user/albums/:id", middleware.RequireAuth, controllers.HandleUserAlbumView)
 	group.Get("/user/albums/edit/:id", middleware.RequireAuth, controllers.HandleUserAlbumEdit)
 	group.Post("/user/albums/edit/:id", middleware.RequireAuth, controllers.HandleUserAlbumEdit)
-	group.Get("/user/albums/delete/:id", middleware.RequireAuth, controllers.HandleUserAlbumDelete)
+	group.Post("/user/albums/delete/:id", middleware.RequireAuth, controllers.HandleUserAlbumDelete)
 	group.Post("/user/albums/:id/add-image", middleware.RequireAuth, controllers.HandleUserAlbumAddImage)
 	group.Post("/user/albums/:id/set-cover", middleware.RequireAuth, controllers.HandleUserAlbumSetCover)
 	group.Get("/user/albums/:id/remove-image/:image_id", middleware.RequireAuth, controllers.HandleUserAlbumRemoveImage)
@@ -185,7 +185,7 @@ func (h HttpRouter) InstallRouter(app *fiber.App) {
 	group.Post("/admin/pages/store", middleware.RequireAdmin, controllers.HandleAdminPageStore)
 	group.Get("/admin/pages/edit/:id", middleware.RequireAdmin, controllers.HandleAdminPageEdit)
 	group.Post("/admin/pages/update/:id", middleware.RequireAdmin, controllers.HandleAdminPageUpdate)
-	group.Get("/admin/pages/delete/:id", middleware.RequireAdmin, controllers.HandleAdminPageDelete)
+	group.Post("/admin/pages/delete/:id", middleware.RequireAdmin, controllers.HandleAdminPageDelete)
 	// Admin Settings Routes (CSRF protected)
 	group.Get("/admin/settings", middleware.RequireAdmin, controllers.HandleAdminSettings)
 	group.Post("/admin/settings", middleware.RequireAdmin, controllers.HandleAdminSettingsUpdate)

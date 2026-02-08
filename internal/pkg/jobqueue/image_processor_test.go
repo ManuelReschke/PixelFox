@@ -2,6 +2,7 @@ package jobqueue
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,6 +19,9 @@ import (
 )
 
 func setupTestEnvironment(t *testing.T) (*Queue, *gorm.DB, func()) {
+	host, port, password := resolveTestRedis(t)
+	configureTestCache(host, port, password)
+
 	// Setup test database connection
 	db := database.GetDB()
 	if db == nil {
@@ -30,17 +34,19 @@ func setupTestEnvironment(t *testing.T) (*Queue, *gorm.DB, func()) {
 	// Setup test cache connection
 	cacheClient := cache.GetClient()
 	require.NotNil(t, cacheClient, "Cache client should not be nil")
+	_, err := cacheClient.Ping(context.Background()).Result()
+	require.NoError(t, err, "Cache client should be reachable")
 
 	// Create Redis client for queue
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "cache:6379", // Use the container Redis
-		Password: "",
+		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Password: password,
 		DB:       1, // Use test database
 	})
 
 	// Test Redis connection
 	ctx := context.Background()
-	_, err := redisClient.Ping(ctx).Result()
+	_, err = redisClient.Ping(ctx).Result()
 	require.NoError(t, err, "Redis connection should work")
 
 	// Create queue instance

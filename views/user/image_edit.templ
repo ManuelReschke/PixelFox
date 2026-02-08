@@ -130,11 +130,14 @@ templ ImageEditContent(image models.Image, csrfToken string) {
                             Bild aktualisieren
                         </button>
                         
-                        <a href={ templ.SafeURL("/user/images/delete/" + image.UUID) } 
-                            class="btn btn-error"
-                            onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
-                            Bild löschen
-                        </a>
+                        <form action={ templ.SafeURL("/user/images/delete/" + image.UUID) } method="POST" class="inline">
+                            @csrf(csrfToken)
+                            <button type="submit"
+                                class="btn btn-error"
+                                onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
+                                Bild löschen
+                            </button>
+                        </form>
                     </div>
                 </form>
             </div>

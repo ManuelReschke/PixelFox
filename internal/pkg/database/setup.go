@@ -22,7 +22,7 @@ func SetupDatabase() {
 		env.GetEnv("DB_USER", ""),
 		env.GetEnv("DB_PASSWORD", ""),
 		env.GetEnv("DB_HOST", "127.0.0.1"),
-		"3306", // env.GetEnv("DB_PORT", "5432"),
+		env.GetEnv("DB_PORT", "3306"),
 		env.GetEnv("DB_NAME", ""),
 	)
 

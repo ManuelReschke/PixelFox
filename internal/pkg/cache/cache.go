@@ -20,19 +20,50 @@ func SetupCache() {
 	port := env.GetEnv("CACHE_PORT", "6379")
 	password := env.GetEnv("CACHE_PASSWORD", "")
 
+	candidateHosts := []string{host}
+	if host == "cache" {
+		candidateHosts = append(candidateHosts, "pxlfox-cache")
+	}
+	if host == "pxlfox-cache" {
+		candidateHosts = append(candidateHosts, "cache")
+	}
+	candidateHosts = append(candidateHosts, "localhost", "127.0.0.1")
+
+	seen := make(map[string]struct{})
+	var lastErr error
+	for _, candidateHost := range candidateHosts {
+		if candidateHost == "" {
+			continue
+		}
+		if _, ok := seen[candidateHost]; ok {
+			continue
+		}
+		seen[candidateHost] = struct{}{}
+
+		candidate := redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", candidateHost, port),
+			Password: password,
+			DB:       0, // use default DB
+		})
+
+		pong, err := candidate.Ping(ctx).Result()
+		if err == nil {
+			client = candidate
+			log.Printf("Successfully connected to Dragonfly cache (%s:%s): %s", candidateHost, port, pong)
+			return
+		}
+
+		lastErr = err
+		_ = candidate.Close()
+	}
+
+	// Keep a client instance for retry attempts later, even if initial connect failed.
 	client = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", host, port),
 		Password: password,
 		DB:       0, // use default DB
 	})
-
-	// Test the connection
-	pong, err := client.Ping(ctx).Result()
-	if err != nil {
-		log.Printf("Warning: Could not connect to Dragonfly cache: %v", err)
-	} else {
-		log.Printf("Successfully connected to Dragonfly cache: %s", pong)
-	}
+	log.Printf("Warning: Could not connect to Dragonfly cache: %v", lastErr)
 }
 
 // GetClient returns the Redis client instance

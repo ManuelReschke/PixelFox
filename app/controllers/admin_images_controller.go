@@ -193,6 +193,10 @@ func (aic *AdminImagesController) HandleAdminImageUpdate(c *fiber.Ctx) error {
 
 // HandleAdminImageDelete handles image deletion using repository pattern
 func (aic *AdminImagesController) HandleAdminImageDelete(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	imageUUID := c.Params("uuid")
 	if imageUUID == "" {
 		return c.Redirect("/admin/images")

@@ -106,11 +106,12 @@ templ imageEditContent(image models.Image) {
 						Bild aktualisieren
 					</button>
 					
-					<a href={ templ.SafeURL("/admin/images/delete/" + image.UUID) } 
-						class="btn btn-error"
-						onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
-						Bild löschen
-					</a>
+					<form action={ templ.SafeURL("/admin/images/delete/" + image.UUID) } method="POST" class="inline">
+						<button type="submit" class="btn btn-error"
+							onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
+							Bild löschen
+						</button>
+					</form>
 				</div>
 			</form>
 		</div>

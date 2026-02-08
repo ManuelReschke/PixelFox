@@ -186,10 +186,13 @@ templ reportShowContent(report *models.ImageReport, csrfToken string) {
                         <div class="flex gap-2">
                             <a class="btn btn-sm" href={ "/image/" + report.Image.UUID } target="_blank">Öffnen</a>
                             <a class="btn btn-sm btn-outline" href={ "/i/" + report.Image.ShareLink } target="_blank">Share</a>
-                            <a class="btn btn-sm btn-error" href={ templ.SafeURL(fmt.Sprintf("/admin/images/delete/%s?resolved_report_id=%d", report.Image.UUID, report.ID)) }
-                               onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
-                                Bild löschen
-                            </a>
+                            <form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/images/delete/%s?resolved_report_id=%d", report.Image.UUID, report.ID)) }>
+                                <input type="hidden" name="_csrf" value={ csrfToken } />
+                                <button class="btn btn-sm btn-error" type="submit"
+                                   onclick="return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');">
+                                    Bild löschen
+                                </button>
+                            </form>
                         </div>
                     </div>
                 } else {

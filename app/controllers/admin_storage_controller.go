@@ -571,6 +571,10 @@ func (asc *AdminStorageController) HandleAdminEditStoragePoolPost(c *fiber.Ctx) 
 
 // HandleAdminDeleteStoragePool deletes a storage pool using repository pattern
 func (asc *AdminStorageController) HandleAdminDeleteStoragePool(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	poolID, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		fm := fiber.Map{

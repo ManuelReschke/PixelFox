@@ -922,7 +922,21 @@ function confirmDelete(poolId, poolName) {
         cancelButtonText: 'Abbrechen'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = `/admin/storage/delete/${poolId}`;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/storage/delete/${poolId}`;
+
+            const csrfSource = document.querySelector('input[name="_csrf"]');
+            if (csrfSource && csrfSource.value) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_csrf';
+                csrfInput.value = csrfSource.value;
+                form.appendChild(csrfInput);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
         }
     });
 }

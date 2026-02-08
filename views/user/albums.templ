@@ -128,11 +128,14 @@ templ AlbumsIndex(username string, csrfToken string, plan string, albums []Album
 								<a href={ templ.URL(fmt.Sprintf("/user/albums/edit/%d", albumData.Album.ID)) } class="btn btn-outline btn-xs">
 									Bearbeiten
 								</a>
-								<a href={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } 
-								   class="btn btn-error btn-outline btn-xs"
-								   onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
-									Löschen
-								</a>
+								<form action={ templ.URL(fmt.Sprintf("/user/albums/delete/%d", albumData.Album.ID)) } method="POST" class="inline">
+									<input type="hidden" name="_csrf" value={ csrfToken } />
+									<button type="submit"
+									   class="btn btn-error btn-outline btn-xs"
+									   onclick="return confirm('Möchten Sie dieses Album wirklich löschen?')">
+										Löschen
+									</button>
+								</form>
 							</div>
 						</div>
 					</div>

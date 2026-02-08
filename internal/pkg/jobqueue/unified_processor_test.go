@@ -2,6 +2,7 @@ package jobqueue
 
 import (
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,11 @@ func TestEnqueueImageProcessing_EmptyUUID(t *testing.T) {
 }
 
 func TestProcessImageUnified_BackupEnabled(t *testing.T) {
+	host, port, password := resolveTestRedis(t)
+	configureTestCache(host, port, password)
+	globalManager = nil
+	managerOnce = sync.Once{}
+
 	// Set environment variable to enable backup
 	originalEnv := os.Getenv("S3_BACKUP_ENABLED")
 	defer func() {
@@ -66,6 +72,11 @@ func TestProcessImageUnified_BackupEnabled(t *testing.T) {
 }
 
 func TestProcessImageUnified_BackupDisabled(t *testing.T) {
+	host, port, password := resolveTestRedis(t)
+	configureTestCache(host, port, password)
+	globalManager = nil
+	managerOnce = sync.Once{}
+
 	// Set environment variable to disable backup
 	originalEnv := os.Getenv("S3_BACKUP_ENABLED")
 	defer func() {

@@ -466,6 +466,10 @@ func HandleUserImageUpdate(c *fiber.Ctx) error {
 
 // HandleUserImageDelete removes user's image and all variants
 func HandleUserImageDelete(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	userCtx := usercontext.GetUserContext(c)
 	userID := userCtx.UserID
 	uuid := c.Params("uuid")

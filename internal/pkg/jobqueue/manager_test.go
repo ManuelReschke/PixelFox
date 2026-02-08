@@ -120,7 +120,14 @@ func TestNewManagerStructure(t *testing.T) {
 	assert.Nil(t, manager.retryTicker)
 
 	// Verify queue has correct number of workers
-	assert.Equal(t, 5, manager.queue.workers)
+	expectedWorkers := 5
+	if settings := getAppSettings(); settings != nil {
+		expectedWorkers = settings.GetJobQueueWorkerCount()
+	}
+	if expectedWorkers <= 0 {
+		expectedWorkers = 3
+	}
+	assert.Equal(t, expectedWorkers, manager.queue.workers)
 }
 
 func TestManagerSingletonReset(t *testing.T) {

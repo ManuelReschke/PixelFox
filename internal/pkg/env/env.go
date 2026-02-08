@@ -1,6 +1,7 @@
 package env
 
 import (
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -21,6 +22,9 @@ func GetEnv(key, def string) string {
 }
 
 func SetupEnvFile() {
+	// Reset map so GetEnv continues to work through OS fallback.
+	Env = map[string]string{}
+
 	// Look for .env file in project root
 	envFiles := []string{
 		".env",          // Current directory
@@ -37,8 +41,8 @@ func SetupEnvFile() {
 		}
 	}
 
-	// If we get here, no env file was found
-	panic("No .env file found in any of the expected locations")
+	// No local env file found: continue with process environment variables.
+	log.Printf("No .env file found in default locations, falling back to OS environment")
 }
 
 func IsDev() bool {

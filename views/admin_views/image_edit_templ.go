@@ -289,20 +289,20 @@ func imageEditContent(image models.Image) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"label-text\">Öffentliches Bild</span></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn aktiviert, ist das Bild öffentlich zugänglich.</span></label></div><!-- Submit Button --><div class=\"flex justify-between mt-6\"><button type=\"submit\" class=\"btn btn-primary\">Bild aktualisieren</button> <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"label-text\">Öffentliches Bild</span></label> <label class=\"label\"><span class=\"label-text-alt\">Wenn aktiviert, ist das Bild öffentlich zugänglich.</span></label></div><!-- Submit Button --><div class=\"flex justify-between mt-6\"><button type=\"submit\" class=\"btn btn-primary\">Bild aktualisieren</button><form action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 templ.SafeURL
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/admin/images/delete/" + image.UUID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 109, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/image_edit.templ`, Line: 109, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" class=\"btn btn-error\" onclick=\"return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');\">Bild löschen</a></div></form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" method=\"POST\" class=\"inline\"><button type=\"submit\" class=\"btn btn-error\" onclick=\"return confirm('Bist du sicher, dass du dieses Bild löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.');\">Bild löschen</button></form></div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

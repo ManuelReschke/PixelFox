@@ -70,6 +70,10 @@ func EnqueueImageProcessing(image *models.Image, enableBackup bool) error {
 // ProcessImageUnified is the new unified function that replaces imageprocessor.ProcessImage
 // This function should be used instead of the old imageprocessor.ProcessImage
 func ProcessImageUnified(image *models.Image) error {
+	if image == nil || image.UUID == "" {
+		return fmt.Errorf("cannot enqueue invalid image data")
+	}
+
 	// Check if S3 backup is enabled via storage pools
 	db := database.GetDB()
 	if db == nil {

@@ -58,6 +58,8 @@ func (m *Manager) Start() {
 		return
 	}
 
+	// Recreate stop channel for each start cycle so manager can be restarted safely.
+	m.stopCh = make(chan struct{})
 	m.running = true
 	log.Info("[JobQueue Manager] Starting job queue and background tasks")
 
@@ -131,6 +133,7 @@ func (m *Manager) Stop() {
 
 	// Signal workers to stop
 	close(m.stopCh)
+	m.stopCh = nil
 	m.running = false
 
 	// Wait for background workers to finish

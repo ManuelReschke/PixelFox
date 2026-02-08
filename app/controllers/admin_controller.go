@@ -265,6 +265,10 @@ func (ac *AdminController) HandleUserUpdate(c *fiber.Ctx) error {
 
 // HandleUserDelete handles user deletion with repository pattern
 func (ac *AdminController) HandleUserDelete(c *fiber.Ctx) error {
+	if c.Method() != fiber.MethodPost {
+		return c.SendStatus(fiber.StatusMethodNotAllowed)
+	}
+
 	userID := c.Params("id")
 	if userID == "" {
 		return c.Redirect("/admin/users")

@@ -187,6 +187,8 @@ func TestImageProcessingJobPayload_ToMap(t *testing.T) {
 		"file_name":     "test.jpg",
 		"file_type":     ".jpg",
 		"enable_backup": true,
+		"pool_id":       uint(0),
+		"node_id":       "",
 	}
 
 	assert.Equal(t, expected, result)

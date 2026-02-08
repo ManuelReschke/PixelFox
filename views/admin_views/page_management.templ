@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-templ pageManagementContent(pages []models.Page) {
+templ pageManagementContent(pages []models.Page, csrfToken string) {
 	<div class="mb-6">
 		<div class="flex justify-between items-center">
 			<div>
@@ -80,7 +80,8 @@ templ pageManagementContent(pages []models.Page) {
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.828-9.828a1 1 0 000-1.414L14 3.586a1 1 0 00-1.414 0L3.758 12.414A1 1 0 003.465 13.12V18a2 2 0 002 2z" />
 										</svg>
 									</a>
-									<form action={ templ.SafeURL("/admin/pages/delete/" + strconv.FormatUint(uint64(page.ID), 10)) } method="GET" class="inline-block">
+									<form action={ templ.SafeURL("/admin/pages/delete/" + strconv.FormatUint(uint64(page.ID), 10)) } method="POST" class="inline-block">
+										<input type="hidden" name="_csrf" value={ csrfToken } />
 										<button type="button" onclick={ templ.ComponentScript{Call: "event.preventDefault(); Swal.fire({title:'Seite wirklich löschen?', icon:'warning', showCancelButton:true, confirmButtonText:'Ja, löschen', cancelButtonText:'Abbrechen'}).then((result)=>{ if(result.isConfirmed){ this.closest('form').submit() } });"}  } class="inline-flex items-center text-red-600 hover:text-red-900" title="Seite löschen">
 											<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -97,6 +98,6 @@ templ pageManagementContent(pages []models.Page) {
 	</div>
 }
 
-templ PageManagement(pages []models.Page) {
-	@AdminLayout(pageManagementContent(pages))
+templ PageManagement(pages []models.Page, csrfToken string) {
+	@AdminLayout(pageManagementContent(pages, csrfToken))
 }
