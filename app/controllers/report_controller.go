@@ -1,9 +1,8 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/sujit-baniya/flash"
 	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
@@ -15,8 +14,43 @@ import (
 	admin_views "github.com/ManuelReschke/PixelFox/views/admin_views"
 	report_views "github.com/ManuelReschke/PixelFox/views/report"
 	"github.com/a-h/templ"
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/sujit-baniya/flash"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+const imageAlreadyReportedMessage = "Dieses Bild wurde bereits gemeldet und wird innerhalb von 24 Stunden überprüft."
+
+var errImageAlreadyReported = errors.New("image already has an open report")
+
+func redirectAlreadyReported(c *fiber.Ctx, uuid string) error {
+	fm := fiber.Map{"type": "info", "message": imageAlreadyReportedMessage}
+	return flash.WithInfo(c, fm).Redirect("/image/" + uuid)
+}
+
+func createImageReportIfNoneOpen(db *gorm.DB, imageID uint, report *models.ImageReport) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		var lockImage models.Image
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("id").
+			Where("id = ?", imageID).
+			Take(&lockImage).Error; err != nil {
+			return err
+		}
+
+		hasOpenReport, err := models.HasOpenReportForImage(tx, imageID)
+		if err != nil {
+			return err
+		}
+		if hasOpenReport {
+			return errImageAlreadyReported
+		}
+
+		return tx.Create(report).Error
+	})
+}
 
 // GET /image/:uuid/report – show report form
 func HandleImageReportForm(c *fiber.Ctx) error {
@@ -34,6 +68,12 @@ func HandleImageReportForm(c *fiber.Ctx) error {
 	image, err := models.FindImageByUUID(db, uuid)
 	if err != nil {
 		return c.Redirect("/", fiber.StatusSeeOther)
+	}
+	if hasOpenReport, err := models.HasOpenReportForImage(db, image.ID); err != nil {
+		fm := fiber.Map{"type": "error", "message": "Meldungsstatus konnte nicht geprüft werden."}
+		return flash.WithError(c, fm).Redirect("/image/" + uuid)
+	} else if hasOpenReport {
+		return redirectAlreadyReported(c, uuid)
 	}
 
 	displayName := image.FileName
@@ -59,6 +99,12 @@ func HandleImageReportSubmit(c *fiber.Ctx) error {
 	if err != nil {
 		fm := fiber.Map{"type": "error", "message": "Bild wurde nicht gefunden."}
 		return flash.WithError(c, fm).Redirect("/")
+	}
+	if hasOpenReport, err := models.HasOpenReportForImage(db, image.ID); err != nil {
+		fm := fiber.Map{"type": "error", "message": "Meldungsstatus konnte nicht geprüft werden."}
+		return flash.WithError(c, fm).Redirect("/image/" + uuid)
+	} else if hasOpenReport {
+		return redirectAlreadyReported(c, uuid)
 	}
 
 	reason := c.FormValue("reason")
@@ -107,7 +153,10 @@ func HandleImageReportSubmit(c *fiber.Ctx) error {
 		ReporterIPv6: ipv6,
 	}
 
-	if err := db.Create(&report).Error; err != nil {
+	if err := createImageReportIfNoneOpen(db, image.ID, &report); err != nil {
+		if errors.Is(err, errImageAlreadyReported) {
+			return redirectAlreadyReported(c, uuid)
+		}
 		fm := fiber.Map{"type": "error", "message": "Meldung konnte nicht gespeichert werden."}
 		return flash.WithError(c, fm).Redirect("/image/" + uuid)
 	}
