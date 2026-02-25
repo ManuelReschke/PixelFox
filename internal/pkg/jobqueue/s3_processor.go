@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 )
 
@@ -64,15 +66,53 @@ func (q *Queue) processS3BackupJob(ctx context.Context, job *Job) error {
 		return fmt.Errorf("failed to find backup record: %w", err)
 	}
 
-	// Mark backup as uploading
-	if err := backup.MarkAsUploading(db); err != nil {
-		return fmt.Errorf("failed to mark backup as uploading: %w", err)
-	}
-
-	// Get the image record to check storage pool configuration
+	// Get the image record to check storage pool configuration (needed for node routing)
 	var image models.Image
 	if err := db.Preload("StoragePool").Where("id = ?", payload.ImageID).First(&image).Error; err != nil {
 		return fmt.Errorf("failed to find image %d: %w", payload.ImageID, err)
+	}
+
+	// Node routing: ensure backup runs on the node that has access to the file (image's storage node)
+	nodeID := strings.TrimSpace(env.GetEnv("NODE_ID", ""))
+	if nodeID != "" && image.StoragePool != nil {
+		poolNode := strings.TrimSpace(image.StoragePool.NodeID)
+		if poolNode != "" && !strings.EqualFold(nodeID, poolNode) {
+			// Requeue for correct node without counting as a failure
+			if err := q.requeueJob(ctx, job); err != nil {
+				log.Errorf("[S3Backup] Failed to requeue job %s for node routing: %v", job.ID, err)
+			} else {
+				log.Infof("[S3Backup] Requeued job %s for node %s (current node %s)", job.ID, poolNode, nodeID)
+			}
+			return ErrRequeue
+		}
+	}
+
+	// Claim backup for uploading atomically (DB dedupe). If claim fails, verify current state and skip if already claimed/completed.
+	claimed, err := backup.ClaimForUploading(db, nodeID)
+	if err != nil {
+		return fmt.Errorf("failed to claim backup for uploading: %w", err)
+	}
+	if !claimed {
+		// Reload and inspect state
+		if err := db.First(&backup, payload.BackupID).Error; err == nil {
+			if backup.Status == models.BackupStatusCompleted {
+				log.Infof("[S3Backup] Backup %d already completed; skipping", backup.ID)
+				return nil
+			}
+			if backup.Status == models.BackupStatusUploading {
+				// Someone else is processing; skip duplicate job gracefully
+				log.Infof("[S3Backup] Backup %d already claimed by %s; skipping", backup.ID, backup.ClaimedBy)
+				return nil
+			}
+		}
+		// Otherwise, continue and try once (rare race). Attempt to set uploading (best-effort)
+		if ok, err := backup.ClaimForUploading(db, nodeID); err != nil || !ok {
+			if err != nil {
+				return fmt.Errorf("failed to claim backup (second attempt): %w", err)
+			}
+			log.Infof("[S3Backup] Backup %d not eligible to claim; skipping", backup.ID)
+			return nil
+		}
 	}
 
 	// Construct the full file path using storage pool-aware path construction
@@ -140,6 +180,7 @@ func (q *Queue) RetryFailedS3Backups() error {
 	log.Infof("[S3Backup] Found %d failed backups to retry", len(failedBackups))
 
 	for _, backup := range failedBackups {
+
 		// Create retry job
 		job, err := q.EnqueueS3BackupJob(
 			backup.ImageID,
@@ -151,12 +192,41 @@ func (q *Queue) RetryFailedS3Backups() error {
 		)
 		if err != nil {
 			log.Errorf("[S3Backup] Failed to enqueue retry job for backup %d: %v", backup.ID, err)
+			// Record enqueue issue without burning upload retries.
+			if updateErr := db.Model(&models.ImageBackup{}).
+				Where("id = ?", backup.ID).
+				Update("error_message", fmt.Sprintf("enqueue failed: %v", err)).Error; updateErr != nil {
+				log.Errorf("[S3Backup] Failed to store enqueue error for backup %d: %v", backup.ID, updateErr)
+			}
 			continue
 		}
 
 		log.Infof("[S3Backup] Enqueued retry job %s for backup %d", job.ID, backup.ID)
 	}
 
+	return nil
+}
+
+// RecoverStuckS3Uploading marks backups stuck in 'uploading' as failed for retry
+func (q *Queue) RecoverStuckS3Uploading(maxAge time.Duration) error {
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+	stuck, err := models.FindStuckUploadingBackups(db, maxAge)
+	if err != nil {
+		return fmt.Errorf("failed to find stuck uploading backups: %w", err)
+	}
+	if len(stuck) == 0 {
+		return nil
+	}
+	log.Infof("[S3Backup] Recovering %d stuck 'uploading' backups older than %s", len(stuck), maxAge)
+	for i := range stuck {
+		b := &stuck[i]
+		if err := b.MarkAsFailed(db, "recovered from stuck uploading"); err != nil {
+			log.Errorf("[S3Backup] Failed to mark stuck backup %d as failed: %v", b.ID, err)
+		}
+	}
 	return nil
 }
 
@@ -304,6 +374,12 @@ func (q *Queue) ProcessDelayedS3Backups() error {
 		)
 		if err != nil {
 			log.Errorf("[DelayedS3Backup] Failed to enqueue delayed backup job for image %s: %v", image.UUID, err)
+			// Keep pending status and only record enqueue issue.
+			if updateErr := db.Model(&models.ImageBackup{}).
+				Where("id = ?", backup.ID).
+				Update("error_message", fmt.Sprintf("enqueue failed: %v", err)).Error; updateErr != nil {
+				log.Errorf("[DelayedS3Backup] Failed to store enqueue error for backup %d: %v", backup.ID, updateErr)
+			}
 			continue
 		}
 

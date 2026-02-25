@@ -170,6 +170,11 @@ func (m *Manager) retryWorker() {
 			return
 		case <-m.retryTicker.C:
 			log.Debug("[JobQueue Manager] Running retry check for failed S3 backups")
+			// 1) Recover stuck 'uploading' backups
+			if err := m.queue.RecoverStuckS3Uploading(30 * time.Minute); err != nil {
+				log.Errorf("[JobQueue Manager] Error recovering stuck S3 uploads: %v", err)
+			}
+			// 2) Retry failed backups
 			if err := m.queue.RetryFailedS3Backups(); err != nil {
 				log.Errorf("[JobQueue Manager] Error retrying failed S3 backups: %v", err)
 			}

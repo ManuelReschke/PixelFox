@@ -39,6 +39,8 @@ type ImageBackup struct {
 	BackupDate   *time.Time     `json:"backup_date"`
 	ErrorMessage string         `gorm:"type:text" json:"error_message"`
 	RetryCount   int            `gorm:"type:int unsigned;default:0" json:"retry_count"`
+	ClaimedBy    string         `gorm:"type:varchar(50);default:'';index:idx_claimed_by" json:"claimed_by"`
+	ClaimedAt    *time.Time     `json:"claimed_at"`
 	CreatedAt    time.Time      `gorm:"autoCreateTime;index:idx_created_at" json:"created_at"`
 	UpdatedAt    time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 }
@@ -65,6 +67,32 @@ func (ib *ImageBackup) MarkAsUploading(db *gorm.DB) error {
 	return db.Save(ib).Error
 }
 
+// ClaimForUploading attempts to atomically claim this backup for uploading by the given node.
+// Returns true if the claim succeeded, false if not (another worker claimed or status not eligible).
+func (ib *ImageBackup) ClaimForUploading(db *gorm.DB, nodeID string) (bool, error) {
+	now := time.Now()
+	// Atomic conditional update: only claim when status is pending or failed
+	tx := db.Model(&ImageBackup{}).
+		Where("id = ? AND status IN ?", ib.ID, []BackupStatus{BackupStatusPending, BackupStatusFailed}).
+		Updates(map[string]interface{}{
+			"status":     BackupStatusUploading,
+			"claimed_by": nodeID,
+			"claimed_at": now,
+			"updated_at": now,
+		})
+	if tx.Error != nil {
+		return false, tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return false, nil
+	}
+	// Reflect changes on struct
+	ib.Status = BackupStatusUploading
+	ib.ClaimedBy = nodeID
+	ib.ClaimedAt = &now
+	return true, nil
+}
+
 // MarkAsCompleted updates the backup status to completed with metadata
 func (ib *ImageBackup) MarkAsCompleted(db *gorm.DB, bucketName, objectKey string, size int64) error {
 	now := time.Now()
@@ -74,6 +102,8 @@ func (ib *ImageBackup) MarkAsCompleted(db *gorm.DB, bucketName, objectKey string
 	ib.BackupSize = size
 	ib.BackupDate = &now
 	ib.ErrorMessage = "" // Clear any previous error
+	ib.ClaimedBy = ""
+	ib.ClaimedAt = nil
 	return db.Save(ib).Error
 }
 
@@ -82,6 +112,8 @@ func (ib *ImageBackup) MarkAsFailed(db *gorm.DB, errorMsg string) error {
 	ib.Status = BackupStatusFailed
 	ib.ErrorMessage = errorMsg
 	ib.RetryCount++
+	ib.ClaimedBy = ""
+	ib.ClaimedAt = nil
 	return db.Save(ib).Error
 }
 
@@ -89,6 +121,8 @@ func (ib *ImageBackup) MarkAsFailed(db *gorm.DB, errorMsg string) error {
 func (ib *ImageBackup) MarkAsDeleted(db *gorm.DB, message string) error {
 	ib.Status = BackupStatusDeleted
 	ib.ErrorMessage = message
+	ib.ClaimedBy = ""
+	ib.ClaimedAt = nil
 	return db.Save(ib).Error
 }
 
@@ -120,6 +154,14 @@ func FindPendingBackups(db *gorm.DB) ([]ImageBackup, error) {
 func FindFailedRetryableBackups(db *gorm.DB) ([]ImageBackup, error) {
 	var backups []ImageBackup
 	err := db.Preload("Image").Where("status = ? AND retry_count < ?", BackupStatusFailed, 3).Find(&backups).Error
+	return backups, err
+}
+
+// FindStuckUploadingBackups returns backups that have been in 'uploading' longer than the given duration
+func FindStuckUploadingBackups(db *gorm.DB, olderThan time.Duration) ([]ImageBackup, error) {
+	var backups []ImageBackup
+	cutoff := time.Now().Add(-olderThan)
+	err := db.Preload("Image").Where("status = ? AND claimed_at IS NOT NULL AND claimed_at <= ?", BackupStatusUploading, cutoff).Find(&backups).Error
 	return backups, err
 }
 

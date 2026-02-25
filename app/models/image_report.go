@@ -30,3 +30,15 @@ type ImageReport struct {
 	UpdatedAt    time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 }
+
+// HasOpenReportForImage reports whether an image currently has an open report.
+func HasOpenReportForImage(db *gorm.DB, imageID uint) (bool, error) {
+	var count int64
+	if err := db.Model(&ImageReport{}).
+		Where("image_id = ? AND status = ?", imageID, ReportStatusOpen).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
