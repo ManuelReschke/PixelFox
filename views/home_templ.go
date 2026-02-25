@@ -41,7 +41,7 @@ func HomeIndex(fromProtected bool, csrfToken string, plan string, stats statisti
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"mx-auto w-fit flex flex-col gap-6 text-center\"><img loading=\"lazy\" src=\"/img/pixelfox-logo-2025.webp\" class=\"mx-auto w-32\" alt=\"PixelFox Logo\"> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"mx-auto w-fit flex flex-col gap-6 text-center\"><img loading=\"lazy\" src=\"/img/pixelfox-logo-2026.png\" class=\"mx-auto w-32\" alt=\"PixelFox Logo\"> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
