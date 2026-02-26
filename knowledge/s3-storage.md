@@ -33,6 +33,29 @@ Umsetzungsentscheidung:
 - Finales Key-/URL-Schema bleibt `uploads/...` (kompatibler Modus).
 - Objekte werden im Bucket unter `uploads/...` geschrieben.
 
+## Aktueller Betriebsmodus bei nur einem S3-Pool (2026-02-26)
+
+Wenn nur ein aktiver S3-Pool existiert, wird dieser aktuell als Upload-Ziel ausgewählt (Fallback in der Pool-Selektion).
+
+Konkretes Verhalten:
+
+- Upload wird direkt nach S3 gespeichert (`uploads/original/YYYY/MM/DD/...`).
+- Danach wird wie üblich die Bildverarbeitung enqueued.
+
+Wichtige Einschränkung im aktuellen Stand:
+
+- Die Verarbeitungspipeline erwartet für das Original noch einen lokalen Dateisystempfad.
+- Bei reinem S3-Primary-Upload kann die Variantenerzeugung daher fehlschlagen (WebP/AVIF/Thumbnails).
+
+Zusätzlich für API-Upload-Sessions:
+
+- `Upload API URL` muss gesetzt sein, sonst `pool_misconfigured`.
+
+Empfohlener Betrieb aktuell:
+
+- Hot-Uploads auf lokal/NFS.
+- S3 als Cold-Storage-Ziel via Move/Tiering.
+
 ## Aktueller Ist-Zustand im Code
 
 ## Was bereits passt
@@ -49,21 +72,15 @@ Umsetzungsentscheidung:
 - S3-Client auf Basis StoragePool existiert (`PoolClient`).
   - `internal/pkg/s3backup/pool_client.go`
 
-## Was aktuell blockiert
+## Was aktuell noch blockiert
 
-- `StorageManager.SaveFile/DeleteFile/MigrateFile/GetFilePath` arbeiten nur mit lokalem Dateisystem (`filepath.Join`, `os.*`).
-  - `internal/pkg/storage/manager.go`
-- Upload-Controller schreiben immer lokal in den Pool-`BasePath`.
-  - `app/controllers/upload_controller.go`
-  - `app/controllers/storage_upload_controller.go`
-- Bildverarbeitung öffnet Originale direkt aus dem Dateisystem und schreibt Varianten lokal.
+- Bildverarbeitung (Variantenerzeugung) erwartet für das Original weiterhin einen lokalen Dateisystempfad.
   - `internal/pkg/imageprocessor/imageprocessor.go`
-- Delete-Flow löscht Original/Varianten lokal, nicht objektbasiert aus S3.
-  - `internal/pkg/imageprocessor/imageprocessor.go` (`DeleteImageAndVariants`)
-- App-Serving `/uploads` ist lokal statisch gemountet.
+- Reiner S3-Primary-Upload ist daher aktuell nicht als Standardbetrieb empfohlen.
+- App-Serving `/uploads` ist lokal statisch gemountet; für S3-Objekte wird die Auslieferung über `public_base_url` + CDN/Origin-Rewrite gelöst.
   - `cmd/pixelfox/main.go`
 
-Konsequenz: Ein S3-Pool kann derzeit als Backup-Ziel funktionieren, aber nicht robust als regulärer Storage-Pool im Lebenszyklus (move, delete, recover, optional reprocess).
+Konsequenz: S3 funktioniert aktuell zuverlässig als Cold-Storage-Ziel (inkl. Move/Delete), aber nicht als alleiniger Hot-Upload-Primary für die komplette Verarbeitungspipeline.
 
 ## Zielbild (technisch)
 
@@ -242,4 +259,3 @@ Empfehlung:
   - https://www.backblaze.com/docs/cloud-storage-s3-compatible-api-quickstart
 - Cloudflare Default Cache-Verhalten:
   - https://developers.cloudflare.com/cache/concepts/default-cache-behavior/
-

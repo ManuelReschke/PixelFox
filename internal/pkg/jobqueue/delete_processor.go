@@ -34,15 +34,16 @@ func (q *Queue) processDeleteImageJob(ctx context.Context, job *Job) error {
 		return fmt.Errorf("database connection is nil")
 	}
 
-	// Try to load image by ID; fallback to UUID
+	// Try to load image by ID; fallback to UUID.
+	// Use Unscoped so user-initiated soft-deletes are still processed and files are removed from storage.
 	var image models.Image
 	if payload.ImageID > 0 {
-		if err := db.First(&image, payload.ImageID).Error; err != nil {
+		if err := db.Unscoped().First(&image, payload.ImageID).Error; err != nil {
 			log.Warnf("[DeleteImageJob] Image %d not found by ID, trying UUID %s", payload.ImageID, payload.ImageUUID)
 		}
 	}
 	if image.ID == 0 && payload.ImageUUID != "" {
-		if err := db.Where("uuid = ?", payload.ImageUUID).First(&image).Error; err != nil {
+		if err := db.Unscoped().Where("uuid = ?", payload.ImageUUID).First(&image).Error; err != nil {
 			// If image already deleted from DB, nothing more to do
 			log.Infof("[DeleteImageJob] Image %s not found in DB (already deleted)", payload.ImageUUID)
 			return nil
