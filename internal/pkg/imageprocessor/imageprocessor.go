@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ import (
 	"github.com/ManuelReschke/PixelFox/internal/pkg/constants"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/entitlements"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/storage"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -1325,6 +1327,7 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 	}
 
 	log.Infof("[ImageProcessor] Starting deletion of image %s and all variants", imageModel.UUID)
+	sm := storage.NewStorageManager()
 
 	// Ensure storage pool is loaded to resolve absolute filesystem paths
 	if imageModel.StoragePoolID > 0 && imageModel.StoragePool == nil {
@@ -1344,62 +1347,70 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 		// Continue with deletion attempt even if variants can't be found
 	}
 
-	// Delete all variant files
+	// Cache storage pools while deleting variants
+	poolCache := map[uint]*models.StoragePool{}
+	if imageModel.StoragePool != nil {
+		poolCache[imageModel.StoragePoolID] = imageModel.StoragePool
+	}
+	loadPool := func(poolID uint) *models.StoragePool {
+		if poolID == 0 {
+			return nil
+		}
+		if p, ok := poolCache[poolID]; ok {
+			return p
+		}
+		p, err := models.FindStoragePoolByID(db, poolID)
+		if err != nil || p == nil {
+			return nil
+		}
+		poolCache[poolID] = p
+		return p
+	}
+
+	// Delete all variant files from their assigned storage pools
 	for _, variant := range variants {
-		filePath := filepath.Join(variant.FilePath, variant.FileName)
-		if err := os.Remove(filePath); err != nil {
-			if !os.IsNotExist(err) {
+		poolID := variant.StoragePoolID
+		if poolID == 0 {
+			poolID = imageModel.StoragePoolID
+		}
+		pool := loadPool(poolID)
+		relPath := resolveVariantRelativePath(variant.FilePath, variant.FileName, pool)
+		if relPath == "" {
+			filePath := filepath.Join(variant.FilePath, variant.FileName)
+			if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 				log.Errorf("[ImageProcessor] Failed to delete variant file %s: %v", filePath, err)
 			}
-		} else {
-			log.Debugf("[ImageProcessor] Deleted variant file: %s", filePath)
+			continue
+		}
+		if _, err := sm.DeleteFile(relPath, poolID); err != nil {
+			log.Errorf("[ImageProcessor] Failed to delete variant %s from pool %d: %v", relPath, poolID, err)
 		}
 	}
 
-	// Delete original file if it exists and is different from variants
-	var originalPath string
-	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
-		originalPath = filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath, imageModel.FileName)
-	} else {
-		originalPath = filepath.Join(imageModel.FilePath, imageModel.FileName)
-	}
-	if err := os.Remove(originalPath); err != nil {
-		if !os.IsNotExist(err) {
-			log.Errorf("[ImageProcessor] Failed to delete original file %s: %v", originalPath, err)
+	// Delete original file
+	if imageModel.StoragePoolID > 0 {
+		originalRelPath := filepath.Join(imageModel.FilePath, imageModel.FileName)
+		if _, err := sm.DeleteFile(originalRelPath, imageModel.StoragePoolID); err != nil {
+			log.Errorf("[ImageProcessor] Failed to delete original file %s from pool %d: %v", originalRelPath, imageModel.StoragePoolID, err)
 		}
 	} else {
-		log.Debugf("[ImageProcessor] Deleted original file: %s", originalPath)
+		legacyOriginal := filepath.Join(imageModel.FilePath, imageModel.FileName)
+		if err := os.Remove(legacyOriginal); err != nil && !os.IsNotExist(err) {
+			log.Errorf("[ImageProcessor] Failed to delete original file %s: %v", legacyOriginal, err)
+		}
 	}
 
-	// Clean up empty directories
-	// Try to remove the variants directory for this image
-	var variantsDir string
-	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
-		// storage pool layout: <base>/variants/<yyyy>/<mm>/<dd>
+	// Clean up empty local directories (not relevant for S3 pools)
+	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil && !imageModel.StoragePool.IsS3Storage() {
 		relativePath := strings.TrimPrefix(imageModel.FilePath, "original/")
 		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-		variantsDir = filepath.Join(imageModel.StoragePool.BasePath, "variants", relativePath)
-	} else {
-		// legacy layout: uploads/variants/<yyyy>/<mm>/<dd>
-		relativePath := strings.TrimPrefix(imageModel.FilePath, OriginalDir)
-		relativePath = strings.TrimPrefix(relativePath, string(filepath.Separator))
-		variantsDir = filepath.Join(VariantsDir, relativePath)
-	}
-	if err := os.Remove(variantsDir); err != nil {
-		if !os.IsNotExist(err) {
+		variantsDir := filepath.Join(imageModel.StoragePool.BasePath, "variants", relativePath)
+		if err := os.Remove(variantsDir); err != nil && !os.IsNotExist(err) {
 			log.Debugf("[ImageProcessor] Could not remove variants directory %s (may not be empty): %v", variantsDir, err)
 		}
-	}
 
-	// Remove original directory if empty
-	var originalDir string
-	if imageModel.StoragePoolID > 0 && imageModel.StoragePool != nil {
-		originalDir = filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath)
-	} else {
-		originalDir = imageModel.FilePath
-	}
-	if err := os.Remove(originalDir); err != nil {
-		if !os.IsNotExist(err) {
+		originalDir := filepath.Join(imageModel.StoragePool.BasePath, imageModel.FilePath)
+		if err := os.Remove(originalDir); err != nil && !os.IsNotExist(err) {
 			log.Debugf("[ImageProcessor] Could not remove original directory %s (may not be empty): %v", originalDir, err)
 		}
 	}
@@ -1424,4 +1435,31 @@ func DeleteImageAndVariants(imageModel *models.Image) error {
 
 	log.Infof("[ImageProcessor] Successfully deleted image %s and all variants", imageModel.UUID)
 	return nil
+}
+
+func resolveVariantRelativePath(filePath, fileName string, pool *models.StoragePool) string {
+	rel := filepath.ToSlash(strings.TrimSpace(filePath))
+	if rel == "" || strings.TrimSpace(fileName) == "" {
+		return ""
+	}
+
+	if idx := strings.Index(rel, "variants/"); idx >= 0 {
+		return path.Join(rel[idx:], strings.TrimSpace(fileName))
+	}
+
+	if pool != nil && !pool.IsS3Storage() {
+		base := filepath.ToSlash(strings.TrimRight(pool.BasePath, string(filepath.Separator)))
+		if base != "" && strings.HasPrefix(rel, base+"/") {
+			trimmed := strings.TrimPrefix(rel, base+"/")
+			if trimmed != "" {
+				return path.Join(trimmed, strings.TrimSpace(fileName))
+			}
+		}
+	}
+
+	trimmed := strings.Trim(rel, "/")
+	if trimmed == "" {
+		return ""
+	}
+	return path.Join(trimmed, strings.TrimSpace(fileName))
 }

@@ -2,18 +2,11 @@ package jobqueue
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 
@@ -75,113 +68,43 @@ func (q *Queue) processReconcileVariantsJob(job *Job) error {
 	moveOne := func(srcPool *models.StoragePool, relPath, fileName string, targetPoolID uint) error {
 		rel := filepath.Clean(relPath)
 		name := filepath.Clean(fileName)
+		storedPath := filepath.ToSlash(filepath.Join(rel, name))
+		storedPath = strings.TrimLeft(storedPath, "/")
 
-		srcFull := filepath.Clean(filepath.Join(srcPool.BasePath, rel, name))
-		tgtFull := filepath.Clean(filepath.Join(tgtPool.BasePath, rel, name))
-
-		if strings.EqualFold(srcFull, tgtFull) {
-			return nil
+		exists, _, existsErr := sm.FileExists(storedPath, srcPool.ID)
+		if existsErr != nil {
+			return fmt.Errorf("source existence check failed: %w", existsErr)
 		}
-
-		info, statErr := os.Stat(srcFull)
-		if statErr != nil {
-			if os.IsNotExist(statErr) {
-				log.Warnf("[Reconcile] Source variant missing, skipping: %s", srcFull)
-				return nil
-			}
-			return fmt.Errorf("stat source failed: %w", statErr)
+		if !exists {
+			return os.ErrNotExist
 		}
 
 		srcNode := strings.TrimSpace(srcPool.NodeID)
 		tgtNode := strings.TrimSpace(tgtPool.NodeID)
-		remoteTarget := (srcNode != "" && tgtNode != "" && !strings.EqualFold(srcNode, tgtNode))
+		remoteTarget := isLocalLikeStoragePool(srcPool) &&
+			isLocalLikeStoragePool(tgtPool) &&
+			srcNode != "" && tgtNode != "" &&
+			!strings.EqualFold(srcNode, tgtNode)
 
 		if remoteTarget {
-			f, err := os.Open(srcFull)
+			srcFull, err := sm.GetFilePath(storedPath, srcPool.ID)
 			if err != nil {
-				return fmt.Errorf("open source failed: %w", err)
+				return fmt.Errorf("resolve source path failed: %w", err)
 			}
-			pr, pw := io.Pipe()
-			mw := multipart.NewWriter(pw)
-			writerDone := make(chan struct{})
-			go func() {
-				defer close(writerDone)
-				defer f.Close()
-				defer pw.Close()
-				defer mw.Close()
-				_ = mw.WriteField("pool_id", strconv.FormatUint(uint64(targetPoolID), 10))
-				_ = mw.WriteField("stored_path", filepath.Join(rel, name))
-				_ = mw.WriteField("size", strconv.FormatInt(info.Size(), 10))
-				part, err := mw.CreateFormFile("file", name)
-				if err != nil {
-					_ = pw.CloseWithError(err)
-					return
-				}
-				hasher := sha256.New()
-				tee := io.TeeReader(f, hasher)
-				if _, err := io.Copy(part, tee); err != nil {
-					_ = pw.CloseWithError(err)
-					return
-				}
-				_ = mw.WriteField("sha256", hex.EncodeToString(hasher.Sum(nil)))
-			}()
-			repURL := strings.TrimSpace(tgtPool.UploadAPIURL)
-			if repURL == "" {
-				_ = pw.CloseWithError(fmt.Errorf("missing upload_api_url"))
-				<-writerDone
-				return fmt.Errorf("target pool missing upload_api_url")
+			if err := replicateFileToRemotePool(srcFull, storedPath, targetPoolID, tgtPool.UploadAPIURL); err != nil {
+				return err
 			}
-			repURL = strings.TrimRight(repURL, "/")
-			if strings.HasSuffix(repURL, "/upload") {
-				repURL = strings.TrimSuffix(repURL, "/upload") + "/replicate"
-			} else {
-				repURL = repURL + "/replicate"
-			}
-			client := &http.Client{Timeout: 300 * time.Second}
-			req, err := http.NewRequest(http.MethodPut, repURL, pr)
-			if err != nil {
-				_ = pw.CloseWithError(err)
-				<-writerDone
-				return fmt.Errorf("create request failed: %w", err)
-			}
-			req.Header.Set("Content-Type", mw.FormDataContentType())
-			secret := strings.TrimSpace(env.GetEnv("REPLICATION_SECRET", ""))
-			if secret == "" {
-				_ = pw.CloseWithError(fmt.Errorf("missing replication secret"))
-				<-writerDone
-				return fmt.Errorf("REPLICATION_SECRET is not set")
-			}
-			req.Header.Set("Authorization", "Bearer "+secret)
-			resp, err := client.Do(req)
-			if err != nil {
-				_ = pw.CloseWithError(err)
-				<-writerDone
-				return fmt.Errorf("replicate HTTP error: %w", err)
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-				_ = pw.CloseWithError(fmt.Errorf("bad status %d", resp.StatusCode))
-				<-writerDone
-				return fmt.Errorf("replicate failed: status %d", resp.StatusCode)
-			}
-			<-writerDone
-			if _, err := sm.DeleteFile(filepath.Join(rel, name), srcPool.ID); err != nil {
+			if _, err := sm.DeleteFile(storedPath, srcPool.ID); err != nil {
 				return fmt.Errorf("delete from source failed: %w", err)
 			}
 			return nil
 		}
 
-		// Local move
-		f, err := os.Open(srcFull)
-		if err != nil {
-			return fmt.Errorf("open source failed: %w", err)
-		}
-		defer f.Close()
-		if _, err = sm.SaveFile(f, filepath.Join(rel, name), targetPoolID); err != nil {
-			return fmt.Errorf("save to target failed: %w", err)
-		}
-		if _, err := sm.DeleteFile(filepath.Join(rel, name), srcPool.ID); err != nil {
-			return fmt.Errorf("delete from source failed: %w", err)
+		if _, err := sm.MigrateFile(storedPath, srcPool.ID, targetPoolID); err != nil {
+			if strings.Contains(strings.ToLower(err.Error()), "source file not found") {
+				return os.ErrNotExist
+			}
+			return fmt.Errorf("migrate failed: %w", err)
 		}
 		return nil
 	}
@@ -203,6 +126,9 @@ func (q *Queue) processReconcileVariantsJob(job *Job) error {
 		nodeID := strings.TrimSpace(env.GetEnv("NODE_ID", ""))
 		if nodeID != "" {
 			poolNode := strings.TrimSpace(srcPool.NodeID)
+			if !isLocalLikeStoragePool(srcPool) && isLocalLikeStoragePool(tgtPool) {
+				poolNode = strings.TrimSpace(tgtPool.NodeID)
+			}
 			if poolNode != "" && !strings.EqualFold(nodeID, poolNode) {
 				// Requeue for source node
 				if err := q.requeueJob(context.Background(), job); err != nil {
@@ -213,16 +139,7 @@ func (q *Queue) processReconcileVariantsJob(job *Job) error {
 		}
 
 		// Normalize variant relative path
-		rel := v.FilePath
-		if idx := strings.Index(rel, "variants"); idx >= 0 {
-			rel = rel[idx:]
-		} else {
-			base := strings.TrimRight(srcPool.BasePath, string(filepath.Separator)) + string(filepath.Separator)
-			if strings.HasPrefix(rel, base) {
-				rel = strings.TrimPrefix(rel, base)
-			}
-			rel = strings.TrimLeft(rel, string(filepath.Separator))
-		}
+		rel := normalizeVariantRelativePath(v.FilePath, srcPool)
 
 		if err := moveOne(srcPool, rel, v.FileName, targetPoolID); err != nil {
 			// Non-fatal for missing sources; otherwise fail to retry

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/s3backup"
 )
 
 // StorageManager handles all storage operations across multiple pools
@@ -134,35 +137,78 @@ func (sm *StorageManager) SaveFile(data io.Reader, filename string, poolID uint)
 		return operation, operation.Error
 	}
 
-	// Create full file path
-	fullPath := filepath.Join(pool.BasePath, filename)
-	operation.FilePath = fullPath
-
-	// Ensure directory exists
-	dir := filepath.Dir(fullPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		operation.Error = fmt.Errorf("failed to create directory %s: %w", dir, err)
+	relativePath, err := cleanRelativeStoragePath(filename)
+	if err != nil {
+		operation.Error = fmt.Errorf("invalid file path %q: %w", filename, err)
 		operation.Duration = time.Since(startTime)
 		return operation, operation.Error
 	}
 
-	// Create and write file
-	file, err := os.Create(fullPath)
-	if err != nil {
-		operation.Error = fmt.Errorf("failed to create file %s: %w", fullPath, err)
-		operation.Duration = time.Since(startTime)
-		return operation, operation.Error
-	}
-	defer file.Close()
+	var bytesWritten int64
+	if pool.IsS3Storage() {
+		s3Client, err := s3backup.NewPoolClient(pool)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to initialize S3 client for pool '%s': %w", pool.Name, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
 
-	// Copy data to file and track size
-	bytesWritten, err := io.Copy(file, data)
-	if err != nil {
-		operation.Error = fmt.Errorf("failed to write file %s: %w", fullPath, err)
-		operation.Duration = time.Since(startTime)
-		// Clean up partial file
-		os.Remove(fullPath)
-		return operation, operation.Error
+		tmpFile, err := os.CreateTemp("", "pixelfox-storage-upload-*")
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to create temporary upload file: %w", err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		tmpPath := tmpFile.Name()
+		defer os.Remove(tmpPath)
+
+		bytesWritten, err = io.Copy(tmpFile, data)
+		if closeErr := tmpFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to buffer upload for S3: %w", err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+
+		s3Key := toS3ObjectKey(relativePath)
+		if err := s3Client.UploadFile(tmpPath, s3Key); err != nil {
+			operation.Error = fmt.Errorf("failed to upload file %s to S3 pool '%s': %w", s3Key, pool.Name, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		operation.FilePath = s3Key
+	} else {
+		fullPath := filepath.Join(pool.BasePath, filepath.FromSlash(relativePath))
+		operation.FilePath = fullPath
+
+		// Ensure directory exists
+		dir := filepath.Dir(fullPath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			operation.Error = fmt.Errorf("failed to create directory %s: %w", dir, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+
+		// Create and write file
+		file, err := os.Create(fullPath)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to create file %s: %w", fullPath, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		defer file.Close()
+
+		// Copy data to file and track size
+		bytesWritten, err = io.Copy(file, data)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to write file %s: %w", fullPath, err)
+			operation.Duration = time.Since(startTime)
+			// Clean up partial file
+			_ = os.Remove(fullPath)
+			return operation, operation.Error
+		}
 	}
 
 	// Update pool usage
@@ -175,7 +221,7 @@ func (sm *StorageManager) SaveFile(data io.Reader, filename string, poolID uint)
 	operation.Duration = time.Since(startTime)
 
 	log.Infof("[StorageManager] Successfully saved file %s (%d bytes) to pool '%s' in %v",
-		filename, bytesWritten, pool.Name, operation.Duration)
+		relativePath, bytesWritten, pool.Name, operation.Duration)
 
 	return operation, nil
 }
@@ -198,25 +244,51 @@ func (sm *StorageManager) DeleteFile(relativePath string, poolID uint) (*FileOpe
 
 	operation.PoolName = pool.Name
 
-	// Create full file path
-	fullPath := filepath.Join(pool.BasePath, relativePath)
-	operation.FilePath = fullPath
-
-	// Get file size before deletion for usage tracking
-	fileInfo, err := os.Stat(fullPath)
-	fileSize := int64(0)
-	if err == nil {
-		fileSize = fileInfo.Size()
+	cleanRelPath, err := cleanRelativeStoragePath(relativePath)
+	if err != nil {
+		operation.Error = fmt.Errorf("invalid file path %q: %w", relativePath, err)
+		operation.Duration = time.Since(startTime)
+		return operation, operation.Error
 	}
 
-	// Delete the file
-	if err := os.Remove(fullPath); err != nil {
-		if !os.IsNotExist(err) {
-			operation.Error = fmt.Errorf("failed to delete file %s: %w", fullPath, err)
+	fileSize := int64(0)
+	if pool.IsS3Storage() {
+		s3Client, err := s3backup.NewPoolClient(pool)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to initialize S3 client for pool '%s': %w", pool.Name, err)
 			operation.Duration = time.Since(startTime)
 			return operation, operation.Error
 		}
-		// File doesn't exist, consider it successful
+
+		s3Key := toS3ObjectKey(cleanRelPath)
+		operation.FilePath = s3Key
+		if size, err := s3Client.GetFileSize(s3Key); err == nil {
+			fileSize = size
+		}
+		if err := s3Client.DeleteFile(s3Key); err != nil {
+			operation.Error = fmt.Errorf("failed to delete S3 object %s: %w", s3Key, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+	} else {
+		fullPath := filepath.Join(pool.BasePath, filepath.FromSlash(cleanRelPath))
+		operation.FilePath = fullPath
+
+		// Get file size before deletion for usage tracking
+		fileInfo, err := os.Stat(fullPath)
+		if err == nil {
+			fileSize = fileInfo.Size()
+		}
+
+		// Delete the file
+		if err := os.Remove(fullPath); err != nil {
+			if !os.IsNotExist(err) {
+				operation.Error = fmt.Errorf("failed to delete file %s: %w", fullPath, err)
+				operation.Duration = time.Since(startTime)
+				return operation, operation.Error
+			}
+			// File doesn't exist, consider it successful
+		}
 	}
 
 	// Update pool usage (subtract file size)
@@ -231,7 +303,7 @@ func (sm *StorageManager) DeleteFile(relativePath string, poolID uint) (*FileOpe
 	operation.Duration = time.Since(startTime)
 
 	log.Infof("[StorageManager] Successfully deleted file %s (%d bytes) from pool '%s' in %v",
-		relativePath, fileSize, pool.Name, operation.Duration)
+		cleanRelPath, fileSize, pool.Name, operation.Duration)
 
 	return operation, nil
 }
@@ -260,6 +332,13 @@ func (sm *StorageManager) MigrateFile(relativePath string, sourcePoolID, targetP
 	operation.PoolID = targetPoolID
 	operation.PoolName = targetPool.Name
 
+	relPath, err := cleanRelativeStoragePath(relativePath)
+	if err != nil {
+		operation.Error = fmt.Errorf("invalid file path %q: %w", relativePath, err)
+		operation.Duration = time.Since(startTime)
+		return operation, operation.Error
+	}
+
 	// Check target pool health and capacity
 	if !targetPool.IsHealthy() {
 		operation.Error = fmt.Errorf("target storage pool '%s' is not healthy", targetPool.Name)
@@ -267,20 +346,17 @@ func (sm *StorageManager) MigrateFile(relativePath string, sourcePoolID, targetP
 		return operation, operation.Error
 	}
 
-	// Create file paths
-	sourcePath := filepath.Join(sourcePool.BasePath, relativePath)
-	targetPath := filepath.Join(targetPool.BasePath, relativePath)
-	operation.FilePath = targetPath
-
-	// Get file size for capacity check
-	fileInfo, err := os.Stat(sourcePath)
+	exists, fileSize, err := sm.FileExists(relPath, sourcePoolID)
 	if err != nil {
-		operation.Error = fmt.Errorf("failed to stat source file %s: %w", sourcePath, err)
+		operation.Error = fmt.Errorf("failed to inspect source file %s: %w", relPath, err)
 		operation.Duration = time.Since(startTime)
 		return operation, operation.Error
 	}
-
-	fileSize := fileInfo.Size()
+	if !exists {
+		operation.Error = fmt.Errorf("source file not found: %s", relPath)
+		operation.Duration = time.Since(startTime)
+		return operation, operation.Error
+	}
 
 	// Check if target pool can accept the file
 	if !targetPool.CanAcceptFile(fileSize) {
@@ -289,41 +365,88 @@ func (sm *StorageManager) MigrateFile(relativePath string, sourcePoolID, targetP
 		return operation, operation.Error
 	}
 
-	// Create target directory
-	targetDir := filepath.Dir(targetPath)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		operation.Error = fmt.Errorf("failed to create target directory %s: %w", targetDir, err)
+	// Local no-op if source and destination are identical
+	if !sourcePool.IsS3Storage() && !targetPool.IsS3Storage() {
+		sourcePath := filepath.Clean(filepath.Join(sourcePool.BasePath, filepath.FromSlash(relPath)))
+		targetPath := filepath.Clean(filepath.Join(targetPool.BasePath, filepath.FromSlash(relPath)))
+		if strings.EqualFold(sourcePath, targetPath) {
+			operation.Success = true
+			operation.FilePath = targetPath
+			operation.Duration = time.Since(startTime)
+			log.Infof("[StorageManager] Source and target are identical (%s), migration skipped", sourcePath)
+			return operation, nil
+		}
+	}
+
+	// Open source stream depending on pool type
+	var (
+		sourceReader io.ReadCloser
+		tempFilePath string
+	)
+	if sourcePool.IsS3Storage() {
+		s3Client, err := s3backup.NewPoolClient(sourcePool)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to initialize S3 client for source pool '%s': %w", sourcePool.Name, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		tmpFile, err := os.CreateTemp("", "pixelfox-storage-migrate-*")
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to create temp file for migration: %w", err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		tempFilePath = tmpFile.Name()
+		_ = tmpFile.Close()
+		defer os.Remove(tempFilePath)
+
+		s3Key := toS3ObjectKey(relPath)
+		if err := s3Client.DownloadFile(s3Key, tempFilePath); err != nil {
+			operation.Error = fmt.Errorf("failed to download source object %s from pool '%s': %w", s3Key, sourcePool.Name, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		sourceReader, err = os.Open(tempFilePath)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to open temporary source file: %w", err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+	} else {
+		sourcePath := filepath.Join(sourcePool.BasePath, filepath.FromSlash(relPath))
+		f, err := os.Open(sourcePath)
+		if err != nil {
+			operation.Error = fmt.Errorf("failed to open source file %s: %w", sourcePath, err)
+			operation.Duration = time.Since(startTime)
+			return operation, operation.Error
+		}
+		sourceReader = f
+	}
+	defer sourceReader.Close()
+
+	saveOp, err := sm.SaveFile(sourceReader, relPath, targetPoolID)
+	if err != nil || !saveOp.Success {
+		if err == nil && saveOp != nil && saveOp.Error != nil {
+			err = saveOp.Error
+		}
+		operation.Error = fmt.Errorf("failed to save file to target pool '%s': %w", targetPool.Name, err)
 		operation.Duration = time.Since(startTime)
 		return operation, operation.Error
 	}
 
-	// Copy file (safer than move for cross-filesystem operations)
-	if err := sm.copyFile(sourcePath, targetPath); err != nil {
-		operation.Error = fmt.Errorf("failed to copy file from %s to %s: %w", sourcePath, targetPath, err)
+	if _, err := sm.DeleteFile(relPath, sourcePoolID); err != nil {
+		operation.Error = fmt.Errorf("file copied to target but failed deleting source: %w", err)
 		operation.Duration = time.Since(startTime)
 		return operation, operation.Error
 	}
 
-	// Update pool usage
-	if err := sourcePool.UpdateUsedSize(sm.db, -fileSize); err != nil {
-		log.Errorf("[StorageManager] Failed to update source pool usage: %v", err)
-	}
-
-	if err := targetPool.UpdateUsedSize(sm.db, fileSize); err != nil {
-		log.Errorf("[StorageManager] Failed to update target pool usage: %v", err)
-	}
-
-	// Delete source file after successful copy
-	if err := os.Remove(sourcePath); err != nil {
-		log.Errorf("[StorageManager] Failed to remove source file %s after migration: %v", sourcePath, err)
-		// Don't fail the operation for this
-	}
+	operation.FilePath = saveOp.FilePath
 
 	operation.Success = true
 	operation.Duration = time.Since(startTime)
 
 	log.Infof("[StorageManager] Successfully migrated file %s (%d bytes) from pool '%s' to pool '%s' in %v",
-		relativePath, fileSize, sourcePool.Name, targetPool.Name, operation.Duration)
+		relPath, fileSize, sourcePool.Name, targetPool.Name, operation.Duration)
 
 	return operation, nil
 }
@@ -386,7 +509,46 @@ func (sm *StorageManager) GetFilePath(relativePath string, poolID uint) (string,
 		return "", fmt.Errorf("failed to find storage pool %d: %w", poolID, err)
 	}
 
-	return filepath.Join(pool.BasePath, relativePath), nil
+	cleanRelPath, err := cleanRelativeStoragePath(relativePath)
+	if err != nil {
+		return "", err
+	}
+	if pool.IsS3Storage() {
+		return toS3ObjectKey(cleanRelPath), nil
+	}
+
+	return filepath.Join(pool.BasePath, filepath.FromSlash(cleanRelPath)), nil
+}
+
+// FileExists checks whether a file exists in the specified pool and returns its size.
+func (sm *StorageManager) FileExists(relativePath string, poolID uint) (bool, int64, error) {
+	pool, err := models.FindStoragePoolByID(sm.db, poolID)
+	if err != nil {
+		return false, 0, fmt.Errorf("failed to find storage pool %d: %w", poolID, err)
+	}
+
+	cleanRelPath, err := cleanRelativeStoragePath(relativePath)
+	if err != nil {
+		return false, 0, err
+	}
+
+	if pool.IsS3Storage() {
+		s3Client, err := s3backup.NewPoolClient(pool)
+		if err != nil {
+			return false, 0, fmt.Errorf("failed to initialize S3 client for pool '%s': %w", pool.Name, err)
+		}
+		return s3Client.FileInfo(toS3ObjectKey(cleanRelPath))
+	}
+
+	fullPath := filepath.Join(pool.BasePath, filepath.FromSlash(cleanRelPath))
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, 0, nil
+		}
+		return false, 0, fmt.Errorf("failed to stat %s: %w", fullPath, err)
+	}
+	return true, info.Size(), nil
 }
 
 // UpdatePoolUsage updates the used size of a storage pool
@@ -397,4 +559,31 @@ func (sm *StorageManager) UpdatePoolUsage(poolID uint, sizeChange int64) error {
 	}
 
 	return pool.UpdateUsedSize(sm.db, sizeChange)
+}
+
+func cleanRelativeStoragePath(raw string) (string, error) {
+	candidate := strings.TrimSpace(strings.ReplaceAll(raw, "\\", "/"))
+	if candidate == "" {
+		return "", fmt.Errorf("path cannot be empty")
+	}
+
+	clean := strings.TrimPrefix(path.Clean("/"+candidate), "/")
+	if clean == "" || clean == "." {
+		return "", fmt.Errorf("path cannot be empty")
+	}
+	if clean == ".." || strings.HasPrefix(clean, "../") || strings.Contains(clean, "/../") {
+		return "", fmt.Errorf("path traversal is not allowed")
+	}
+	return clean, nil
+}
+
+func toS3ObjectKey(relativePath string) string {
+	clean := strings.TrimPrefix(path.Clean("/"+strings.ReplaceAll(relativePath, "\\", "/")), "/")
+	if clean == "" || clean == "." {
+		return "uploads"
+	}
+	if strings.HasPrefix(clean, "uploads/") {
+		return clean
+	}
+	return path.Join("uploads", clean)
 }

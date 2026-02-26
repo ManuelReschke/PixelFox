@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -518,18 +517,15 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	}
 
 	// Idempotency: if file already exists at destination and size matches, skip
-	fullPath, err := sm.GetFilePath(storedPath, uint(poolID))
-	if err == nil {
-		if info, statErr := os.Stat(fullPath); statErr == nil {
-			// Compare size if provided else with uploaded header size
-			want := expectedSize
-			if want < 0 {
-				want = fh.Size
-			}
-			if want >= 0 && info.Size() == want {
-				fiberlog.Infof("[Replicate] Skip existing file (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, want, c.IP())
-				return c.JSON(fiber.Map{"status": "ok", "skipped": true, "reason": "exists"})
-			}
+	if exists, existingSize, existsErr := sm.FileExists(storedPath, uint(poolID)); existsErr == nil && exists {
+		// Compare size if provided else with uploaded header size
+		want := expectedSize
+		if want < 0 {
+			want = fh.Size
+		}
+		if want >= 0 && existingSize == want {
+			fiberlog.Infof("[Replicate] Skip existing file (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, want, c.IP())
+			return c.JSON(fiber.Map{"status": "ok", "skipped": true, "reason": "exists"})
 		}
 	}
 

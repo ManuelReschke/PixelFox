@@ -5,13 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"net/http"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
@@ -21,6 +27,39 @@ import (
 type PoolClient struct {
 	s3Client *s3.Client
 	pool     *models.StoragePool
+}
+
+func (pc *PoolClient) resolveKey(s3Key string) string {
+	key := strings.TrimSpace(strings.ReplaceAll(s3Key, "\\", "/"))
+	key = strings.TrimPrefix(path.Clean("/"+key), "/")
+	if key == "." {
+		key = ""
+	}
+	if pc.pool.S3PathPrefix != nil && strings.TrimSpace(*pc.pool.S3PathPrefix) != "" {
+		prefix := strings.TrimPrefix(path.Clean("/"+strings.TrimSpace(*pc.pool.S3PathPrefix)), "/")
+		return path.Join(prefix, key)
+	}
+	return key
+}
+
+func isS3NotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var nsk *types.NoSuchKey
+	if errors.As(err, &nsk) {
+		return true
+	}
+	var nf *types.NotFound
+	if errors.As(err, &nf) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		code := strings.TrimSpace(apiErr.ErrorCode())
+		return code == "NotFound" || code == "NoSuchKey" || code == "404"
+	}
+	return false
 }
 
 // NewPoolClient creates a new S3 client from a Storage Pool configuration
@@ -72,17 +111,28 @@ func (pc *PoolClient) UploadFile(localFilePath, s3Key string) error {
 	}
 	defer file.Close()
 
-	// Add path prefix if configured
-	fullKey := s3Key
-	if pc.pool.S3PathPrefix != nil && *pc.pool.S3PathPrefix != "" {
-		fullKey = fmt.Sprintf("%s/%s", *pc.pool.S3PathPrefix, s3Key)
+	fullKey := pc.resolveKey(s3Key)
+	contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(localFilePath)))
+	if contentType == "" {
+		header := make([]byte, 512)
+		n, _ := file.Read(header)
+		if n > 0 {
+			contentType = http.DetectContentType(header[:n])
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("failed to reset file pointer for %s: %w", localFilePath, err)
+		}
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
 	}
 
 	// Upload to S3
 	_, err = pc.s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(*pc.pool.S3BucketName),
-		Key:    aws.String(fullKey),
-		Body:   file,
+		Bucket:      aws.String(*pc.pool.S3BucketName),
+		Key:         aws.String(fullKey),
+		Body:        file,
+		ContentType: aws.String(contentType),
 	})
 
 	if err != nil {
@@ -95,11 +145,7 @@ func (pc *PoolClient) UploadFile(localFilePath, s3Key string) error {
 
 // DownloadFile downloads a file from the S3 storage pool
 func (pc *PoolClient) DownloadFile(s3Key, localFilePath string) error {
-	// Add path prefix if configured
-	fullKey := s3Key
-	if pc.pool.S3PathPrefix != nil && *pc.pool.S3PathPrefix != "" {
-		fullKey = fmt.Sprintf("%s/%s", *pc.pool.S3PathPrefix, s3Key)
-	}
+	fullKey := pc.resolveKey(s3Key)
 
 	// Download from S3
 	result, err := pc.s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
@@ -112,6 +158,9 @@ func (pc *PoolClient) DownloadFile(s3Key, localFilePath string) error {
 	defer result.Body.Close()
 
 	// Create local file
+	if err := os.MkdirAll(filepath.Dir(localFilePath), 0755); err != nil {
+		return fmt.Errorf("failed to create local directory for %s: %w", localFilePath, err)
+	}
 	file, err := os.Create(localFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create local file %s: %w", localFilePath, err)
@@ -130,11 +179,7 @@ func (pc *PoolClient) DownloadFile(s3Key, localFilePath string) error {
 
 // DeleteFile deletes a file from the S3 storage pool
 func (pc *PoolClient) DeleteFile(s3Key string) error {
-	// Add path prefix if configured
-	fullKey := s3Key
-	if pc.pool.S3PathPrefix != nil && *pc.pool.S3PathPrefix != "" {
-		fullKey = fmt.Sprintf("%s/%s", *pc.pool.S3PathPrefix, s3Key)
-	}
+	fullKey := pc.resolveKey(s3Key)
 
 	// Delete from S3
 	_, err := pc.s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
@@ -152,28 +197,42 @@ func (pc *PoolClient) DeleteFile(s3Key string) error {
 
 // FileExists checks if a file exists in the S3 storage pool
 func (pc *PoolClient) FileExists(s3Key string) (bool, error) {
-	// Add path prefix if configured
-	fullKey := s3Key
-	if pc.pool.S3PathPrefix != nil && *pc.pool.S3PathPrefix != "" {
-		fullKey = fmt.Sprintf("%s/%s", *pc.pool.S3PathPrefix, s3Key)
-	}
+	exists, _, err := pc.FileInfo(s3Key)
+	return exists, err
+}
 
-	// Check if object exists
-	_, err := pc.s3Client.HeadObject(context.TODO(), &s3.HeadObjectInput{
+// FileInfo checks if a file exists and returns its size.
+func (pc *PoolClient) FileInfo(s3Key string) (bool, int64, error) {
+	fullKey := pc.resolveKey(s3Key)
+
+	out, err := pc.s3Client.HeadObject(context.TODO(), &s3.HeadObjectInput{
 		Bucket: aws.String(*pc.pool.S3BucketName),
 		Key:    aws.String(fullKey),
 	})
 
 	if err != nil {
-		// Check if it's a "not found" error
-		var nsk *types.NoSuchKey
-		if errors.As(err, &nsk) {
-			return false, nil
+		if isS3NotFoundError(err) {
+			return false, 0, nil
 		}
-		return false, fmt.Errorf("failed to check if %s exists in S3 pool %s: %w", fullKey, pc.pool.Name, err)
+		return false, 0, fmt.Errorf("failed to check if %s exists in S3 pool %s: %w", fullKey, pc.pool.Name, err)
 	}
 
-	return true, nil
+	if out.ContentLength == nil {
+		return true, 0, nil
+	}
+	return true, *out.ContentLength, nil
+}
+
+// GetFileSize returns the object size for the given key, 0 if object does not exist.
+func (pc *PoolClient) GetFileSize(s3Key string) (int64, error) {
+	exists, size, err := pc.FileInfo(s3Key)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, nil
+	}
+	return size, nil
 }
 
 // GetBucketName returns the bucket name for this storage pool

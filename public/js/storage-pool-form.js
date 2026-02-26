@@ -5,6 +5,7 @@ function initStoragePoolForm() {
     const storageTypeSelect = document.querySelector('select[name="storage_type"]');
     const s3Config = document.getElementById('s3-config');
     const basePathInput = document.querySelector('input[name="base_path"]');
+    const s3BucketNameInput = document.querySelector('input[name="s3_bucket_name"]');
     
     if (!storageTypeSelect || !s3Config || !basePathInput) {
         return;
@@ -17,15 +18,22 @@ function initStoragePoolForm() {
         return;
     }
 
+    function syncS3BasePathFromBucket() {
+        if (!s3BucketNameInput) return;
+        const bucketName = s3BucketNameInput.value.trim();
+        if (!bucketName) return;
+        basePathInput.value = `s3://${bucketName}`;
+    }
+
     function toggleS3Config() {
         const isS3 = storageTypeSelect.value === 's3';
         s3Config.style.display = isS3 ? 'block' : 'none';
         
         // Update base path placeholder for S3
         if (isS3) {
-            basePathInput.placeholder = 'S3 Bucket Name (wird automatisch gesetzt)';
-            basePathInput.readOnly = true;
-            basePathInput.value = 's3://bucket-name';
+            basePathInput.placeholder = 'z.B. s3://pixelfox-dev';
+            basePathInput.readOnly = false;
+            syncS3BasePathFromBucket();
         } else {
             basePathInput.placeholder = '/mnt/storage/images';
             basePathInput.readOnly = false;
@@ -42,8 +50,6 @@ function initStoragePoolForm() {
                 field.required = isS3;
             }
         });
-        
-        console.log('Toggled S3 config:', isS3 ? 'visible' : 'hidden');
     }
     
     // Initialize on page load
@@ -51,6 +57,18 @@ function initStoragePoolForm() {
     
     // Listen for changes
     storageTypeSelect.addEventListener('change', toggleS3Config);
+    if (s3BucketNameInput) {
+        s3BucketNameInput.addEventListener('input', () => {
+            if (storageTypeSelect.value === 's3') {
+                syncS3BasePathFromBucket();
+            }
+        });
+        s3BucketNameInput.addEventListener('change', () => {
+            if (storageTypeSelect.value === 's3') {
+                syncS3BasePathFromBucket();
+            }
+        });
+    }
     storageTypeSelect.setAttribute('data-pxf-storage-init', '1');
     
     // initialized

@@ -282,11 +282,16 @@ func (asc *AdminStorageController) HandleAdminCreateStoragePoolPost(c *fiber.Ctx
 		s3EndpointURL := strings.TrimSpace(c.FormValue("s3_endpoint_url"))
 		if s3EndpointURL != "" {
 			pool.S3EndpointURL = &s3EndpointURL
+		} else {
+			pool.S3EndpointURL = nil
 		}
 
 		s3PathPrefix := strings.TrimSpace(c.FormValue("s3_path_prefix"))
+		s3PathPrefix = strings.Trim(s3PathPrefix, "/")
 		if s3PathPrefix != "" {
 			pool.S3PathPrefix = &s3PathPrefix
+		} else {
+			pool.S3PathPrefix = nil
 		}
 
 		// Set base path for S3 pools
@@ -502,11 +507,16 @@ func (asc *AdminStorageController) HandleAdminEditStoragePoolPost(c *fiber.Ctx) 
 		s3EndpointURL := strings.TrimSpace(c.FormValue("s3_endpoint_url"))
 		if s3EndpointURL != "" {
 			pool.S3EndpointURL = &s3EndpointURL
+		} else {
+			pool.S3EndpointURL = nil
 		}
 
 		s3PathPrefix := strings.TrimSpace(c.FormValue("s3_path_prefix"))
+		s3PathPrefix = strings.Trim(s3PathPrefix, "/")
 		if s3PathPrefix != "" {
 			pool.S3PathPrefix = &s3PathPrefix
+		} else {
+			pool.S3PathPrefix = nil
 		}
 
 		// Update base path for S3 pools

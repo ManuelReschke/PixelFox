@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -106,7 +105,7 @@ func (w *uploadWorkflow) run() error {
 		return err
 	}
 
-	w.afterPersist(persisted, file.Size)
+	w.afterPersist(persisted)
 	return w.respondSuccess(file.Filename, persisted.image.UUID)
 }
 
@@ -234,31 +233,14 @@ func (w *uploadWorkflow) persistUpload(file *multipart.FileHeader, src multipart
 	relativePath := fmt.Sprintf("%d/%02d/%02d", time.Now().Year(), time.Now().Month(), time.Now().Day())
 	fileName := fmt.Sprintf("%s%s", imageUUID, fileExt)
 
-	poolBasePath := selectedPool.BasePath
-	if !strings.HasSuffix(poolBasePath, "/") {
-		poolBasePath += "/"
-	}
-	originalDirPath := filepath.Join(poolBasePath, "original", relativePath)
-	originalSavePath := filepath.Join(originalDirPath, fileName)
-
-	if err := os.MkdirAll(originalDirPath, 0755); err != nil {
-		fiberlog.Errorf("Error creating directory: %v", err)
-		return nil, markHandledResponse(respondUploadError(w.c, fiber.StatusInternalServerError, "Fehler beim Erstellen des Upload-Verzeichnisses", "/"))
-	}
-
 	fiberlog.Infof("[Upload] Selected %s storage pool '%s' for upload", selectedPool.StorageTier, selectedPool.Name)
-	fiberlog.Infof("[Upload] file: %s -> %s", file.Filename, originalSavePath)
-
-	dst, err := os.Create(originalSavePath)
-	if err != nil {
-		fiberlog.Errorf("Error creating target file: %v", err)
-		return nil, markHandledResponse(respondUploadError(w.c, fiber.StatusInternalServerError, fmt.Sprintf("Fehler beim Erstellen der Zieldatei: %s", err), "/"))
-	}
-	defer dst.Close()
-
-	buffer := make([]byte, 1024*1024)
-	if _, err := io.CopyBuffer(dst, src, buffer); err != nil {
-		fiberlog.Errorf("Error copying file: %v", err)
+	savePath := filepath.Join("original", relativePath, fileName)
+	op, err := w.storageManager.SaveFile(src, savePath, selectedPool.ID)
+	if err != nil || op == nil || !op.Success {
+		if err == nil && op != nil {
+			err = op.Error
+		}
+		fiberlog.Errorf("Error saving file to storage pool: %v", err)
 		return nil, markHandledResponse(respondUploadError(w.c, fiber.StatusInternalServerError, fmt.Sprintf("Fehler beim Speichern der Datei: %s", err), "/"))
 	}
 
@@ -279,7 +261,9 @@ func (w *uploadWorkflow) persistUpload(file *multipart.FileHeader, src multipart
 
 	if err := w.imageRepo.Create(image); err != nil {
 		fiberlog.Errorf("Error saving image to database: %v", err)
-		_ = os.Remove(originalSavePath)
+		if _, delErr := w.storageManager.DeleteFile(savePath, selectedPool.ID); delErr != nil {
+			fiberlog.Warnf("Failed to cleanup stored file after DB error: %v", delErr)
+		}
 		return nil, w.handlePersistError(err, file.Filename, fileHash)
 	}
 
@@ -313,11 +297,7 @@ func (w *uploadWorkflow) handlePersistError(createErr error, uploadFileName, fil
 	return markHandledResponse(w.c.Redirect("/"))
 }
 
-func (w *uploadWorkflow) afterPersist(persisted *persistedUpload, fileSize int64) {
-	if err := w.storageManager.UpdatePoolUsage(persisted.selectedPool.ID, fileSize); err != nil {
-		fiberlog.Errorf("Error updating storage pool usage: %v", err)
-	}
-
+func (w *uploadWorkflow) afterPersist(persisted *persistedUpload) {
 	fiberlog.Infof("[Upload] Enqueueing unified image processing for %s", persisted.image.UUID)
 	if err := jobqueue.ProcessImageUnified(persisted.image); err != nil {
 		fiberlog.Errorf("Error enqueueing unified image processing for %s: %v", persisted.image.UUID, err)
