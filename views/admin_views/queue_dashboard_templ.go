@@ -214,6 +214,8 @@ func getBadgeClass(itemType string) string {
 		return "badge-success"
 	case "job_stats":
 		return "badge-neutral"
+	case "statistics":
+		return "badge-info"
 	case "analytics":
 		return "badge-secondary"
 	case "session":
@@ -252,7 +254,7 @@ func QueueItemsTable(items []QueueItem, currentTime time.Time) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(items)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 114, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 116, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -265,7 +267,7 @@ func QueueItemsTable(items []QueueItem, currentTime time.Time) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(currentTime.Format("15:04:05"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 115, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/queue_dashboard.templ`, Line: 117, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -326,7 +328,24 @@ func QueueItems(items []QueueItem, currentTime time.Time) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"p-4\"><div class=\"flex justify-between items-center mb-6\"><h1 class=\"text-2xl font-bold\">Cache & Queue Monitor</h1><button class=\"btn btn-primary\" hx-get=\"/admin/queues/data\" hx-trigger=\"click, every 5s\" hx-target=\"#queue-items-table\" hx-indicator=\"#refresh-indicator\"><span id=\"refresh-indicator\" class=\"loading loading-spinner loading-xs htmx-indicator\"></span> Aktualisieren</button></div><div id=\"queue-items-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"p-4\"><div class=\"flex flex-col gap-4 mb-6 lg:flex-row lg:items-center lg:justify-between\"><h1 class=\"text-2xl font-bold\">Cache & Queue Monitor</h1><div class=\"flex flex-col items-start gap-3 lg:items-end\"><form method=\"POST\" action=\"/admin/queues/bulk-delete\" hx-boost=\"false\" class=\"flex flex-wrap items-center gap-3\"><label class=\"label cursor-pointer gap-2 p-0\"><input type=\"checkbox\" name=\"scopes\" value=\"jobs\" data-label=\"Jobs\" class=\"checkbox checkbox-sm\"> <span class=\"label-text\">Jobs</span></label> <label class=\"label cursor-pointer gap-2 p-0\"><input type=\"checkbox\" name=\"scopes\" value=\"image_status\" data-label=\"Image Status\" class=\"checkbox checkbox-sm\"> <span class=\"label-text\">Image Status</span></label> <label class=\"label cursor-pointer gap-2 p-0\"><input type=\"checkbox\" name=\"scopes\" value=\"statistics\" data-label=\"Statistics\" class=\"checkbox checkbox-sm\"> <span class=\"label-text\">Statistics</span></label> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, templ.ComponentScript{Call: "event.preventDefault(); const form=this.closest('form'); const selected=form.querySelectorAll('input[name=scopes]:checked'); if(selected.length===0){ Swal.fire({title:'Keine Auswahl', text:'Bitte mindestens eine Kategorie auswählen.', icon:'info', confirmButtonText:'OK'}); return; } const labels=Array.from(selected).map(el=>el.dataset.label||el.value); Swal.fire({title:'Auswahl wirklich löschen?', html:`Kategorien: <b>${labels.join(', ')}</b><br><br>Diese Aktion kann nicht rückgängig gemacht werden.`, icon:'warning', showCancelButton:true, confirmButtonText:'Ja, löschen', cancelButtonText:'Abbrechen'}).then((result)=>{ if(result.isConfirmed){ form.submit(); } });"})
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<button type=\"button\" class=\"btn btn-error btn-sm\" onclick=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var15 templ.ComponentScript = templ.ComponentScript{Call: "event.preventDefault(); const form=this.closest('form'); const selected=form.querySelectorAll('input[name=scopes]:checked'); if(selected.length===0){ Swal.fire({title:'Keine Auswahl', text:'Bitte mindestens eine Kategorie auswählen.', icon:'info', confirmButtonText:'OK'}); return; } const labels=Array.from(selected).map(el=>el.dataset.label||el.value); Swal.fire({title:'Auswahl wirklich löschen?', html:`Kategorien: <b>${labels.join(', ')}</b><br><br>Diese Aktion kann nicht rückgängig gemacht werden.`, icon:'warning', showCancelButton:true, confirmButtonText:'Ja, löschen', cancelButtonText:'Abbrechen'}).then((result)=>{ if(result.isConfirmed){ form.submit(); } });"}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15.Call)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\">Auswahl löschen</button></form><button class=\"btn btn-primary\" hx-get=\"/admin/queues/data\" hx-trigger=\"click, every 5s\" hx-target=\"#queue-items-table\" hx-indicator=\"#refresh-indicator\"><span id=\"refresh-indicator\" class=\"loading loading-spinner loading-xs htmx-indicator\"></span> Aktualisieren</button></div></div><div id=\"queue-items-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -334,7 +353,7 @@ func QueueItems(items []QueueItem, currentTime time.Time) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

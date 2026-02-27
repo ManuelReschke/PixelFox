@@ -29,6 +29,44 @@ type AdminQueueController struct {
 	queueRepo repository.QueueRepository
 }
 
+const (
+	imageStatusKeyPrefix          = "image:status:"
+	imageStatusTimestampKeyPrefix = "image:status:timestamp:"
+	statisticsKeyPrefix           = "statistics:"
+	analyticsKeyPrefix            = "analytics:"
+	sessionKeyPrefix              = "session:"
+)
+
+type queueBulkDeleteTarget struct {
+	label    string
+	patterns []string
+}
+
+var queueBulkDeleteTargets = map[string]queueBulkDeleteTarget{
+	"jobs": {
+		label: "Jobs",
+		patterns: []string{
+			jobqueue.JobKeyPrefix + "*",
+			jobqueue.JobQueueKey,
+			jobqueue.JobProcessingKey,
+			jobqueue.JobStatsKey,
+		},
+	},
+	"image_status": {
+		label: "Image Status",
+		patterns: []string{
+			imageStatusKeyPrefix + "*",
+			imageStatusTimestampKeyPrefix + "*",
+		},
+	},
+	"statistics": {
+		label: "Statistics",
+		patterns: []string{
+			statisticsKeyPrefix + "*",
+		},
+	},
+}
+
 // NewAdminQueueController creates a new admin queue controller with repository
 func NewAdminQueueController(queueRepo repository.QueueRepository) *AdminQueueController {
 	return &AdminQueueController{
@@ -101,6 +139,52 @@ func (aqc *AdminQueueController) HandleAdminQueueDelete(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
+// HandleAdminQueueBulkDelete deletes key groups by selected scopes.
+func (aqc *AdminQueueController) HandleAdminQueueBulkDelete(c *fiber.Ctx) error {
+	rawScopes := c.Context().PostArgs().PeekMulti("scopes")
+	scopes := make([]string, 0, len(rawScopes))
+	for _, rawScope := range rawScopes {
+		scopes = append(scopes, strings.TrimSpace(string(rawScope)))
+	}
+
+	normalizedScopes, err := normalizeBulkDeleteScopes(scopes)
+	if err != nil {
+		return flash.WithError(c, fiber.Map{
+			"type":    "error",
+			"message": err.Error(),
+		}).Redirect("/admin/queues")
+	}
+
+	if len(normalizedScopes) == 0 {
+		return flash.WithError(c, fiber.Map{
+			"type":    "error",
+			"message": "Bitte mindestens eine Kategorie auswählen.",
+		}).Redirect("/admin/queues")
+	}
+
+	patterns, labels := resolveBulkDeletePatterns(normalizedScopes)
+	keys, err := aqc.queueRepo.FindKeysByPatterns(patterns)
+	if err != nil {
+		return aqc.handleError(c, "Fehler beim Suchen passender Schlüssel", err)
+	}
+
+	deleted, err := aqc.queueRepo.DeleteKeys(keys)
+	if err != nil {
+		return aqc.handleError(c, "Fehler beim Löschen der ausgewählten Schlüssel", err)
+	}
+
+	selection := strings.Join(labels, ", ")
+	message := fmt.Sprintf("%d Schlüssel gelöscht (%s).", deleted, selection)
+	if len(keys) == 0 {
+		message = fmt.Sprintf("Keine passenden Schlüssel gefunden (%s).", selection)
+	}
+
+	return flash.WithSuccess(c, fiber.Map{
+		"type":    "success",
+		"message": message,
+	}).Redirect("/admin/queues")
+}
+
 // getQueueItems retrieves all items from the cache with their metadata using repository pattern
 func (aqc *AdminQueueController) getQueueItems() ([]admin_views.QueueItem, error) {
 	// Get all keys using repository
@@ -130,11 +214,13 @@ func (aqc *AdminQueueController) getQueueItems() ([]admin_views.QueueItem, error
 		itemType := "unknown"
 		displayValue := value
 
-		if strings.HasPrefix(key, imageprocessor.ImageStatusKeyFormat[:13]) { // Prefix "image:status:"
+		if strings.HasPrefix(key, imageStatusTimestampKeyPrefix) {
 			itemType = "image_status"
-			// Extract UUID from key
-			uuid := strings.TrimPrefix(key, "image:status:")
-			// Display a more readable value for status keys
+			uuid := strings.TrimPrefix(key, imageStatusTimestampKeyPrefix)
+			displayValue = fmt.Sprintf("Zeitstempel %s (UUID: %s)", value, uuid)
+		} else if strings.HasPrefix(key, imageStatusKeyPrefix) {
+			itemType = "image_status"
+			uuid := strings.TrimPrefix(key, imageStatusKeyPrefix)
 			switch value {
 			case imageprocessor.STATUS_PENDING:
 				displayValue = "Wartend"
@@ -162,9 +248,11 @@ func (aqc *AdminQueueController) getQueueItems() ([]admin_views.QueueItem, error
 		} else if key == jobqueue.JobStatsKey {
 			itemType = "job_stats"
 			displayValue = "Job-Statistiken"
-		} else if strings.HasPrefix(key, "analytics:") {
+		} else if strings.HasPrefix(key, statisticsKeyPrefix) {
+			itemType = "statistics"
+		} else if strings.HasPrefix(key, analyticsKeyPrefix) {
 			itemType = "analytics"
-		} else if strings.HasPrefix(key, "session:") {
+		} else if strings.HasPrefix(key, sessionKeyPrefix) {
 			itemType = "session"
 		}
 
@@ -221,6 +309,51 @@ func (aqc *AdminQueueController) getJobStatusFromValue(jsonValue string) string 
 		return "Wird wiederholt"
 	}
 	return "Unbekannt"
+}
+
+func normalizeBulkDeleteScopes(scopes []string) ([]string, error) {
+	seen := make(map[string]struct{})
+	normalized := make([]string, 0, len(scopes))
+
+	for _, scope := range scopes {
+		if scope == "" {
+			continue
+		}
+
+		if _, ok := queueBulkDeleteTargets[scope]; !ok {
+			return nil, fmt.Errorf("Ungültige Auswahl für Bulk-Löschung: %s", scope)
+		}
+
+		if _, exists := seen[scope]; exists {
+			continue
+		}
+
+		seen[scope] = struct{}{}
+		normalized = append(normalized, scope)
+	}
+
+	return normalized, nil
+}
+
+func resolveBulkDeletePatterns(scopes []string) ([]string, []string) {
+	seenPatterns := make(map[string]struct{})
+	patterns := make([]string, 0, len(scopes))
+	labels := make([]string, 0, len(scopes))
+
+	for _, scope := range scopes {
+		target := queueBulkDeleteTargets[scope]
+		labels = append(labels, target.label)
+
+		for _, pattern := range target.patterns {
+			if _, exists := seenPatterns[pattern]; exists {
+				continue
+			}
+			seenPatterns[pattern] = struct{}{}
+			patterns = append(patterns, pattern)
+		}
+	}
+
+	return patterns, labels
 }
 
 // ============================================================================

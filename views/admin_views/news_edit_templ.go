@@ -34,7 +34,7 @@ func newsEditContent(news models.News) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-6\"><div><h1 class=\"text-2xl font-bold\">News-Artikel bearbeiten</h1><p class=\"opacity-75\">Bearbeite den News-Artikel</p></div></div><!-- News Edit Form --><div class=\"bg-base-200 shadow-md rounded-lg p-6\"><form action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"mb-6\"><div><h1 class=\"text-3xl font-bold mb-2\">News-Artikel bearbeiten</h1><p class=\"opacity-75\">Bearbeite den News-Artikel</p></div></div><!-- News Edit Form --><div class=\"bg-base-200 shadow-md rounded-lg p-6\"><form action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -47,7 +47,7 @@ func newsEditContent(news models.News) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" method=\"POST\" class=\"space-y-6\"><div class=\"grid grid-cols-1 gap-6\"><div><label for=\"title\" class=\"block text-sm font-medium\">Titel</label> <input type=\"text\" name=\"title\" id=\"title\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" method=\"POST\" class=\"space-y-6\"><div class=\"grid grid-cols-1 gap-6\"><div><label for=\"title\" class=\"block text-sm font-medium mb-2\">Titel</label> <input type=\"text\" name=\"title\" id=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -60,33 +60,33 @@ func newsEditContent(news models.News) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" required class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\"></div><div><label for=\"slug\" class=\"block text-sm font-medium\">Slug</label> <input type=\"text\" name=\"slug\" id=\"slug\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" required class=\"input input-bordered w-full\" placeholder=\"Titel des News-Artikels\"></div><div><label for=\"slug\" class=\"block text-sm font-medium mb-2\">Slug</label> <input type=\"text\" name=\"slug\" id=\"slug\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(news.Slug)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/news_edit.templ`, Line: 30, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/news_edit.templ`, Line: 31, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" required class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\"><p class=\"mt-1 text-sm opacity-75\">Der Slug wird in der URL verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche.</p></div><div><label for=\"content\" class=\"block text-sm font-medium\">Inhalt</label> <textarea name=\"content\" id=\"content\" rows=\"10\" required class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" required class=\"input input-bordered w-full\" placeholder=\"news-artikel-slug\" pattern=\"^[a-z0-9]+(?:-[a-z0-9]+)*$\" title=\"Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt\"><p class=\"mt-1 text-sm opacity-75\">Der Slug wird in der URL verwendet. Nur Kleinbuchstaben, Zahlen und Bindestriche.</p></div><div><label for=\"content\" class=\"block text-sm font-medium mb-2\">Inhalt</label> <textarea name=\"content\" id=\"content\" rows=\"10\" required class=\"textarea textarea-bordered w-full\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(news.Content)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/news_edit.templ`, Line: 38, Col: 152}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/admin_views/news_edit.templ`, Line: 42, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</textarea><p class=\"mt-1 text-sm opacity-75\">Markdown wird unterstützt.</p></div><div><label for=\"published\" class=\"block text-sm font-medium\">Status</label> <select name=\"published\" id=\"published\" class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</textarea><p class=\"mt-1 text-sm opacity-75\">Markdown wird unterstützt.</p></div><div><label for=\"published\" class=\"block text-sm font-medium mb-2\">Status</label> <select name=\"published\" id=\"published\" class=\"select select-bordered w-full\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -101,7 +101,7 @@ func newsEditContent(news models.News) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</select></div></div><div class=\"flex justify-end space-x-3\"><a href=\"/admin/news\" class=\"btn btn-outline\">Abbrechen</a> <button type=\"submit\" class=\"inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500\">Speichern</button></div></form></div><!-- CKEditor handled globally -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</select></div></div><div class=\"flex justify-end space-x-3\"><a href=\"/admin/news\" class=\"btn btn-secondary\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Speichern</button></div></form></div><!-- CKEditor handled globally -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -130,7 +130,7 @@ func newsCreateContent() templ.Component {
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"mb-6\"><div><h1 class=\"text-2xl font-bold\">Neuen News-Artikel erstellen</h1><p class=\"opacity-75\">Erstelle einen neuen News-Artikel</p></div></div><!-- News Create Form --><div class=\"bg-base-200 shadow-md rounded-lg p-6\"><form action=\"/admin/news/store\" method=\"POST\" class=\"space-y-6\"><!-- CSRF Token -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"mb-6\"><div><h1 class=\"text-3xl font-bold mb-2\">Neuen News-Artikel erstellen</h1><p class=\"opacity-75\">Erstelle einen neuen News-Artikel</p></div></div><!-- News Create Form --><div class=\"bg-base-200 shadow-md rounded-lg p-6\"><form action=\"/admin/news/store\" method=\"POST\" class=\"space-y-6\"><!-- CSRF Token -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -138,7 +138,7 @@ func newsCreateContent() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"grid grid-cols-1 gap-6\"><div><label for=\"title\" class=\"block text-sm font-medium\">Titel</label> <input type=\"text\" name=\"title\" id=\"title\" required class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\"></div><div><label for=\"slug\" class=\"block text-sm font-medium\">Slug</label> <input type=\"text\" name=\"slug\" id=\"slug\" required class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\"></div><div><label for=\"content\" class=\"block text-sm font-medium\">Inhalt</label> <textarea name=\"content\" id=\"content\" rows=\"10\" required class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\"></textarea></div><div><label for=\"published\" class=\"block text-sm font-medium\">Status</label> <select name=\"published\" id=\"published\" class=\"mt-1 block w-full border-base-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-base-100\"><option value=\"1\">Veröffentlicht</option> <option value=\"0\" selected>Entwurf</option></select></div></div><div class=\"flex justify-end space-x-3\"><a href=\"/admin/news\" class=\"btn btn-outline\">Abbrechen</a> <button type=\"submit\" class=\"inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500\">Speichern</button></div></form></div><!-- CKEditor handled globally -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"grid grid-cols-1 gap-6\"><div><label for=\"title\" class=\"block text-sm font-medium mb-2\">Titel</label> <input type=\"text\" name=\"title\" id=\"title\" required class=\"input input-bordered w-full\" placeholder=\"Titel des News-Artikels\"></div><div><label for=\"slug\" class=\"block text-sm font-medium mb-2\">Slug</label> <input type=\"text\" name=\"slug\" id=\"slug\" required class=\"input input-bordered w-full\" placeholder=\"news-artikel-slug\" pattern=\"^[a-z0-9]+(?:-[a-z0-9]+)*$\" title=\"Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt\"></div><div><label for=\"content\" class=\"block text-sm font-medium mb-2\">Inhalt</label> <textarea name=\"content\" id=\"content\" rows=\"10\" required class=\"textarea textarea-bordered w-full\"></textarea></div><div><label for=\"published\" class=\"block text-sm font-medium mb-2\">Status</label> <select name=\"published\" id=\"published\" class=\"select select-bordered w-full\"><option value=\"1\">Veröffentlicht</option> <option value=\"0\" selected>Entwurf</option></select></div></div><div class=\"flex justify-end space-x-3\"><a href=\"/admin/news\" class=\"btn btn-secondary\">Abbrechen</a> <button type=\"submit\" class=\"btn btn-primary\">Speichern</button></div></form></div><!-- CKEditor handled globally -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

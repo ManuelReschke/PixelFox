@@ -35,6 +35,7 @@ func (h HttpRouter) registerAdminRoutes(app *fiber.App) {
 	adminGroup.Get("/queues", controllers.HandleAdminQueues)
 	adminGroup.Get("/queues/data", controllers.HandleAdminQueuesData)
 	adminGroup.Delete("/queues/delete/:key", controllers.HandleAdminQueueDelete)
+	adminGroup.Post("/queues/bulk-delete", controllers.HandleAdminQueueBulkDelete)
 
 	// Storage management
 	adminGroup.Get("/storage", controllers.HandleAdminStorageManagement)

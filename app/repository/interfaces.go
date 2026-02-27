@@ -130,6 +130,8 @@ type QueueRepository interface {
 	GetTTL(key string) (time.Duration, error)
 	DeleteKey(key string) (int64, error)
 	GetListLength(key string) (int64, error)
+	FindKeysByPatterns(patterns []string) ([]string, error)
+	DeleteKeys(keys []string) (int64, error)
 }
 
 // UserWithStats represents a user with additional statistics

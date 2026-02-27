@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/ManuelReschke/PixelFox/internal/pkg/cache"
@@ -80,4 +81,71 @@ func (r *queueRepository) GetListLength(key string) (int64, error) {
 	}
 
 	return length, nil
+}
+
+// FindKeysByPatterns retrieves keys for the provided Redis match patterns using SCAN.
+func (r *queueRepository) FindKeysByPatterns(patterns []string) ([]string, error) {
+	redisClient := cache.GetClient()
+	ctx := context.Background()
+
+	uniqueKeys := make(map[string]struct{})
+
+	for _, pattern := range patterns {
+		if pattern == "" {
+			continue
+		}
+
+		var cursor uint64
+		for {
+			keys, nextCursor, err := redisClient.Scan(ctx, cursor, pattern, 500).Result()
+			if err != nil {
+				return nil, err
+			}
+
+			for _, key := range keys {
+				uniqueKeys[key] = struct{}{}
+			}
+
+			cursor = nextCursor
+			if cursor == 0 {
+				break
+			}
+		}
+	}
+
+	keys := make([]string, 0, len(uniqueKeys))
+	for key := range uniqueKeys {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+	return keys, nil
+}
+
+// DeleteKeys deletes keys in batches and returns the total number of deleted keys.
+func (r *queueRepository) DeleteKeys(keys []string) (int64, error) {
+	if len(keys) == 0 {
+		return 0, nil
+	}
+
+	redisClient := cache.GetClient()
+	ctx := context.Background()
+
+	const batchSize = 500
+	var totalDeleted int64
+
+	for i := 0; i < len(keys); i += batchSize {
+		end := i + batchSize
+		if end > len(keys) {
+			end = len(keys)
+		}
+
+		deleted, err := redisClient.Del(ctx, keys[i:end]...).Result()
+		if err != nil {
+			return totalDeleted, err
+		}
+		totalDeleted += deleted
+	}
+
+	return totalDeleted, nil
 }

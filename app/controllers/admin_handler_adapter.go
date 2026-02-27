@@ -145,6 +145,11 @@ func HandleAdminQueueDelete(c *fiber.Ctx) error {
 	return GetAdminQueueController().HandleAdminQueueDelete(c)
 }
 
+// HandleAdminQueueBulkDelete - Adapter for queue bulk deletion
+func HandleAdminQueueBulkDelete(c *fiber.Ctx) error {
+	return GetAdminQueueController().HandleAdminQueueBulkDelete(c)
+}
+
 // Storage Management - Repository Pattern Functions using dedicated AdminStorageController
 
 // HandleAdminStorageManagement - Adapter for storage management dashboard
