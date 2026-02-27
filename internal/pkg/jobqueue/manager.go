@@ -11,15 +11,13 @@ import (
 
 // Manager manages the global job queue and background tasks
 type Manager struct {
-	queue               *Queue
-	retryTicker         *time.Ticker
-	delayedBackupTicker *time.Ticker
-	counterFlushTicker  *time.Ticker
-	tieringTicker       *time.Ticker
-	stopCh              chan struct{}
-	wg                  sync.WaitGroup
-	mu                  sync.Mutex
-	running             bool
+	queue              *Queue
+	counterFlushTicker *time.Ticker
+	tieringTicker      *time.Ticker
+	stopCh             chan struct{}
+	wg                 sync.WaitGroup
+	mu                 sync.Mutex
+	running            bool
 }
 
 var (
@@ -37,7 +35,7 @@ func GetManager() *Manager {
 		}
 
 		globalManager = &Manager{
-			queue:  NewQueue(workerCount), // Configurable workers for image processing + backup jobs (unified)
+			queue:  NewQueue(workerCount), // Configurable workers for unified background jobs
 			stopCh: make(chan struct{}),
 		}
 	})
@@ -65,24 +63,6 @@ func (m *Manager) Start() {
 
 	// Start the job queue
 	m.queue.Start()
-
-	// Get intervals from settings
-	retryInterval := 2 * time.Minute // Default fallback
-	checkInterval := 5 * time.Minute // Default fallback
-	if settings := getAppSettings(); settings != nil {
-		retryInterval = time.Duration(settings.GetS3RetryInterval()) * time.Minute
-		checkInterval = time.Duration(settings.GetS3BackupCheckInterval()) * time.Minute
-	}
-
-	// Start retry mechanism - configurable interval
-	m.retryTicker = time.NewTicker(retryInterval)
-	m.wg.Add(1)
-	go m.retryWorker()
-
-	// Start delayed backup processing - configurable interval
-	m.delayedBackupTicker = time.NewTicker(checkInterval)
-	m.wg.Add(1)
-	go m.delayedBackupWorker()
 
 	// Start counter flush worker (Redis -> DB) every 5 seconds
 	m.counterFlushTicker = time.NewTicker(5 * time.Second)
@@ -113,16 +93,6 @@ func (m *Manager) Stop() {
 
 	log.Info("[JobQueue Manager] Stopping job queue and background tasks...")
 
-	// Stop retry ticker
-	if m.retryTicker != nil {
-		m.retryTicker.Stop()
-	}
-
-	// Stop delayed backup ticker
-	if m.delayedBackupTicker != nil {
-		m.delayedBackupTicker.Stop()
-	}
-
 	if m.counterFlushTicker != nil {
 		m.counterFlushTicker.Stop()
 	}
@@ -145,64 +115,11 @@ func (m *Manager) Stop() {
 
 	m.mu.Lock()
 	m.stopCh = nil
-	m.retryTicker = nil
-	m.delayedBackupTicker = nil
 	m.counterFlushTicker = nil
 	m.tieringTicker = nil
 	m.mu.Unlock()
 
 	log.Info("[JobQueue Manager] Stopped successfully")
-}
-
-// retryWorker runs periodically to retry failed S3 backups
-func (m *Manager) retryWorker() {
-	defer m.wg.Done()
-	interval := 2 // Default fallback
-	if settings := getAppSettings(); settings != nil {
-		interval = settings.GetS3RetryInterval()
-	}
-	log.Infof("[JobQueue Manager] Started retry worker (interval: %d minutes)", interval)
-
-	for {
-		select {
-		case <-m.stopCh:
-			log.Info("[JobQueue Manager] Retry worker stopping")
-			return
-		case <-m.retryTicker.C:
-			log.Debug("[JobQueue Manager] Running retry check for failed S3 backups")
-			// 1) Recover stuck 'uploading' backups
-			if err := m.queue.RecoverStuckS3Uploading(30 * time.Minute); err != nil {
-				log.Errorf("[JobQueue Manager] Error recovering stuck S3 uploads: %v", err)
-			}
-			// 2) Retry failed backups
-			if err := m.queue.RetryFailedS3Backups(); err != nil {
-				log.Errorf("[JobQueue Manager] Error retrying failed S3 backups: %v", err)
-			}
-		}
-	}
-}
-
-// delayedBackupWorker runs periodically to process delayed S3 backups
-func (m *Manager) delayedBackupWorker() {
-	defer m.wg.Done()
-	interval := 5 // Default fallback
-	if settings := getAppSettings(); settings != nil {
-		interval = settings.GetS3BackupCheckInterval()
-	}
-	log.Infof("[JobQueue Manager] Started delayed backup worker (interval: %d minutes)", interval)
-
-	for {
-		select {
-		case <-m.stopCh:
-			log.Info("[JobQueue Manager] Delayed backup worker stopping")
-			return
-		case <-m.delayedBackupTicker.C:
-			log.Debug("[JobQueue Manager] Running delayed backup processing")
-			if err := m.queue.ProcessDelayedS3Backups(); err != nil {
-				log.Errorf("[JobQueue Manager] Error processing delayed S3 backups: %v", err)
-			}
-		}
-	}
 }
 
 // counterFlushWorker periodically flushes in-memory counters from Redis to DB

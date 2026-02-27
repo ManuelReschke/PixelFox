@@ -1,7 +1,6 @@
 package jobqueue
 
 import (
-	"os"
 	"sync"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 
 func TestEnqueueImageProcessing_NilImage(t *testing.T) {
 	// Execute the test with nil image
-	err := EnqueueImageProcessing(nil, false)
+	err := EnqueueImageProcessing(nil)
 
 	// Assertions
 	assert.Error(t, err)
@@ -30,29 +29,18 @@ func TestEnqueueImageProcessing_EmptyUUID(t *testing.T) {
 	}
 
 	// Execute the test
-	err := EnqueueImageProcessing(image, false)
+	err := EnqueueImageProcessing(image)
 
 	// Assertions
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot enqueue invalid image data")
 }
 
-func TestProcessImageUnified_BackupEnabled(t *testing.T) {
+func TestProcessImageUnified(t *testing.T) {
 	host, port, password := resolveTestRedis(t)
 	configureTestCache(host, port, password)
 	globalManager = nil
 	managerOnce = sync.Once{}
-
-	// Set environment variable to enable backup
-	originalEnv := os.Getenv("S3_BACKUP_ENABLED")
-	defer func() {
-		if originalEnv != "" {
-			os.Setenv("S3_BACKUP_ENABLED", originalEnv)
-		} else {
-			os.Unsetenv("S3_BACKUP_ENABLED")
-		}
-	}()
-	os.Setenv("S3_BACKUP_ENABLED", "true")
 
 	// Create test image
 	image := &models.Image{
@@ -64,40 +52,6 @@ func TestProcessImageUnified_BackupEnabled(t *testing.T) {
 	}
 
 	// Execute the test - this should succeed because it only enqueues a job
-	err := ProcessImageUnified(image)
-
-	// The function should succeed as it only enqueues a job to Redis queue
-	// The actual processing happens asynchronously in workers
-	assert.NoError(t, err, "ProcessImageUnified should successfully enqueue job")
-}
-
-func TestProcessImageUnified_BackupDisabled(t *testing.T) {
-	host, port, password := resolveTestRedis(t)
-	configureTestCache(host, port, password)
-	globalManager = nil
-	managerOnce = sync.Once{}
-
-	// Set environment variable to disable backup
-	originalEnv := os.Getenv("S3_BACKUP_ENABLED")
-	defer func() {
-		if originalEnv != "" {
-			os.Setenv("S3_BACKUP_ENABLED", originalEnv)
-		} else {
-			os.Unsetenv("S3_BACKUP_ENABLED")
-		}
-	}()
-	os.Setenv("S3_BACKUP_ENABLED", "false")
-
-	// Create test image
-	image := &models.Image{
-		ID:       789,
-		UUID:     "unified-test-uuid-no-backup",
-		FilePath: "/unified/test/path",
-		FileName: "unified.jpg",
-		FileType: ".jpg",
-	}
-
-	// Execute the test
 	err := ProcessImageUnified(image)
 
 	// The function should succeed as it only enqueues a job to Redis queue

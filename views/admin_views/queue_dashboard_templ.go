@@ -206,7 +206,7 @@ func getBadgeClass(itemType string) string {
 	switch itemType {
 	case "image_status":
 		return "badge-primary"
-	case "s3_backup_job":
+	case "job":
 		return "badge-warning"
 	case "job_queue":
 		return "badge-info"

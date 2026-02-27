@@ -502,54 +502,6 @@ func HandleUserImageDelete(c *fiber.Ctx) error {
 	return c.Redirect("/user/images")
 }
 
-// enqueueUserS3DeleteJobsIfEnabled creates S3 delete jobs for completed backups if S3 backup is enabled
-func enqueueUserS3DeleteJobsIfEnabled(image *models.Image) {
-	// Check admin setting for S3 backup enablement
-	settings := models.GetAppSettings()
-	if settings == nil || !settings.IsS3BackupEnabled() {
-		fmt.Printf("[S3Delete] S3 backup disabled by settings, skipping delete for image %s\n", image.UUID)
-		return
-	}
-
-	db := database.GetDB()
-	if db == nil {
-		fmt.Printf("[S3Delete] Database connection is nil\n")
-		return
-	}
-
-	// Find all completed backups for this image
-	backups, err := models.FindCompletedBackupsByImageID(db, image.ID)
-	if err != nil {
-		fmt.Printf("[S3Delete] Failed to find backups for image %d: %v\n", image.ID, err)
-		return
-	}
-
-	if len(backups) == 0 {
-		fmt.Printf("[S3Delete] No completed backups found for image %s\n", image.UUID)
-		return
-	}
-
-	// Get job queue from manager
-	queue := jobqueue.GetManager().GetQueue()
-
-	// Enqueue delete jobs for each completed backup
-	for _, backup := range backups {
-		job, err := queue.EnqueueS3DeleteJob(
-			image.ID,
-			image.UUID,
-			backup.ObjectKey,
-			backup.BucketName,
-			backup.ID,
-		)
-		if err != nil {
-			fmt.Printf("[S3Delete] Failed to enqueue delete job for backup %d: %v\n", backup.ID, err)
-			continue
-		}
-
-		fmt.Printf("[S3Delete] Successfully enqueued delete job %s for image %s\n", job.ID, image.UUID)
-	}
-}
-
 func HandleUserProfileEdit(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)
 	userID := userCtx.UserID

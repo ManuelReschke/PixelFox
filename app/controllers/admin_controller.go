@@ -511,29 +511,6 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 	// Replication settings
 	replicationRequireChecksum := c.FormValue("replication_require_checksum") == "on"
 
-	// Parse and validate numeric settings
-	s3BackupEnabled := c.FormValue("s3_backup_enabled") == "on"
-	s3BackupDelayMinutes, _ := strconv.Atoi(c.FormValue("s3_backup_delay_minutes"))
-	if s3BackupDelayMinutes < 0 {
-		s3BackupDelayMinutes = 0
-	} else if s3BackupDelayMinutes > 43200 {
-		s3BackupDelayMinutes = 43200
-	}
-
-	s3BackupCheckInterval, _ := strconv.Atoi(c.FormValue("s3_backup_check_interval"))
-	if s3BackupCheckInterval < 1 {
-		s3BackupCheckInterval = 1
-	} else if s3BackupCheckInterval > 60 {
-		s3BackupCheckInterval = 60
-	}
-
-	s3RetryInterval, _ := strconv.Atoi(c.FormValue("s3_retry_interval"))
-	if s3RetryInterval < 1 {
-		s3RetryInterval = 1
-	} else if s3RetryInterval > 60 {
-		s3RetryInterval = 60
-	}
-
 	jobQueueWorkerCount, _ := strconv.Atoi(c.FormValue("job_queue_worker_count"))
 	if jobQueueWorkerCount < 1 {
 		jobQueueWorkerCount = 1
@@ -611,10 +588,6 @@ func (ac *AdminController) HandleSettingsUpdate(c *fiber.Ctx) error {
 		ThumbnailOriginalEnabled:     thumbnailOriginalEnabled,
 		ThumbnailWebPEnabled:         thumbnailWebPEnabled,
 		ThumbnailAVIFEnabled:         thumbnailAVIFEnabled,
-		S3BackupEnabled:              s3BackupEnabled,
-		S3BackupDelayMinutes:         s3BackupDelayMinutes,
-		S3BackupCheckInterval:        s3BackupCheckInterval,
-		S3RetryInterval:              s3RetryInterval,
 		JobQueueWorkerCount:          jobQueueWorkerCount,
 		APIRateLimitPerMinute:        apiRateLimitPerMinute,
 		ReplicationRequireChecksum:   replicationRequireChecksum,

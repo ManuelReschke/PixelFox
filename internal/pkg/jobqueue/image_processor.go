@@ -92,53 +92,6 @@ func (q *Queue) processImageProcessingJob(ctx context.Context, job *Job) error {
 
 	log.Infof("[JobQueue] Image processing completed for %s", payload.ImageUUID)
 
-	// If backup is enabled, check delay setting and enqueue S3 backup job accordingly
-	if payload.EnableBackup {
-		// Get current app settings to check backup delay
-		settings := models.GetAppSettings()
-		delayMinutes := settings.GetS3BackupDelayMinutes()
-
-		if delayMinutes <= 0 {
-			// Immediate backup (delay is 0 or negative)
-			log.Infof("[JobQueue] Enqueueing immediate S3 backup job for %s", payload.ImageUUID)
-
-			// Create backup record first
-			db := database.GetDB()
-			backup, err := models.CreateBackupRecord(db, payload.ImageID, models.BackupProviderS3)
-			if err != nil {
-				log.Errorf("[JobQueue] Failed to create backup record for %s: %v", payload.ImageUUID, err)
-				return nil // Don't fail image processing for backup record creation failure
-			}
-
-			// Create S3 backup payload
-			backupPayload := S3BackupJobPayload{
-				ImageID:   payload.ImageID,
-				ImageUUID: payload.ImageUUID,
-				FilePath:  payload.FilePath,
-				FileName:  payload.FileName,
-				FileSize:  image.FileSize,
-				Provider:  models.BackupProviderS3,
-				BackupID:  backup.ID,
-			}
-
-			// Enqueue S3 backup job immediately
-			if _, err := q.EnqueueJob(JobTypeS3Backup, backupPayload.ToMap()); err != nil {
-				log.Errorf("[JobQueue] Failed to enqueue S3 backup job for %s: %v", payload.ImageUUID, err)
-				// Don't fail the image processing job if backup enqueueing fails
-			}
-		} else {
-			// Delayed backup - just create backup record with pending status
-			// The background delayed backup job will pick this up later
-			log.Infof("[JobQueue] Creating delayed backup record for %s (delay: %d minutes)", payload.ImageUUID, delayMinutes)
-
-			db := database.GetDB()
-			_, err := models.CreateBackupRecord(db, payload.ImageID, models.BackupProviderS3)
-			if err != nil {
-				log.Errorf("[JobQueue] Failed to create delayed backup record for %s: %v", payload.ImageUUID, err)
-			}
-		}
-	}
-
 	return nil
 }
 

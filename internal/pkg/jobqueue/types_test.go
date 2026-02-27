@@ -7,8 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/ManuelReschke/PixelFox/app/models"
 )
 
 func TestJobType(t *testing.T) {
@@ -18,8 +16,10 @@ func TestJobType(t *testing.T) {
 		expected string
 	}{
 		{"Image Processing", JobTypeImageProcessing, "image_processing"},
-		{"S3 Backup", JobTypeS3Backup, "s3_backup"},
-		{"S3 Delete", JobTypeS3Delete, "s3_delete"},
+		{"Pool Move Enqueue", JobTypePoolMoveEnqueue, "pool_move_enqueue"},
+		{"Move Image", JobTypeMoveImage, "move_image"},
+		{"Delete Image", JobTypeDeleteImage, "delete_image"},
+		{"Reconcile Variants", JobTypeReconcileVariants, "reconcile_variants"},
 	}
 
 	for _, tt := range tests {
@@ -170,25 +170,23 @@ func TestJob_MarkAsRetrying(t *testing.T) {
 
 func TestImageProcessingJobPayload_ToMap(t *testing.T) {
 	payload := ImageProcessingJobPayload{
-		ImageID:      123,
-		ImageUUID:    "test-uuid-123",
-		FilePath:     "/path/to/file",
-		FileName:     "test.jpg",
-		FileType:     ".jpg",
-		EnableBackup: true,
+		ImageID:   123,
+		ImageUUID: "test-uuid-123",
+		FilePath:  "/path/to/file",
+		FileName:  "test.jpg",
+		FileType:  ".jpg",
 	}
 
 	result := payload.ToMap()
 
 	expected := map[string]interface{}{
-		"image_id":      uint(123),
-		"image_uuid":    "test-uuid-123",
-		"file_path":     "/path/to/file",
-		"file_name":     "test.jpg",
-		"file_type":     ".jpg",
-		"enable_backup": true,
-		"pool_id":       uint(0),
-		"node_id":       "",
+		"image_id":   uint(123),
+		"image_uuid": "test-uuid-123",
+		"file_path":  "/path/to/file",
+		"file_name":  "test.jpg",
+		"file_type":  ".jpg",
+		"pool_id":    uint(0),
+		"node_id":    "",
 	}
 
 	assert.Equal(t, expected, result)
@@ -196,24 +194,22 @@ func TestImageProcessingJobPayload_ToMap(t *testing.T) {
 
 func TestImageProcessingJobPayloadFromMap(t *testing.T) {
 	data := map[string]interface{}{
-		"image_id":      float64(123), // JSON numbers are float64
-		"image_uuid":    "test-uuid-123",
-		"file_path":     "/path/to/file",
-		"file_name":     "test.jpg",
-		"file_type":     ".jpg",
-		"enable_backup": true,
+		"image_id":   float64(123), // JSON numbers are float64
+		"image_uuid": "test-uuid-123",
+		"file_path":  "/path/to/file",
+		"file_name":  "test.jpg",
+		"file_type":  ".jpg",
 	}
 
 	payload, err := ImageProcessingJobPayloadFromMap(data)
 	require.NoError(t, err)
 
 	expected := &ImageProcessingJobPayload{
-		ImageID:      123,
-		ImageUUID:    "test-uuid-123",
-		FilePath:     "/path/to/file",
-		FileName:     "test.jpg",
-		FileType:     ".jpg",
-		EnableBackup: true,
+		ImageID:   123,
+		ImageUUID: "test-uuid-123",
+		FilePath:  "/path/to/file",
+		FileName:  "test.jpg",
+		FileType:  ".jpg",
 	}
 
 	assert.Equal(t, expected, payload)
@@ -230,159 +226,19 @@ func TestImageProcessingJobPayloadFromMap_InvalidData(t *testing.T) {
 	assert.Nil(t, payload)
 }
 
-func TestS3BackupJobPayload_ToMap(t *testing.T) {
-	payload := S3BackupJobPayload{
-		ImageID:   456,
-		ImageUUID: "backup-uuid-456",
-		FilePath:  "/backup/path",
-		FileName:  "backup.png",
-		FileSize:  1024,
-		Provider:  models.BackupProviderS3,
-		BackupID:  789,
-	}
-
-	result := payload.ToMap()
-
-	expected := map[string]interface{}{
-		"image_id":   uint(456),
-		"image_uuid": "backup-uuid-456",
-		"file_path":  "/backup/path",
-		"file_name":  "backup.png",
-		"file_size":  int64(1024),
-		"provider":   string(models.BackupProviderS3),
-		"backup_id":  uint(789),
-	}
-
-	assert.Equal(t, expected, result)
-}
-
-func TestS3BackupJobPayloadFromMap(t *testing.T) {
-	data := map[string]interface{}{
-		"image_id":   float64(456),
-		"image_uuid": "backup-uuid-456",
-		"file_path":  "/backup/path",
-		"file_name":  "backup.png",
-		"file_size":  float64(1024),
-		"provider":   "s3",
-		"backup_id":  float64(789),
-	}
-
-	payload, err := S3BackupJobPayloadFromMap(data)
-	require.NoError(t, err)
-
-	expected := &S3BackupJobPayload{
-		ImageID:   456,
-		ImageUUID: "backup-uuid-456",
-		FilePath:  "/backup/path",
-		FileName:  "backup.png",
-		FileSize:  1024,
-		Provider:  models.BackupProviderS3,
-		BackupID:  789,
-	}
-
-	assert.Equal(t, expected, payload)
-}
-
-func TestS3DeleteJobPayload_ToMap(t *testing.T) {
-	payload := S3DeleteJobPayload{
-		ImageID:    789,
-		ImageUUID:  "delete-uuid-789",
-		ObjectKey:  "2024/01/test-file.jpg",
-		BucketName: "test-bucket",
-		Provider:   models.BackupProviderS3,
-		BackupID:   101112,
-	}
-
-	result := payload.ToMap()
-
-	expected := map[string]interface{}{
-		"image_id":    uint(789),
-		"image_uuid":  "delete-uuid-789",
-		"object_key":  "2024/01/test-file.jpg",
-		"bucket_name": "test-bucket",
-		"provider":    string(models.BackupProviderS3),
-		"backup_id":   uint(101112),
-	}
-
-	assert.Equal(t, expected, result)
-}
-
-func TestS3DeleteJobPayloadFromMap(t *testing.T) {
-	data := map[string]interface{}{
-		"image_id":    float64(789),
-		"image_uuid":  "delete-uuid-789",
-		"object_key":  "2024/01/test-file.jpg",
-		"bucket_name": "test-bucket",
-		"provider":    "s3",
-		"backup_id":   float64(101112),
-	}
-
-	payload, err := S3DeleteJobPayloadFromMap(data)
-	require.NoError(t, err)
-
-	expected := &S3DeleteJobPayload{
-		ImageID:    789,
-		ImageUUID:  "delete-uuid-789",
-		ObjectKey:  "2024/01/test-file.jpg",
-		BucketName: "test-bucket",
-		Provider:   models.BackupProviderS3,
-		BackupID:   101112,
-	}
-
-	assert.Equal(t, expected, payload)
-}
-
 func TestPayloadRoundTrip(t *testing.T) {
 	t.Run("ImageProcessingJobPayload", func(t *testing.T) {
 		original := ImageProcessingJobPayload{
-			ImageID:      123,
-			ImageUUID:    "round-trip-test",
-			FilePath:     "/test/path",
-			FileName:     "roundtrip.jpg",
-			FileType:     ".jpg",
-			EnableBackup: false,
+			ImageID:   123,
+			ImageUUID: "round-trip-test",
+			FilePath:  "/test/path",
+			FileName:  "roundtrip.jpg",
+			FileType:  ".jpg",
 		}
 
 		// Convert to map and back
 		data := original.ToMap()
 		result, err := ImageProcessingJobPayloadFromMap(data)
-		require.NoError(t, err)
-
-		assert.Equal(t, &original, result)
-	})
-
-	t.Run("S3BackupJobPayload", func(t *testing.T) {
-		original := S3BackupJobPayload{
-			ImageID:   456,
-			ImageUUID: "backup-roundtrip",
-			FilePath:  "/backup/test",
-			FileName:  "backup.png",
-			FileSize:  2048,
-			Provider:  models.BackupProviderS3,
-			BackupID:  999,
-		}
-
-		// Convert to map and back
-		data := original.ToMap()
-		result, err := S3BackupJobPayloadFromMap(data)
-		require.NoError(t, err)
-
-		assert.Equal(t, &original, result)
-	})
-
-	t.Run("S3DeleteJobPayload", func(t *testing.T) {
-		original := S3DeleteJobPayload{
-			ImageID:    789,
-			ImageUUID:  "delete-roundtrip",
-			ObjectKey:  "2024/test/delete.jpg",
-			BucketName: "roundtrip-bucket",
-			Provider:   models.BackupProviderS3,
-			BackupID:   111213,
-		}
-
-		// Convert to map and back
-		data := original.ToMap()
-		result, err := S3DeleteJobPayloadFromMap(data)
 		require.NoError(t, err)
 
 		assert.Equal(t, &original, result)

@@ -96,16 +96,6 @@ func HandleAdminImageDelete(c *fiber.Ctx) error {
 	return GetAdminImagesController().HandleAdminImageDelete(c)
 }
 
-// HandleAdminImageStartBackup - Adapter for manual S3 backup enqueue
-func HandleAdminImageStartBackup(c *fiber.Ctx) error {
-	return GetAdminImagesController().HandleAdminImageStartBackup(c)
-}
-
-// HandleAdminImageDeleteBackup - Adapter for manual S3 backup enqueue
-func HandleAdminImageDeleteBackup(c *fiber.Ctx) error {
-	return GetAdminImagesController().HandleAdminImageDeleteBackup(c)
-}
-
 // News Management - Repository Pattern Functions using dedicated AdminNewsController
 
 // HandleAdminNews - Adapter for news management

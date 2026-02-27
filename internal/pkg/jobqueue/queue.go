@@ -280,10 +280,9 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 	switch job.Type {
 	case JobTypeImageProcessing:
 		err = q.processImageProcessingJob(ctx, job)
-	case JobTypeS3Backup:
-		err = q.processS3BackupJob(ctx, job)
-	case JobTypeS3Delete:
-		err = q.processS3DeleteJob(ctx, job)
+	case JobType("s3_backup"), JobType("s3_delete"):
+		log.Warnf("[JobQueue] Dropping deprecated job type %s (%s)", job.Type, job.ID)
+		err = nil
 	case JobTypePoolMoveEnqueue:
 		err = q.processPoolMoveEnqueueJob(job)
 	case JobTypeMoveImage:

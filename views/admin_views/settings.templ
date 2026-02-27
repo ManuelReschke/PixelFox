@@ -287,86 +287,8 @@ templ settingsContent(settings models.AppSettings, csrfToken string) {
 					</label>
 				</div>
 
-				<!-- S3 Backup Settings -->
-				<div class="divider">S3 Backup Einstellungen</div>
-
-				<div class="form-control">
-					<label class="label cursor-pointer">
-						<span class="label-text font-semibold">S3 Backup aktivieren</span>
-						<input 
-							type="checkbox" 
-							name="s3_backup_enabled" 
-							class="checkbox"
-							if settings.S3BackupEnabled {
-								checked
-							}
-						/>
-					</label>
-					<label class="label">
-						<span class="label-text-alt">Steuert global, ob S3 Backups erstellt werden (vorausgesetzt, es existiert ein aktiver S3‑Speicherpool).</span>
-						<span class="label-text-alt">Wenn deaktiviert, werden keine neuen S3‑Backups mehr eingeplant. Bereits vorhandene Backups bleiben im Bucket bestehen; ggf. bereits ausstehende (verzögerte) Backups können weiterhin verarbeitet werden. S3‑Löschjobs beim Bildlöschen sind in diesem Modus ebenfalls deaktiviert.</span>
-					</label>
-				</div>
-				
-				<div class="form-control">
-					<label class="label">
-						<span class="label-text font-semibold">S3 Backup Verzögerung (Minuten)</span>
-					</label>
-					<input 
-						type="number" 
-						name="s3_backup_delay_minutes" 
-						value={ fmt.Sprintf("%d", settings.S3BackupDelayMinutes) }
-						class="input input-bordered w-full" 
-						placeholder="0"
-						min="0"
-						max="43200"
-						required
-					/>
-					<label class="label">
-						<span class="label-text-alt">Nach wie vielen Minuten nach dem Upload soll das S3 Backup erfolgen? 0 = sofort, 1440 = nach 24 Stunden</span>
-					</label>
-				</div>
-
-				<div class="form-control">
-					<label class="label">
-						<span class="label-text font-semibold">S3 Backup Check Intervall (Minuten)</span>
-					</label>
-					<input 
-						type="number" 
-						name="s3_backup_check_interval" 
-						value={ fmt.Sprintf("%d", settings.S3BackupCheckInterval) }
-						class="input input-bordered w-full" 
-						placeholder="5"
-						min="1"
-						max="60"
-						required
-					/>
-					<label class="label">
-						<span class="label-text-alt">Wie oft soll nach ausstehenden S3 Backups gesucht werden? (1-60 Minuten)</span>
-					</label>
-				</div>
-
-				<div class="form-control">
-					<label class="label">
-						<span class="label-text font-semibold">S3 Retry Intervall (Minuten)</span>
-					</label>
-					<input 
-						type="number" 
-						name="s3_retry_interval" 
-						value={ fmt.Sprintf("%d", settings.S3RetryInterval) }
-						class="input input-bordered w-full" 
-						placeholder="2"
-						min="1"
-						max="60"
-						required
-					/>
-					<label class="label">
-						<span class="label-text-alt">Wartezeit zwischen Wiederholungsversuchen für fehlgeschlagene S3 Backups (1-60 Minuten)</span>
-					</label>
-				</div>
-
-				<!-- Thumbnail Format Settings -->
-				<div class="divider">Thumbnail-Format Einstellungen</div>
+					<!-- Thumbnail Format Settings -->
+					<div class="divider">Thumbnail-Format Einstellungen</div>
 				
 				<div class="form-control">
 					<label class="label cursor-pointer">

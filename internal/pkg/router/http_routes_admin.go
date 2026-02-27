@@ -21,8 +21,6 @@ func (h HttpRouter) registerAdminRoutes(app *fiber.App) {
 	adminGroup.Get("/images/edit/:uuid", controllers.HandleAdminImageEdit)
 	adminGroup.Post("/images/update/:uuid", controllers.HandleAdminImageUpdate)
 	adminGroup.Post("/images/delete/:uuid", controllers.HandleAdminImageDelete)
-	adminGroup.Post("/images/backup/:uuid", controllers.HandleAdminImageStartBackup)
-	adminGroup.Post("/images/backup-delete/:uuid", controllers.HandleAdminImageDeleteBackup)
 
 	// News management
 	adminGroup.Get("/news", controllers.HandleAdminNews)

@@ -212,7 +212,7 @@ func (aic *AdminImagesController) HandleAdminImageDelete(c *fiber.Ctx) error {
 		return flash.WithError(c, fm).Redirect("/admin/images")
 	}
 
-	// Enqueue async delete job (files, backups, deep cleanup)
+	// Enqueue async delete job (files + deep cleanup)
 	queue := jobqueue.GetManager().GetQueue()
 	var ridPtr *uint
 	if reportIDStr := c.Query("resolved_report_id", ""); reportIDStr != "" {
@@ -275,100 +275,6 @@ func (aic *AdminImagesController) HandleAdminImageDelete(c *fiber.Ctx) error {
 	}
 
 	return flash.WithSuccess(c, fm).Redirect("/admin/images")
-}
-
-// HandleAdminImageStartBackup enqueues a manual S3 backup job for an image if none exists
-func (aic *AdminImagesController) HandleAdminImageStartBackup(c *fiber.Ctx) error {
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-
-	// Find image
-	image, err := aic.imageRepo.GetByUUID(imageUUID)
-	if err != nil || image == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
-
-	db := database.GetDB()
-	if db == nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("DB not available")
-	}
-
-	// If backup already exists, do nothing (idempotent)
-	if backups, err := models.FindCompletedBackupsByImageID(db, image.ID); err == nil && len(backups) > 0 {
-		return c.SendStatus(fiber.StatusNoContent)
-	}
-
-	// Check admin toggle and s3 pool
-	settings := models.GetAppSettings()
-	if settings == nil || !settings.IsS3BackupEnabled() {
-		return c.Status(fiber.StatusBadRequest).SendString("S3 backup disabled")
-	}
-	s3Pool, err := models.FindHighestPriorityS3Pool(db)
-	if err != nil || s3Pool == nil {
-		return c.Status(fiber.StatusBadRequest).SendString("No active S3 storage pool")
-	}
-
-	// Create backup record
-	backup, err := models.CreateBackupRecord(db, image.ID, models.BackupProviderS3)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to create backup record")
-	}
-
-	// Enqueue S3 backup job
-	queue := jobqueue.GetManager().GetQueue()
-	if _, err := queue.EnqueueS3BackupJob(image.ID, image.UUID, image.FilePath, image.FileName, image.FileSize, backup.ID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to enqueue backup job")
-	}
-
-	return c.SendStatus(fiber.StatusAccepted)
-}
-
-// HandleAdminImageDeleteBackup enqueues S3 delete jobs for completed backups of an image
-func (aic *AdminImagesController) HandleAdminImageDeleteBackup(c *fiber.Ctx) error {
-	imageUUID := c.Params("uuid")
-	if imageUUID == "" {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-
-	// Find image
-	image, err := aic.imageRepo.GetByUUID(imageUUID)
-	if err != nil || image == nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
-
-	db := database.GetDB()
-	if db == nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("DB not available")
-	}
-
-	// Find all completed backups for this image
-	backups, err := models.FindCompletedBackupsByImageID(db, image.ID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to fetch backups")
-	}
-	if len(backups) == 0 {
-		return c.SendStatus(fiber.StatusNoContent)
-	}
-
-	// Enqueue delete jobs
-	queue := jobqueue.GetManager().GetQueue()
-	for _, backup := range backups {
-		if _, err := queue.EnqueueS3DeleteJob(
-			image.ID,
-			image.UUID,
-			backup.ObjectKey,
-			backup.BucketName,
-			backup.ID,
-		); err != nil {
-			// continue with others; report generic failure if needed
-			// but do not block the entire action
-			continue
-		}
-	}
-
-	return c.SendStatus(fiber.StatusAccepted)
 }
 
 // handleError handles errors consistently

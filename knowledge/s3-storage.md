@@ -1,7 +1,29 @@
 # S3 als Primary Cold Storage (Backblaze B2 + Cloudflare)
 
-Stand: 2026-02-25  
-Status: Analyse + laufende Implementierung (Storage-I/O Umbau gestartet)
+Stand: 2026-02-26  
+Status: Hard-Cleanup S3-Backup abgeschlossen, S3 als normaler Storage aktiv
+
+## Update 2026-02-26: S3-Backup Feature ausgebaut
+
+Entscheidung im Projekt:
+
+- S3 wird als normaler Storage-Pool betrieben (inkl. Cold-Tiering).
+- Das bisherige separate S3-Backup-Feature wird nicht mehr genutzt.
+
+Umgesetzt:
+
+- Keine Admin-Routen mehr für manuelles S3-Backup (`/admin/images/backup/*` entfernt).
+- Keine Backup-UI mehr in Bilderverwaltung/Settings/Storage-Form.
+- Upload-Queue erstellt keine S3-Backup-Jobs mehr.
+- Job-Manager startet keine Backup-Retry/Delayed-Backup Worker mehr.
+- Delete-Flow löscht Dateiobjekte direkt aus dem zugewiesenen Pool und hard-deleted DB-Records.
+- Pool-Statistiken für S3 zählen nur direkt zugewiesene Bilder/Varianten (kein `image_backups`-Anteil mehr).
+- Modelle/Migration-Basis ohne Backup-Artefakte: kein `ImageBackup`, kein `image_backups`, kein `is_backup_target`, keine `s3_backup_*` Settings.
+
+Wichtig:
+
+- Tiering/Move/Reconcile bleiben aktiv und unverändert im Kernfluss.
+- `storage_type=s3` + `storage_tier=cold` bleibt der empfohlene Weg für Cold Storage.
 
 ## Ziel
 
@@ -118,7 +140,6 @@ Es gibt damit zwei valide Betriebsmodi:
   - `storage_tier = cold`
   - `public_base_url = https://images-b2.pixelfox.cc`
   - S3 Credentials/Region/Bucket/Endpoint
-- `is_backup_target` nur setzen, wenn dieser Pool wirklich Backup-Ziel sein soll.
 
 ## Wichtige Design-Entscheidung für Objektkeys
 
@@ -195,14 +216,10 @@ Wenn später Re-Processing für Bilder im Cold-Pool nötig ist, braucht `imagepr
 
 Für Phase 1 (nur Cold nach abgeschlossener Verarbeitung) kann das vorerst optional bleiben.
 
-## 6) Stats/Accounting für S3-Pools korrigieren (empfohlen)
+## 6) Stats/Accounting für S3-Pools (Stand 2026-02-26)
 
-`GetStoragePoolStats` zählt bei S3 aktuell Backup-Daten und direkte Storage-Nutzung zusammen. Das kann bei gemischter Nutzung doppelt zählen.
-
-Empfehlung:
-
-- klare Trennung „Primary Storage“ vs „Backup Storage“ in Stats,
-- oder Backup-Zählung nur für explizite Backup-Pools.
+`GetStoragePoolStats` zählt nur direkte Pool-Zuweisungen aus `images`/`image_variants`.  
+Es gibt keine zusätzliche Backup-Zählung mehr.
 
 ## Migrationsstrategie (inkrementell)
 
@@ -236,7 +253,6 @@ Empfehlung:
 ## Offene Punkte vor Implementierung
 
 - Soll Cold-S3 nur Demotion-Ziel sein, oder auch Upload-Fallback wenn Hot/Warm voll?
-- Soll es zusätzlich weiterhin S3-Backups geben (separater Bucket), oder ersetzt Cold-S3 das Backup-Konzept teilweise?
 - Brauchen wir Re-Processing aus Cold-S3 in Phase 1 bereits, oder erst später?
 
 ## Test-Checkliste

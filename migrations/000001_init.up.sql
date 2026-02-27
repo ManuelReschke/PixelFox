@@ -20,13 +20,9 @@ INSERT INTO `settings` (`id`, `setting_key`, `value`, `type`, `created_at`, `upd
 (5, 'job_queue_worker_count', '2', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (6, 'site_title', 'PixelFox', 'string', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (7, 'direct_upload_enabled', 'true', 'boolean', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
-(8, 's3_backup_enabled', 'true', 'boolean', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
-(9, 's3_backup_delay_minutes', '5', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
-(10, 's3_retry_interval', '2', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (11, 'api_rate_limit_per_minute', '200', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (12, 'site_description', 'Next Generation Imagehosting Platform', 'string', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (13, 'upload_rate_limit_per_minute', '60', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
-(14, 's3_backup_check_interval', '5', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (15, 'replication_require_checksum', 'true', 'boolean', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (16, 'image_upload_enabled', 'true', 'boolean', '2025-09-24 18:22:54', '2025-09-25 19:05:40');
 
@@ -36,8 +32,8 @@ INSERT INTO `storage_pools` (`name`, `base_path`, `max_size`, `used_size`, `is_a
 SELECT 'Default Local Storage', '/app/uploads', 107374182400, 0, 1, 1, 99, 'local', 'hot', 'Default hot storage pool for images and variants', 'http://localhost:8080', 'http://app:4000/api/internal/upload', 'local', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM `storage_pools` WHERE `is_default` = 1);
 -- s01 - hot storage
-INSERT INTO `storage_pools` (`id`, `name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `is_backup_target`, `priority`, `storage_type`, `storage_tier`, `description`, `s3_access_key_id`, `s3_secret_access_key`, `s3_region`, `s3_bucket_name`, `s3_endpoint_url`, `s3_path_prefix`, `public_base_url`, `upload_api_url`, `node_id`, `created_at`, `updated_at`) VALUES
-(2, 'Server 1', '/app/uploads_s01', 53687091200, 0, 1, 0, 0, 1, 'local', 'hot', 'Hot Storage s01', NULL, NULL, NULL, NULL, NULL, '', 'http://localhost:8082', 'http://app_s01:4000/api/internal/upload', 's01', '2025-09-24 18:30:10', '2025-09-24 18:30:42');
+INSERT INTO `storage_pools` (`id`, `name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `priority`, `storage_type`, `storage_tier`, `description`, `s3_access_key_id`, `s3_secret_access_key`, `s3_region`, `s3_bucket_name`, `s3_endpoint_url`, `s3_path_prefix`, `public_base_url`, `upload_api_url`, `node_id`, `created_at`, `updated_at`) VALUES
+(2, 'Server 1', '/app/uploads_s01', 53687091200, 0, 1, 0, 1, 'local', 'hot', 'Hot Storage s01', NULL, NULL, NULL, NULL, NULL, '', 'http://localhost:8082', 'http://app_s01:4000/api/internal/upload', 's01', '2025-09-24 18:30:10', '2025-09-24 18:30:42');
 -- s02 - hot storage
-INSERT INTO `storage_pools` (`id`, `name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `is_backup_target`, `priority`, `storage_type`, `storage_tier`, `description`, `s3_access_key_id`, `s3_secret_access_key`, `s3_region`, `s3_bucket_name`, `s3_endpoint_url`, `s3_path_prefix`, `public_base_url`, `upload_api_url`, `node_id`, `created_at`, `updated_at`) VALUES
-(3, 'Server 2', '/app/uploads_s02', 322122547200, 0, 1, 0, 0, 2, 'local', 'warm', 'Warm Storage s02', NULL, NULL, NULL, NULL, NULL, '', 'http://localhost:8083', 'http://app_s02:4000/api/internal/upload', 's02', '2025-10-17 09:49:45', '2025-10-17 09:50:14');
+INSERT INTO `storage_pools` (`id`, `name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `priority`, `storage_type`, `storage_tier`, `description`, `s3_access_key_id`, `s3_secret_access_key`, `s3_region`, `s3_bucket_name`, `s3_endpoint_url`, `s3_path_prefix`, `public_base_url`, `upload_api_url`, `node_id`, `created_at`, `updated_at`) VALUES
+(3, 'Server 2', '/app/uploads_s02', 322122547200, 0, 1, 0, 2, 'local', 'warm', 'Warm Storage s02', NULL, NULL, NULL, NULL, NULL, '', 'http://localhost:8083', 'http://app_s02:4000/api/internal/upload', 's02', '2025-10-17 09:49:45', '2025-10-17 09:50:14');

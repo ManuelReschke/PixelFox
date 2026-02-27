@@ -7,15 +7,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/ManuelReschke/PixelFox/app/models"
 )
 
 // TestBasicJobTypes tests the basic job type constants
 func TestBasicJobTypes(t *testing.T) {
 	assert.Equal(t, "image_processing", string(JobTypeImageProcessing))
-	assert.Equal(t, "s3_backup", string(JobTypeS3Backup))
-	assert.Equal(t, "s3_delete", string(JobTypeS3Delete))
+	assert.Equal(t, "pool_move_enqueue", string(JobTypePoolMoveEnqueue))
+	assert.Equal(t, "move_image", string(JobTypeMoveImage))
+	assert.Equal(t, "delete_image", string(JobTypeDeleteImage))
+	assert.Equal(t, "reconcile_variants", string(JobTypeReconcileVariants))
 }
 
 // TestBasicJobStatus tests the basic job status constants
@@ -66,90 +66,28 @@ func TestJob_BasicMethods(t *testing.T) {
 // TestImageProcessingJobPayload_Serialization tests payload serialization
 func TestImageProcessingJobPayload_Serialization(t *testing.T) {
 	payload := ImageProcessingJobPayload{
-		ImageID:      123,
-		ImageUUID:    "test-uuid",
-		FilePath:     "/test/path",
-		FileName:     "test.jpg",
-		FileType:     ".jpg",
-		EnableBackup: true,
+		ImageID:   123,
+		ImageUUID: "test-uuid",
+		FilePath:  "/test/path",
+		FileName:  "test.jpg",
+		FileType:  ".jpg",
 	}
 
 	// Test ToMap
 	data := payload.ToMap()
 	expected := map[string]interface{}{
-		"image_id":      uint(123),
-		"image_uuid":    "test-uuid",
-		"file_path":     "/test/path",
-		"file_name":     "test.jpg",
-		"file_type":     ".jpg",
-		"enable_backup": true,
-		"pool_id":       uint(0),
-		"node_id":       "",
+		"image_id":   uint(123),
+		"image_uuid": "test-uuid",
+		"file_path":  "/test/path",
+		"file_name":  "test.jpg",
+		"file_type":  ".jpg",
+		"pool_id":    uint(0),
+		"node_id":    "",
 	}
 	assert.Equal(t, expected, data)
 
 	// Test FromMap
 	result, err := ImageProcessingJobPayloadFromMap(data)
-	require.NoError(t, err)
-	assert.Equal(t, &payload, result)
-}
-
-// TestS3BackupJobPayload_Serialization tests S3 backup payload serialization
-func TestS3BackupJobPayload_Serialization(t *testing.T) {
-	payload := S3BackupJobPayload{
-		ImageID:   456,
-		ImageUUID: "backup-uuid",
-		FilePath:  "/backup/path",
-		FileName:  "backup.png",
-		FileSize:  2048,
-		Provider:  models.BackupProviderS3,
-		BackupID:  789,
-	}
-
-	// Test ToMap
-	data := payload.ToMap()
-	expected := map[string]interface{}{
-		"image_id":   uint(456),
-		"image_uuid": "backup-uuid",
-		"file_path":  "/backup/path",
-		"file_name":  "backup.png",
-		"file_size":  int64(2048),
-		"provider":   string(models.BackupProviderS3),
-		"backup_id":  uint(789),
-	}
-	assert.Equal(t, expected, data)
-
-	// Test FromMap
-	result, err := S3BackupJobPayloadFromMap(data)
-	require.NoError(t, err)
-	assert.Equal(t, &payload, result)
-}
-
-// TestS3DeleteJobPayload_Serialization tests S3 delete payload serialization
-func TestS3DeleteJobPayload_Serialization(t *testing.T) {
-	payload := S3DeleteJobPayload{
-		ImageID:    789,
-		ImageUUID:  "delete-uuid",
-		ObjectKey:  "2024/01/test.jpg",
-		BucketName: "test-bucket",
-		Provider:   models.BackupProviderS3,
-		BackupID:   101112,
-	}
-
-	// Test ToMap
-	data := payload.ToMap()
-	expected := map[string]interface{}{
-		"image_id":    uint(789),
-		"image_uuid":  "delete-uuid",
-		"object_key":  "2024/01/test.jpg",
-		"bucket_name": "test-bucket",
-		"provider":    string(models.BackupProviderS3),
-		"backup_id":   uint(101112),
-	}
-	assert.Equal(t, expected, data)
-
-	// Test FromMap
-	result, err := S3DeleteJobPayloadFromMap(data)
 	require.NoError(t, err)
 	assert.Equal(t, &payload, result)
 }
@@ -227,26 +165,6 @@ func TestPayloadFromMapErrors(t *testing.T) {
 		}
 
 		payload, err := ImageProcessingJobPayloadFromMap(invalidData)
-		assert.Error(t, err)
-		assert.Nil(t, payload)
-	})
-
-	t.Run("S3BackupJobPayload invalid data", func(t *testing.T) {
-		invalidData := map[string]interface{}{
-			"invalid": make(chan int),
-		}
-
-		payload, err := S3BackupJobPayloadFromMap(invalidData)
-		assert.Error(t, err)
-		assert.Nil(t, payload)
-	})
-
-	t.Run("S3DeleteJobPayload invalid data", func(t *testing.T) {
-		invalidData := map[string]interface{}{
-			"invalid": make(chan int),
-		}
-
-		payload, err := S3DeleteJobPayloadFromMap(invalidData)
 		assert.Error(t, err)
 		assert.Nil(t, payload)
 	})

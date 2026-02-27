@@ -12,12 +12,12 @@ import (
 
 // EnqueueImageProcessing enqueues an image processing job in the unified queue
 // This replaces the old imageprocessor.ProcessImage function
-func EnqueueImageProcessing(image *models.Image, enableBackup bool) error {
+func EnqueueImageProcessing(image *models.Image) error {
 	if image == nil || image.UUID == "" {
 		return fmt.Errorf("cannot enqueue invalid image data")
 	}
 
-	log.Infof("[UnifiedQueue] Enqueueing image processing job for %s (backup: %t)", image.UUID, enableBackup)
+	log.Infof("[UnifiedQueue] Enqueueing image processing job for %s", image.UUID)
 
 	// Set initial status to PENDING using the cache
 	if err := imageprocessor.SetImageStatus(image.UUID, imageprocessor.STATUS_PENDING); err != nil {
@@ -27,13 +27,12 @@ func EnqueueImageProcessing(image *models.Image, enableBackup bool) error {
 
 	// Create image processing payload
 	payload := ImageProcessingJobPayload{
-		ImageID:      image.ID,
-		ImageUUID:    image.UUID,
-		FilePath:     image.FilePath,
-		FileName:     image.FileName,
-		FileType:     image.FileType,
-		EnableBackup: enableBackup,
-		PoolID:       image.StoragePoolID,
+		ImageID:   image.ID,
+		ImageUUID: image.UUID,
+		FilePath:  image.FilePath,
+		FileName:  image.FileName,
+		FileType:  image.FileType,
+		PoolID:    image.StoragePoolID,
 	}
 
 	// Optional: lookup node id for routing hint
@@ -74,30 +73,5 @@ func ProcessImageUnified(image *models.Image) error {
 		return fmt.Errorf("cannot enqueue invalid image data")
 	}
 
-	// Check if S3 backup is enabled via storage pools
-	db := database.GetDB()
-	if db == nil {
-		log.Errorf("[UnifiedQueue] Database connection is nil, disabling backup for image %s", image.UUID)
-		return EnqueueImageProcessing(image, false)
-	}
-
-	// Check if there is an explicit backup-target S3 storage pool (fallback to highest priority)
-	s3Pool, err := models.FindBackupTargetS3Pool(db)
-	if err != nil {
-		log.Errorf("[UnifiedQueue] Failed to find backup target S3 pool for image %s: %v", image.UUID, err)
-		return EnqueueImageProcessing(image, false)
-	}
-	if s3Pool == nil {
-		s3Pool, err = models.FindHighestPriorityS3Pool(db)
-		if err != nil {
-			log.Errorf("[UnifiedQueue] Failed to check S3 storage pools for image %s: %v", image.UUID, err)
-			return EnqueueImageProcessing(image, false)
-		}
-	}
-
-	// Also respect admin setting toggle
-	settings := models.GetAppSettings()
-	enableBackup := s3Pool != nil && settings != nil && settings.IsS3BackupEnabled()
-	log.Infof("[UnifiedQueue] Processing image %s with S3 backup enabled (pool:%t setting:%t): %t", image.UUID, s3Pool != nil, settings != nil && settings.IsS3BackupEnabled(), enableBackup)
-	return EnqueueImageProcessing(image, enableBackup)
+	return EnqueueImageProcessing(image)
 }

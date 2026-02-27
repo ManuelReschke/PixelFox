@@ -147,7 +147,7 @@ func (aqc *AdminQueueController) getQueueItems() ([]admin_views.QueueItem, error
 			}
 			displayValue = fmt.Sprintf("%s (UUID: %s)", displayValue, uuid)
 		} else if strings.HasPrefix(key, jobqueue.JobKeyPrefix) { // Job data
-			itemType = "s3_backup_job"
+			itemType = "job"
 			// Extract job ID and try to get status from job data
 			jobID := strings.TrimPrefix(key, jobqueue.JobKeyPrefix)
 			displayValue = fmt.Sprintf("Job %s: %s", jobID, aqc.getJobStatusFromValue(value))

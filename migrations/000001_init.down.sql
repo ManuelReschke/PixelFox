@@ -4,7 +4,6 @@ DROP TABLE IF EXISTS album_images;
 DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS image_metadata;
-DROP TABLE IF EXISTS image_backups;
 DROP TABLE IF EXISTS image_variants;
 DROP TABLE IF EXISTS images;
 DROP TABLE IF EXISTS storage_pools;

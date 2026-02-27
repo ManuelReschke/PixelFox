@@ -23,7 +23,6 @@ func TestGetManager(t *testing.T) {
 	assert.NotNil(t, manager1.queue)
 	assert.NotNil(t, manager1.stopCh)
 	assert.False(t, manager1.running)
-	assert.Nil(t, manager1.retryTicker)
 }
 
 func TestManager_GetQueue(t *testing.T) {
@@ -87,7 +86,6 @@ func TestNewManagerStructure(t *testing.T) {
 	assert.NotNil(t, manager.queue)
 	assert.NotNil(t, manager.stopCh)
 	assert.False(t, manager.running)
-	assert.Nil(t, manager.retryTicker)
 
 	// Verify queue has correct number of workers
 	expectedWorkers := 5

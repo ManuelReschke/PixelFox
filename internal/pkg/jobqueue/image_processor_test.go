@@ -143,12 +143,11 @@ func TestQueue_processImageProcessingJob_Success(t *testing.T) {
 
 	// Create job payload
 	payload := ImageProcessingJobPayload{
-		ImageID:      image.ID,
-		ImageUUID:    image.UUID,
-		FilePath:     testDir,
-		FileName:     "test.jpg",
-		FileType:     ".jpg",
-		EnableBackup: false,
+		ImageID:   image.ID,
+		ImageUUID: image.UUID,
+		FilePath:  testDir,
+		FileName:  "test.jpg",
+		FileType:  ".jpg",
 	}
 
 	// Create job
@@ -175,7 +174,7 @@ func TestQueue_processImageProcessingJob_Success(t *testing.T) {
 	assert.NoError(t, err, "Image should still exist in database")
 }
 
-func TestQueue_processImageProcessingJob_WithBackup(t *testing.T) {
+func TestQueue_processImageProcessingJob_IgnoresLegacyBackupFlag(t *testing.T) {
 	queue, db, cleanup := setupTestEnvironment(t)
 	defer cleanup()
 
@@ -193,22 +192,23 @@ func TestQueue_processImageProcessingJob_WithBackup(t *testing.T) {
 		}
 	}()
 
-	// Create job payload with backup enabled
+	// Create job payload with legacy backup flag enabled
 	payload := ImageProcessingJobPayload{
-		ImageID:      image.ID,
-		ImageUUID:    image.UUID,
-		FilePath:     testDir,
-		FileName:     "test_backup.jpg",
-		FileType:     ".jpg",
-		EnableBackup: true,
+		ImageID:   image.ID,
+		ImageUUID: image.UUID,
+		FilePath:  testDir,
+		FileName:  "test_backup.jpg",
+		FileType:  ".jpg",
 	}
+	payloadMap := payload.ToMap()
+	payloadMap["enable_backup"] = true
 
 	// Create job
 	job := &Job{
 		ID:         uuid.New().String(),
 		Type:       JobTypeImageProcessing,
 		Status:     JobStatusPending,
-		Payload:    payload.ToMap(),
+		Payload:    payloadMap,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		MaxRetries: 3,
@@ -219,21 +219,13 @@ func TestQueue_processImageProcessingJob_WithBackup(t *testing.T) {
 	err := queue.processImageProcessingJob(ctx, job)
 
 	// Assertions
-	assert.NoError(t, err, "Job processing with backup should succeed")
+	assert.NoError(t, err, "Job processing should succeed")
 
 	// Verify image still exists in database
 	var foundImage models.Image
 	err = db.Where("uuid = ?", image.UUID).First(&foundImage).Error
 	assert.NoError(t, err, "Image should still exist in database")
 
-	// Wait a bit and check if backup job was enqueued
-	time.Sleep(100 * time.Millisecond)
-
-	// Check Redis for backup job (this is a best-effort check)
-	keys, err := queue.client.Keys(ctx, "*s3_backup*").Result()
-	if err == nil && len(keys) > 0 {
-		t.Logf("Backup job appears to have been enqueued (found %d backup-related keys)", len(keys))
-	}
 }
 
 func TestQueue_processImageProcessingJob_DatabaseError(t *testing.T) {
@@ -242,12 +234,11 @@ func TestQueue_processImageProcessingJob_DatabaseError(t *testing.T) {
 
 	// Create job payload with non-existent image UUID
 	payload := ImageProcessingJobPayload{
-		ImageID:      999999, // Non-existent ID
-		ImageUUID:    "non-existent-uuid",
-		FilePath:     "/tmp/test",
-		FileName:     "test.jpg",
-		FileType:     ".jpg",
-		EnableBackup: false,
+		ImageID:   999999, // Non-existent ID
+		ImageUUID: "non-existent-uuid",
+		FilePath:  "/tmp/test",
+		FileName:  "test.jpg",
+		FileType:  ".jpg",
 	}
 
 	// Create job
@@ -280,12 +271,11 @@ func TestQueue_processImageProcessingJob_FileNotFound(t *testing.T) {
 
 	// Create job payload with non-existent file
 	payload := ImageProcessingJobPayload{
-		ImageID:      image.ID,
-		ImageUUID:    image.UUID,
-		FilePath:     "/tmp/nonexistent",
-		FileName:     "nonexistent.jpg",
-		FileType:     ".jpg",
-		EnableBackup: false,
+		ImageID:   image.ID,
+		ImageUUID: image.UUID,
+		FilePath:  "/tmp/nonexistent",
+		FileName:  "nonexistent.jpg",
+		FileType:  ".jpg",
 	}
 
 	// Create job
@@ -333,12 +323,11 @@ func TestQueue_processImageProcessingJob_ProcessingError(t *testing.T) {
 
 	// Create job payload
 	payload := ImageProcessingJobPayload{
-		ImageID:      image.ID,
-		ImageUUID:    image.UUID,
-		FilePath:     testDir,
-		FileName:     "invalid.jpg",
-		FileType:     ".jpg",
-		EnableBackup: false,
+		ImageID:   image.ID,
+		ImageUUID: image.UUID,
+		FilePath:  testDir,
+		FileName:  "invalid.jpg",
+		FileType:  ".jpg",
 	}
 
 	// Create job

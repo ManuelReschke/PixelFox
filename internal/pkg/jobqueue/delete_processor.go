@@ -53,32 +53,16 @@ func (q *Queue) processDeleteImageJob(ctx context.Context, job *Job) error {
 		return nil // nothing to do
 	}
 
-	// Enqueue S3 backup deletions (if any) before file removal
-	// We reuse the S3 delete job enqueuing logic from queue
-	backups, berr := models.FindCompletedBackupsByImageID(db, image.ID)
-	if berr == nil {
-		for _, b := range backups {
-			if _, err := q.EnqueueS3DeleteJob(image.ID, image.UUID, b.ObjectKey, b.BucketName, b.ID); err != nil {
-				log.Errorf("[DeleteImageJob] Failed to enqueue S3 delete for backup %d: %v", b.ID, err)
-			}
-		}
-	}
-
 	// Delete files + soft-delete DB records (variants + image). This is idempotent enough.
 	if err := imageprocessor.DeleteImageAndVariants(&image); err != nil {
 		return fmt.Errorf("failed to delete image and variants: %w", err)
 	}
 
-	// If there are no backups, we can safely hard-delete DB records now to avoid DB bloat
-	if berr == nil && len(backups) == 0 {
-		// Hard delete variants + metadata + image
-		_ = db.Unscoped().Where("image_id = ?", image.ID).Delete(&models.ImageVariant{}).Error
-		_ = db.Unscoped().Where("image_id = ?", image.ID).Delete(&models.ImageMetadata{}).Error
-		_ = db.Unscoped().Delete(&image).Error
-		log.Infof("[DeleteImageJob] Hard-deleted DB records for image %s (no backups)", image.UUID)
-	} else {
-		log.Infof("[DeleteImageJob] Left DB records soft-deleted for image %s (backups pending)", image.UUID)
-	}
+	// Hard delete variants + metadata + image to avoid DB bloat.
+	_ = db.Unscoped().Where("image_id = ?", image.ID).Delete(&models.ImageVariant{}).Error
+	_ = db.Unscoped().Where("image_id = ?", image.ID).Delete(&models.ImageMetadata{}).Error
+	_ = db.Unscoped().Delete(&image).Error
+	log.Infof("[DeleteImageJob] Hard-deleted DB records for image %s", image.UUID)
 
 	// If this deletion was triggered from a report, mark it resolved (idempotent)
 	if payload.FromReportID != nil {

@@ -641,6 +641,4 @@ func HandleImageProcessingStatus(c *fiber.Ctx) error {
 	return views.ImageViewerWithUser(imageModel, currentUserID, image.UserID).Render(c.Context(), c.Response().BodyWriter())
 }
 
-// enqueueS3BackupIfEnabled is deprecated - replaced by unified queue system
-// This function is kept for backwards compatibility but should not be used
-// Use jobqueue.ProcessImageUnified() instead which handles both processing and backup
+// Image processing is handled via jobqueue.ProcessImageUnified().

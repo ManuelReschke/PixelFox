@@ -69,13 +69,13 @@ func TestQueue_EnqueueJob_PipelineError(t *testing.T) {
 func TestQueue_GetJob(t *testing.T) {
 	queue, ctx := setupRedisQueue(t)
 
-	created, err := queue.EnqueueJob(JobTypeS3Delete, map[string]interface{}{"image_uuid": "abc"})
+	created, err := queue.EnqueueJob(JobTypeImageProcessing, map[string]interface{}{"image_uuid": "abc"})
 	require.NoError(t, err)
 
 	stored, err := queue.GetJob(ctx, created.ID)
 	require.NoError(t, err)
 	assert.Equal(t, created.ID, stored.ID)
-	assert.Equal(t, JobTypeS3Delete, stored.Type)
+	assert.Equal(t, JobTypeImageProcessing, stored.Type)
 	assert.Equal(t, JobStatusPending, stored.Status)
 }
 

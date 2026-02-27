@@ -29,18 +29,17 @@ const (
 
 // StoragePool represents a storage location for images and variants
 type StoragePool struct {
-	ID             uint   `gorm:"primaryKey" json:"id"`
-	Name           string `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
-	BasePath       string `gorm:"type:varchar(500);not null" json:"base_path"`
-	MaxSize        int64  `gorm:"type:bigint;not null" json:"max_size"`                                                                                             // Maximum size in bytes
-	UsedSize       int64  `gorm:"type:bigint;default:0" json:"used_size"`                                                                                           // Currently used size in bytes
-	IsActive       bool   `gorm:"default:true" json:"is_active"`                                                                                                    // Whether this pool is available for new files
-	IsDefault      bool   `gorm:"default:false" json:"is_default"`                                                                                                  // Whether this is the default fallback pool
-	IsBackupTarget bool   `gorm:"default:false" json:"is_backup_target"`                                                                                            // If true, S3 backups prefer this pool
-	Priority       int    `gorm:"default:100" json:"priority"`                                                                                                      // Lower number = higher priority
-	StorageType    string `gorm:"type:varchar(50);default:'local'" json:"storage_type"`                                                                             // local, nfs, s3, etc.
-	StorageTier    string `gorm:"type:varchar(20);default:'hot';index:idx_storage_tier;index:idx_tier_active,composite:storage_tier,is_active" json:"storage_tier"` // hot, warm, cold, archive
-	Description    string `gorm:"type:text" json:"description"`                                                                                                     // Optional description
+	ID          uint   `gorm:"primaryKey" json:"id"`
+	Name        string `gorm:"type:varchar(100);not null;uniqueIndex" json:"name"`
+	BasePath    string `gorm:"type:varchar(500);not null" json:"base_path"`
+	MaxSize     int64  `gorm:"type:bigint;not null" json:"max_size"`                                                                                             // Maximum size in bytes
+	UsedSize    int64  `gorm:"type:bigint;default:0" json:"used_size"`                                                                                           // Currently used size in bytes
+	IsActive    bool   `gorm:"default:true" json:"is_active"`                                                                                                    // Whether this pool is available for new files
+	IsDefault   bool   `gorm:"default:false" json:"is_default"`                                                                                                  // Whether this is the default fallback pool
+	Priority    int    `gorm:"default:100" json:"priority"`                                                                                                      // Lower number = higher priority
+	StorageType string `gorm:"type:varchar(50);default:'local'" json:"storage_type"`                                                                             // local, nfs, s3, etc.
+	StorageTier string `gorm:"type:varchar(20);default:'hot';index:idx_storage_tier;index:idx_tier_active,composite:storage_tier,is_active" json:"storage_tier"` // hot, warm, cold, archive
+	Description string `gorm:"type:text" json:"description"`                                                                                                     // Optional description
 
 	// S3-specific configuration fields (only used when StorageType = 's3')
 	// Note: These credentials should be encrypted at rest in production
@@ -518,23 +517,6 @@ func FindS3StoragePools(db *gorm.DB) ([]StoragePool, error) {
 	return FindActiveStoragePoolsByType(db, StorageTypeS3)
 }
 
-// FindBackupTargetS3Pool returns the active S3 storage pool explicitly marked as backup target
-// If multiple are marked, the one with the highest priority (lowest number) is returned.
-// Returns nil if none found.
-func FindBackupTargetS3Pool(db *gorm.DB) (*StoragePool, error) {
-	var pool StoragePool
-	err := db.Where("storage_type = ? AND is_active = ? AND is_backup_target = ?", StorageTypeS3, true, true).
-		Order("priority ASC").
-		First(&pool).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to find backup target S3 storage pool: %w", err)
-	}
-	return &pool, nil
-}
-
 // FindHighestPriorityS3Pool returns the S3 storage pool with the highest priority (lowest number)
 // Returns nil if no active S3 storage pools are found
 func FindHighestPriorityS3Pool(db *gorm.DB) (*StoragePool, error) {
@@ -585,33 +567,18 @@ func GetStoragePoolStats(db *gorm.DB, poolID uint) (*StoragePoolStats, error) {
 	var usedSize int64
 
 	if pool.StorageType == StorageTypeS3 {
-		// For S3 pools: count backups that were made TO this specific S3 bucket
-		// This shows what's actually stored in this S3 pool
-		if pool.S3BucketName != nil && *pool.S3BucketName != "" {
-			db.Model(&ImageBackup{}).
-				Where("status = ? AND provider = ? AND bucket_name = ?",
-					BackupStatusCompleted, BackupProviderS3, *pool.S3BucketName).
-				Count(&imageCount)
-
-			db.Model(&ImageBackup{}).
-				Where("status = ? AND provider = ? AND bucket_name = ?",
-					BackupStatusCompleted, BackupProviderS3, *pool.S3BucketName).
-				Select("COALESCE(SUM(backup_size), 0)").Scan(&usedSize)
-		}
-
-		// Also count images stored directly in this S3 pool (if used as primary storage)
+		// For S3 pools we count objects stored directly via pool assignment.
 		var directImageCount int64
 		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Count(&directImageCount)
-		imageCount += directImageCount
+		imageCount = directImageCount
 
 		var directVariantCount int64
 		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Count(&directVariantCount)
 		variantCount = directVariantCount
 
-		// Add direct storage size
 		var directUsedSize int64
 		db.Model(&Image{}).Where("storage_pool_id = ?", poolID).Select("COALESCE(SUM(file_size), 0)").Scan(&directUsedSize)
-		usedSize += directUsedSize
+		usedSize = directUsedSize
 
 		var variantUsedSize int64
 		db.Model(&ImageVariant{}).Where("storage_pool_id = ?", poolID).Select("COALESCE(SUM(file_size), 0)").Scan(&variantUsedSize)
