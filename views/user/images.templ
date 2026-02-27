@@ -1,35 +1,82 @@
 package user_views
 
 import (
-    "fmt"
-    "github.com/ManuelReschke/PixelFox/views"
-    "github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
-    "github.com/gofiber/fiber/v2"
+	"fmt"
+
+	"github.com/gofiber/fiber/v2"
+
+	"github.com/ManuelReschke/PixelFox/app/models"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/viewmodel"
+	"github.com/ManuelReschke/PixelFox/views"
 )
 
 type GalleryImage struct {
-    ID               uint
-    UUID             string
-    Title            string
-    ShareLink        string
-    PreviewPath      string
-    SmallPreviewPath string
-    OriginalPath     string
-    CreatedAt        string
-    IsPublic         bool
-    FileName         string
-    Width            int
-    Height           int
-    FileSize         int64
-    // Grouping helpers for section headers
-    GroupLabel       string
-    SuppressHeader   bool
-    RenderHeader     bool
+	ID               uint
+	UUID             string
+	Title            string
+	ShareLink        string
+	PreviewPath      string
+	SmallPreviewPath string
+	OriginalPath     string
+	CreatedAt        string
+	IsPublic         bool
+	FileName         string
+	Width            int
+	Height           int
+	FileSize         int64
+	StorageTier      string
+	StorageType      string
+	StoragePoolName  string
+	// Grouping helpers for section headers
+	GroupLabel     string
+	SuppressHeader bool
+	RenderHeader   bool
 }
 
 type ImageGroup struct {
-    Label string
-    Items []GalleryImage
+	Label string
+	Items []GalleryImage
+}
+
+func getStorageTierBadgeClass(tier string) string {
+	switch tier {
+	case models.StorageTierHot:
+		return "badge badge-error badge-xs flex items-center gap-1"
+	case models.StorageTierWarm:
+		return "badge badge-warning badge-xs flex items-center gap-1"
+	case models.StorageTierCold:
+		return "badge badge-info badge-xs flex items-center gap-1"
+	case models.StorageTierArchive:
+		return "badge badge-neutral badge-xs flex items-center gap-1"
+	default:
+		return "badge badge-ghost badge-xs flex items-center gap-1"
+	}
+}
+
+func getStorageTierLabel(tier string) string {
+	switch tier {
+	case models.StorageTierHot:
+		return "Hot Storage"
+	case models.StorageTierWarm:
+		return "Warm Storage"
+	case models.StorageTierCold:
+		return "Cold Storage"
+	case models.StorageTierArchive:
+		return "Archive Storage"
+	default:
+		return "Storage Unbekannt"
+	}
+}
+
+func getStorageTierTooltip(image GalleryImage) string {
+	label := getStorageTierLabel(image.StorageTier)
+	if image.StorageType != "" && image.StoragePoolName != "" {
+		return fmt.Sprintf("%s • Typ: %s • Pool: %s", label, image.StorageType, image.StoragePoolName)
+	}
+	if image.StorageType != "" {
+		return fmt.Sprintf("%s • Typ: %s", label, image.StorageType)
+	}
+	return label
 }
 
 templ Images(
@@ -326,17 +373,40 @@ templ GalleryImageItem(image GalleryImage) {
             </a>
 
             <!-- Status Badge oben links -->
-            <div class="absolute top-2 left-2 flex gap-1">
-                if image.IsPublic {
-                    <div class="badge badge-success badge-xs">Öffentlich</div>
-                } else {
-                    <div class="badge badge-warning badge-xs flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                    </div>
-                }
-            </div>
+		            <div class="absolute top-2 left-2 flex gap-1">
+		                if image.IsPublic {
+		                    <div class="badge badge-success badge-xs" title="Öffentlich" aria-label="Öffentlich">Öffentlich</div>
+		                } else {
+		                    <div class="badge badge-warning badge-xs flex items-center gap-1" title="Privat" aria-label="Privat">
+		                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+		                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+		                        </svg>
+		                    </div>
+		                }
+	                <div class={ getStorageTierBadgeClass(image.StorageTier) } title={ getStorageTierTooltip(image) } aria-label={ getStorageTierTooltip(image) }>
+	                    if image.StorageTier == models.StorageTierHot {
+	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c2.5 3 4 5.5 4 8a4 4 0 11-8 0c0-2.5 1.5-5 4-8z" />
+	                        </svg>
+	                    } else if image.StorageTier == models.StorageTierWarm {
+	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1.5m0 15V21m8.5-9H19m-14 0H3m14.4 6.4-1-1m-8-8-1-1m10 0-1 1m-8 8-1 1M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+	                        </svg>
+	                    } else if image.StorageTier == models.StorageTierCold {
+	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m4.5-15.5-9 13m0-13 9 13M3 12h18" />
+	                        </svg>
+	                    } else if image.StorageTier == models.StorageTierArchive {
+	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M5 7v11a2 2 0 002 2h10a2 2 0 002-2V7M9 11h6" />
+	                        </svg>
+	                    } else {
+	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8h.01M12 12v4m9-4a9 9 0 11-18 0 9 9 0 0118 0z" />
+	                        </svg>
+	                    }
+	                </div>
+	            </div>
 
             <div class="overlay">
                 <div class="image-title-overlay">{ image.Title }</div>

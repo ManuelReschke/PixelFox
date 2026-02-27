@@ -277,6 +277,14 @@ func HandleUserImages(c *fiber.Ctx) error {
 	for i, img := range images {
 		// Use centralized helper for a cross-node absolute preview URL
 		previewPath := imageprocessor.GetBestPreviewURL(&img)
+		storageTier := ""
+		storageType := ""
+		storagePoolName := ""
+		if img.StoragePool != nil {
+			storageTier = img.StoragePool.StorageTier
+			storageType = img.StoragePool.StorageType
+			storagePoolName = img.StoragePool.Name
+		}
 
 		title := img.FileName
 		if img.Title != "" {
@@ -288,20 +296,23 @@ func HandleUserImages(c *fiber.Ctx) error {
 		renderHeader := i == 0 || group != prevGroup
 
 		galleryImages = append(galleryImages, user_views.GalleryImage{
-			ID:           img.ID,
-			UUID:         img.UUID,
-			Title:        title,
-			ShareLink:    img.ShareLink,
-			PreviewPath:  previewPath,
-			OriginalPath: originalPath,
-			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
-			IsPublic:     img.IsPublic,
-			FileName:     img.FileName,
-			Width:        img.Width,
-			Height:       img.Height,
-			FileSize:     img.FileSize,
-			GroupLabel:   group,
-			RenderHeader: renderHeader,
+			ID:              img.ID,
+			UUID:            img.UUID,
+			Title:           title,
+			ShareLink:       img.ShareLink,
+			PreviewPath:     previewPath,
+			OriginalPath:    originalPath,
+			CreatedAt:       img.CreatedAt.Format("02.01.2006 15:04"),
+			IsPublic:        img.IsPublic,
+			FileName:        img.FileName,
+			Width:           img.Width,
+			Height:          img.Height,
+			FileSize:        img.FileSize,
+			StorageTier:     storageTier,
+			StorageType:     storageType,
+			StoragePoolName: storagePoolName,
+			GroupLabel:      group,
+			RenderHeader:    renderHeader,
 		})
 		prevGroup = group
 	}
@@ -369,6 +380,14 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 	prevGroup := ""
 	for i, img := range images {
 		previewPath := imageprocessor.GetBestPreviewURL(&img)
+		storageTier := ""
+		storageType := ""
+		storagePoolName := ""
+		if img.StoragePool != nil {
+			storageTier = img.StoragePool.StorageTier
+			storageType = img.StoragePool.StorageType
+			storagePoolName = img.StoragePool.Name
+		}
 
 		title := img.FileName
 		if img.Title != "" {
@@ -380,20 +399,23 @@ func HandleLoadMoreImages(c *fiber.Ctx) error {
 		renderHeader := (i == 0 && group != lastGroup) || (i > 0 && group != prevGroup)
 
 		galleryImages = append(galleryImages, user_views.GalleryImage{
-			ID:           img.ID,
-			UUID:         img.UUID,
-			Title:        title,
-			ShareLink:    img.ShareLink,
-			PreviewPath:  previewPath,
-			OriginalPath: originalPath,
-			CreatedAt:    img.CreatedAt.Format("02.01.2006 15:04"),
-			IsPublic:     img.IsPublic,
-			FileName:     img.FileName,
-			Width:        img.Width,
-			Height:       img.Height,
-			FileSize:     img.FileSize,
-			GroupLabel:   group,
-			RenderHeader: renderHeader,
+			ID:              img.ID,
+			UUID:            img.UUID,
+			Title:           title,
+			ShareLink:       img.ShareLink,
+			PreviewPath:     previewPath,
+			OriginalPath:    originalPath,
+			CreatedAt:       img.CreatedAt.Format("02.01.2006 15:04"),
+			IsPublic:        img.IsPublic,
+			FileName:        img.FileName,
+			Width:           img.Width,
+			Height:          img.Height,
+			FileSize:        img.FileSize,
+			StorageTier:     storageTier,
+			StorageType:     storageType,
+			StoragePoolName: storagePoolName,
+			GroupLabel:      group,
+			RenderHeader:    renderHeader,
 		})
 		prevGroup = group
 	}
