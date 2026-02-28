@@ -943,9 +943,16 @@ function confirmDelete(poolId, poolName) {
 
 // Delegate click on gallery view buttons
 document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.image-view-btn');
-    if (!btn) return;
+    const trigger = e.target.closest('.image-view-btn, .image-open-btn');
+    if (!trigger) return;
     e.preventDefault();
+
+    // Secondary "open" actions inside overlays reuse the same modal source button.
+    let btn = trigger;
+    if (trigger.classList.contains('image-open-btn')) {
+        btn = trigger.closest('.img-container')?.querySelector('.image-view-btn');
+        if (!btn) return;
+    }
 
     // Collect all view buttons to build an ordered image list
     const buttons = Array.from(document.querySelectorAll('.image-view-btn'));

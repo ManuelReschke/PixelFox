@@ -41,16 +41,33 @@ type ImageGroup struct {
 func getStorageTierBadgeClass(tier string) string {
 	switch tier {
 	case models.StorageTierHot:
-		return "badge badge-error badge-xs flex items-center gap-1"
+		return "gallery-chip gallery-chip-hot"
 	case models.StorageTierWarm:
-		return "badge badge-warning badge-xs flex items-center gap-1"
+		return "gallery-chip gallery-chip-warm"
 	case models.StorageTierCold:
-		return "badge badge-info badge-xs flex items-center gap-1"
+		return "gallery-chip gallery-chip-cold"
 	case models.StorageTierArchive:
-		return "badge badge-neutral badge-xs flex items-center gap-1"
+		return "gallery-chip gallery-chip-archive"
 	default:
-		return "badge badge-ghost badge-xs flex items-center gap-1"
+		return "gallery-chip gallery-chip-unknown"
 	}
+}
+
+func formatGalleryFileSize(bytes int64) string {
+	if bytes <= 0 {
+		return ""
+	}
+	units := []string{"B", "KB", "MB", "GB", "TB"}
+	size := float64(bytes)
+	unit := 0
+	for size >= 1024 && unit < len(units)-1 {
+		size /= 1024
+		unit++
+	}
+	if unit > 0 && size < 10 {
+		return fmt.Sprintf("%.1f %s", size, units[unit])
+	}
+	return fmt.Sprintf("%.0f %s", size, units[unit])
 }
 
 func getStorageTierLabel(tier string) string {
@@ -202,89 +219,214 @@ templ ImagesGallery(username string, groups []ImageGroup, total int, years []int
 		.img-container {
 			position: relative;
 			overflow: hidden;
-			border-radius: 8px;
-			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			border-radius: 12px;
+			box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+			background: #0b1220;
 		}
 
 		.gallery-img {
 			width: 100%;
 			display: block;
-			transition: transform 0.3s ease;
+			transition: transform 0.4s ease, filter 0.4s ease;
 		}
 
-		.img-container:hover .gallery-img {
-			transform: scale(1.03);
+		.img-container:hover .gallery-img,
+		.img-container:focus-within .gallery-img {
+			transform: scale(1.04);
+			filter: saturate(1.1) contrast(1.04);
 		}
 
-        .overlay {
+        .gallery-info-overlay {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0);
-            transition: background 0.3s ease;
+            background: linear-gradient(170deg, rgba(7, 11, 19, 0.15) 0%, rgba(7, 11, 19, 0.52) 42%, rgba(7, 11, 19, 0.86) 100%);
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 12px;
-            /* Let clicks fall through to the image link by default */
+            gap: 12px;
+            padding: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
             pointer-events: none;
         }
 
-		.img-container:hover .overlay {
-			background: rgba(0,0,0,0.3);
-		}
-
-		.image-title-overlay {
-			color: white;
-			font-weight: 500;
-			text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-			opacity: 0;
-			transition: opacity 0.3s ease;
-			max-width: 100%;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			padding: 5px;
-			border-radius: 4px;
-			background: rgba(0,0,0,0.3);
-		}
-
-		.img-container:hover .image-title-overlay {
+		.img-container:hover .gallery-info-overlay,
+		.img-container:focus-within .gallery-info-overlay {
 			opacity: 1;
+			visibility: visible;
+			transform: translateY(0);
 		}
 
-        .overlay-content {
+        .gallery-overlay-top {
             display: flex;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
         }
 
-		.img-container:hover .overlay-content {
-			opacity: 1;
-		}
-
-        .view-btn {
-            background: white;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
+        .gallery-chip-row {
             display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .gallery-chip {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            color: #333;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            /* Re-enable pointer events for interactive controls inside overlay */
+            gap: 4px;
+            font-size: 11px;
+            line-height: 1;
+            border-radius: 999px;
+            padding: 5px 8px;
+            border: 1px solid transparent;
+            color: #fff;
+            backdrop-filter: blur(6px);
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+        }
+
+        .gallery-chip svg {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+        }
+
+        .gallery-chip-public {
+            background: rgba(16, 185, 129, 0.26);
+            border-color: rgba(16, 185, 129, 0.6);
+        }
+
+        .gallery-chip-private {
+            background: rgba(245, 158, 11, 0.26);
+            border-color: rgba(245, 158, 11, 0.6);
+        }
+
+        .gallery-chip-hot {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.62);
+        }
+
+        .gallery-chip-warm {
+            background: rgba(249, 115, 22, 0.32);
+            border-color: rgba(249, 115, 22, 0.62);
+        }
+
+        .gallery-chip-cold {
+            background: rgba(14, 165, 233, 0.3);
+            border-color: rgba(14, 165, 233, 0.62);
+        }
+
+        .gallery-chip-archive {
+            background: rgba(107, 114, 128, 0.38);
+            border-color: rgba(148, 163, 184, 0.62);
+        }
+
+        .gallery-chip-unknown {
+            background: rgba(75, 85, 99, 0.3);
+            border-color: rgba(156, 163, 175, 0.62);
+        }
+
+        .gallery-overlay-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(6, 10, 17, 0.48);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 10px;
+            padding: 10px;
+            backdrop-filter: blur(6px);
+        }
+
+        .gallery-title {
+            color: #f8fafc;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.3;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gallery-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            color: rgba(226, 232, 240, 0.92);
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .gallery-meta-dot {
+            color: rgba(148, 163, 184, 0.9);
+        }
+
+        .gallery-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
             pointer-events: auto;
         }
 
-		.view-btn:hover {
-			background: #f0f0f0;
-		}
+        .gallery-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 9px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: #f8fafc;
+            text-decoration: none;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .gallery-action-btn svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+
+        .gallery-action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .gallery-action-view {
+            background: rgba(30, 41, 59, 0.75);
+        }
+
+        .gallery-action-view:hover {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: rgba(148, 163, 184, 0.7);
+        }
+
+        .gallery-action-share {
+            background: rgba(59, 130, 246, 0.24);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .gallery-action-share:hover {
+            background: rgba(59, 130, 246, 0.42);
+            border-color: rgba(96, 165, 250, 0.82);
+        }
+
+        .gallery-action-edit {
+            background: rgba(245, 158, 11, 0.24);
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+
+        .gallery-action-edit:hover {
+            background: rgba(245, 158, 11, 0.4);
+            border-color: rgba(251, 191, 36, 0.82);
+        }
 
 		.empty-gallery {
 			column-span: all;
@@ -301,6 +443,15 @@ templ ImagesGallery(username string, groups []ImageGroup, total int, years []int
 
 		.loading-indicator.active {
 			display: block;
+		}
+
+		/* Touch devices don't have hover: keep actions reachable */
+		@media (hover: none) {
+			.gallery-info-overlay {
+				opacity: 1;
+				visibility: visible;
+				transform: translateY(0);
+			}
 		}
 
 		/* Responsive adjustments */
@@ -372,59 +523,94 @@ templ GalleryImageItem(image GalleryImage) {
                 <img src={ image.PreviewPath } alt={ image.Title } class="gallery-img" loading="lazy" />
             </a>
 
-            <!-- Status Badge oben links -->
-		            <div class="absolute top-2 left-2 flex gap-1">
-		                if image.IsPublic {
-		                    <div class="badge badge-success badge-xs" title="Öffentlich" aria-label="Öffentlich">Öffentlich</div>
-		                } else {
-		                    <div class="badge badge-warning badge-xs flex items-center gap-1" title="Privat" aria-label="Privat">
-		                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-		                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-		                        </svg>
-		                    </div>
-		                }
-	                <div class={ getStorageTierBadgeClass(image.StorageTier) } title={ getStorageTierTooltip(image) } aria-label={ getStorageTierTooltip(image) }>
-	                    if image.StorageTier == models.StorageTierHot {
-	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c2.5 3 4 5.5 4 8a4 4 0 11-8 0c0-2.5 1.5-5 4-8z" />
-	                        </svg>
-	                    } else if image.StorageTier == models.StorageTierWarm {
-	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1.5m0 15V21m8.5-9H19m-14 0H3m14.4 6.4-1-1m-8-8-1-1m10 0-1 1m-8 8-1 1M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-	                        </svg>
-	                    } else if image.StorageTier == models.StorageTierCold {
-	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m4.5-15.5-9 13m0-13 9 13M3 12h18" />
-	                        </svg>
-	                    } else if image.StorageTier == models.StorageTierArchive {
-	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M5 7v11a2 2 0 002 2h10a2 2 0 002-2V7M9 11h6" />
-	                        </svg>
-	                    } else {
-	                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8h.01M12 12v4m9-4a9 9 0 11-18 0 9 9 0 0118 0z" />
-	                        </svg>
-	                    }
-	                </div>
-	            </div>
+            <div class="gallery-info-overlay">
+                <div class="gallery-overlay-top">
+                    <div class="gallery-chip-row">
+                        if image.IsPublic {
+                            <div class="gallery-chip gallery-chip-public" title="Öffentlich" aria-label="Öffentlich">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" />
+                                </svg>
+                                <span>Öffentlich</span>
+                            </div>
+                        } else {
+                            <div class="gallery-chip gallery-chip-private" title="Privat" aria-label="Privat">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5A2.25 2.25 0 0 0 19.5 19.5v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 12.75v6.75A2.25 2.25 0 0 0 6.75 21.75Z" />
+                                </svg>
+                                <span>Privat</span>
+                            </div>
+                        }
+                        <div class={ getStorageTierBadgeClass(image.StorageTier) } title={ getStorageTierTooltip(image) } aria-label={ getStorageTierTooltip(image) }>
+                            if image.StorageTier == models.StorageTierHot {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.5 3 4 5.5 4 8a4 4 0 1 1-8 0c0-2.5 1.5-5 4-8Z" />
+                                </svg>
+                            } else if image.StorageTier == models.StorageTierWarm {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1.5m0 15V21m8.5-9H19m-14 0H3m14.4 6.4-1-1m-8-8-1-1m10 0-1 1m-8 8-1 1M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                            } else if image.StorageTier == models.StorageTierCold {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m4.5-15.5-9 13m0-13 9 13M3 12h18" />
+                                </svg>
+                            } else if image.StorageTier == models.StorageTierArchive {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7M9 11h6" />
+                                </svg>
+                            } else {
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8h.01M12 12v4m9-4a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            }
+                            <span>{ getStorageTierLabel(image.StorageTier) }</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="overlay">
-                <div class="image-title-overlay">{ image.Title }</div>
-                <div class="overlay-content flex flex-row gap-2">
-                    <!-- Share button -->
-                    <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="view-btn" title="Teilen">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25a2.25 2.25 0 0 1 2.25-2.25h12a2.25 2.25 0 0 1 2.25 2.25v4.5a2.25 2.25 0 0 1-2.25 2.25h-12A2.25 2.25 0 0 1 3.75 9.75v-4.5Z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v7.5m0 0l-3-3m3 3l3-3" />
-                        </svg>
-                    </a>
-                    <!-- Edit button -->
-                    <a href={ templ.URL("/user/images/edit/" + image.UUID) } class="view-btn" title="Bearbeiten">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.475 18.814a4.2 4.2 0 0 1-1.67 1.05l-3.263 1.088a.6.6 0 0 1-.76-.76l1.088-3.263a4.2 4.2 0 0 1 1.05-1.67L16.862 4.487Z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 6.75l-1.086-1.086a2.1 2.1 0 0 0-2.97-2.97L4.487 16.862a4.2 4.2 0 0 0-1.05 1.67l-1.088 3.263a.6.6 0 0 0 .76.76l3.263-1.088a4.2 4.2 0 0 0 1.67-1.05L19.5 6.75Z" />
-                        </svg>
-                    </a>
+                <div class="gallery-overlay-bottom">
+                    <div class="gallery-title" title={ image.Title }>{ image.Title }</div>
+                    <div class="gallery-meta">
+                        {{ hasMeta := false }}
+                        if image.CreatedAt != "" {
+                            <span>{ image.CreatedAt }</span>
+                            {{ hasMeta = true }}
+                        }
+                        if image.Width > 0 && image.Height > 0 {
+                            if hasMeta {
+                                <span class="gallery-meta-dot">•</span>
+                            }
+                            <span>{ fmt.Sprintf("%dx%d", image.Width, image.Height) }</span>
+                            {{ hasMeta = true }}
+                        }
+                        if image.FileSize > 0 {
+                            if hasMeta {
+                                <span class="gallery-meta-dot">•</span>
+                            }
+                            <span>{ formatGalleryFileSize(image.FileSize) }</span>
+                        }
+                    </div>
+                    <div class="gallery-actions">
+                        <a href="#" class="gallery-action-btn gallery-action-view image-open-btn" title="Öffnen">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+                            </svg>
+                            <span>Öffnen</span>
+                        </a>
+                        <a href={ templ.URL(fmt.Sprintf("/i/%s", image.ShareLink)) } class="gallery-action-btn gallery-action-share" title="Teilen">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                            </svg>
+                            <span>Teilen</span>
+                        </a>
+                        <a href={ templ.URL("/user/images/edit/" + image.UUID) } class="gallery-action-btn gallery-action-edit" title="Bearbeiten">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a2.25 2.25 0 0 1 3.182 3.182L10.582 17.13a4.5 4.5 0 0 1-1.897 1.13L6 19l.74-2.685a4.5 4.5 0 0 1 1.13-1.897l8.992-9.931Z" />
+                            </svg>
+                            <span>Bearbeiten</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
