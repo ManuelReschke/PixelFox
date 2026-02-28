@@ -1,6 +1,8 @@
 package models
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,7 +24,7 @@ type Image struct {
 	FileType       string       `gorm:"type:varchar(50)" json:"file_type"`
 	Width          int          `gorm:"type:int" json:"width"`
 	Height         int          `gorm:"type:int" json:"height"`
-	ShareLink      string       `gorm:"type:varchar(255) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
+	ShareLink      string       `gorm:"type:varchar(16) CHARACTER SET utf8 COLLATE utf8_bin;uniqueIndex" json:"share_link"`
 	IsPublic       bool         `gorm:"default:false" json:"is_public"`
 	ViewCount      int          `gorm:"default:0" json:"view_count"`
 	DownloadCount  int          `gorm:"default:0" json:"download_count"`
@@ -44,6 +46,11 @@ type Image struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+const (
+	imageShareLinkLength           = 10
+	imageShareLinkGenerateMaxTries = 5
+)
+
 // BeforeCreate wird vor dem Erstellen eines neuen Datensatzes aufgerufen
 func (i *Image) BeforeCreate(tx *gorm.DB) error {
 	// Generiere UUID, falls nicht vorhanden
@@ -51,29 +58,35 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 		i.UUID = uuid.New().String()
 	}
 
-	// Generiere einen eindeutigen temporären ShareLink, falls nicht vorhanden
+	// Generiere einen kryptografisch sicheren ShareLink, falls nicht vorhanden
 	if i.ShareLink == "" {
-		// Vor der DB‑ID setzen wir einen garantiert eindeutigen Platzhalter,
-		// um Deadlocks/Kollisionen auf dem uniqueIndex zu vermeiden.
-		// Nach Insert ersetzt AfterCreate diesen Wert durch die finale, kurze ID.
-		i.ShareLink = "tmp-" + uuid.New().String()
+		shareLink, err := generateUniqueImageShareLink(tx)
+		if err != nil {
+			return err
+		}
+		i.ShareLink = shareLink
 	}
 
 	return nil
 }
 
-// AfterCreate wird nach dem Erstellen eines neuen Datensatzes aufgerufen
-func (i *Image) AfterCreate(tx *gorm.DB) error {
-	// Jetzt haben wir eine ID und können den finalen, kurzen ShareLink generieren
-	if len(i.ShareLink) >= 4 && i.ShareLink[:4] == "tmp-" {
-		// Generiere den ShareLink basierend auf der ID
-		i.ShareLink = shortener.EncodeID(i.ID)
+func generateUniqueImageShareLink(tx *gorm.DB) (string, error) {
+	for attempt := 0; attempt < imageShareLinkGenerateMaxTries; attempt++ {
+		candidate, err := shortener.GenerateSecureSlug(imageShareLinkLength)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate secure image share link: %w", err)
+		}
 
-		// Aktualisiere den ShareLink in der Datenbank
-		return tx.Model(i).Update("share_link", i.ShareLink).Error
+		var count int64
+		if err := tx.Model(&Image{}).Where("share_link = ?", candidate).Limit(1).Count(&count).Error; err != nil {
+			return "", fmt.Errorf("failed to check image share link uniqueness: %w", err)
+		}
+		if count == 0 {
+			return candidate, nil
+		}
 	}
 
-	return nil
+	return "", errors.New("failed to generate a unique image share link")
 }
 
 // IncrementViewCount erhöht den Zähler für Aufrufe
