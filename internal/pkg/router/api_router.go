@@ -54,8 +54,13 @@ func (h ApiRouter) InstallRouter(app *fiber.App) {
 		Middlewares: []apiv1.MiddlewareFunc{
 			func(c *fiber.Ctx) error {
 				p := c.Path()
-				// Endpoints requiring API key
-				if strings.HasPrefix(p, "/api/v1/user/") || strings.HasPrefix(p, "/api/v1/upload/") || strings.HasPrefix(p, "/api/v1/images/") {
+				// Endpoints requiring API key.
+				// Direct upload (/api/v1/upload) is token-authenticated and intentionally excluded.
+				requiresAPIKey := strings.HasPrefix(p, "/api/v1/user/") ||
+					p == "/api/v1/upload/sessions" ||
+					strings.HasPrefix(p, "/api/v1/upload/sessions/") ||
+					strings.HasPrefix(p, "/api/v1/images/")
+				if requiresAPIKey {
 					return appmw.APIKeyAuthMiddleware()(c)
 				}
 				return c.Next()

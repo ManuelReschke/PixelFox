@@ -126,9 +126,6 @@ type VariantSize struct {
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
 
-// Forbidden defines model for Forbidden.
-type Forbidden = Error
-
 // InternalError defines model for InternalError.
 type InternalError = Error
 

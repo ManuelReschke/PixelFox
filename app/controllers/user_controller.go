@@ -64,20 +64,24 @@ func HandleUserProfile(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
-	// Get user statistics
-	var imageCount int64
-	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Count(&imageCount)
-
-	var albumCount int64
-	database.DB.Model(&models.Album{}).Where("user_id = ?", userID).Count(&albumCount)
-
-	// Calculate storage usage
-	var totalStorage int64
-	database.DB.Model(&models.Image{}).Where("user_id = ?", userID).Select("COALESCE(SUM(file_size), 0)").Row().Scan(&totalStorage)
+	// Get user statistics (including storage used by generated variants).
+	stats, err := repository.GetGlobalFactory().GetUserRepository().GetStatsByUserID(userID)
+	if err != nil {
+		flash.WithError(c, fiber.Map{"message": "Failed to load user statistics"})
+		return c.Redirect("/")
+	}
 
 	csrfToken := c.Locals("csrf").(string)
 
-	profileIndex := user_views.ProfileIndex(username, csrfToken, userCtx.Plan, user, int(imageCount), int(albumCount), int64(totalStorage))
+	profileIndex := user_views.ProfileIndex(
+		username,
+		csrfToken,
+		userCtx.Plan,
+		user,
+		int(stats.ImageCount),
+		int(stats.AlbumCount),
+		stats.StorageUsage,
+	)
 	profile := user_views.Profile(
 		" | Profil", userCtx.IsLoggedIn, false, flash.Get(c), username, userCtx.Plan, profileIndex, isAdmin,
 	)

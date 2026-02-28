@@ -92,7 +92,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UploadSessionResponse'
         '400': { $ref: '#/components/responses/BadRequest' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
         '500': { $ref: '#/components/responses/InternalError' }
@@ -218,7 +218,7 @@ components:
     UploadTokenAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: token
       description: Time-limited upload token
     ReplicateBearerAuth:
       type: http
@@ -233,7 +233,7 @@ components:
     CookieAuth:
       type: apiKey
       in: cookie
-      name: session
+      name: session_id
       description: Session cookie for logged-in user
 
   responses:

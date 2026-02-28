@@ -18,7 +18,7 @@ INSERT INTO `settings` (`id`, `setting_key`, `value`, `type`, `created_at`, `upd
 (3, 'thumbnail_avif_enabled', 'true', 'boolean', '2025-09-24 18:13:02', '2025-09-25 19:05:40'),
 (4, 'upload_user_rate_limit_per_minute', '60', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (5, 'job_queue_worker_count', '2', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
-(6, 'site_title', 'PixelFox', 'string', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
+(6, 'site_title', 'PIXELFOX.CC', 'string', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (7, 'direct_upload_enabled', 'true', 'boolean', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (11, 'api_rate_limit_per_minute', '200', 'integer', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),
 (12, 'site_description', 'Next Generation Imagehosting Platform', 'string', '2025-09-24 18:22:54', '2025-09-25 19:05:40'),

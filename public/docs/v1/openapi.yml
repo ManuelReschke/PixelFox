@@ -48,7 +48,7 @@ paths:
   /user/profile:
     get:
       summary: Get authenticated user profile
-      description: Gibt Kontoinformationen, Nutzungsstatistiken und Limits für den authentifizierten Benutzer zurück.
+      description: Returns account details, usage statistics, and limits for the authenticated user.
       operationId: getUserProfile
       tags:
         - Users
@@ -56,7 +56,7 @@ paths:
         - ApiKeyAuth: []
       responses:
         '200':
-          description: Benutzerprofil erfolgreich geladen
+          description: User profile loaded successfully
           content:
             application/json:
               schema:
@@ -68,9 +68,8 @@ paths:
     post:
       summary: Issue direct upload session
       description: >-
-        Erstellt eine direkte Upload-Session und liefert einen temporären Token,
-        mit dem Dateien direkt zum Storage-Endpunkt (`/api/internal/upload`)
-        übertragen werden können.
+        Creates a direct upload session and returns a temporary upload token.
+        Use the returned `upload_url` as the upload target URL for file transfer.
       operationId: postUserUploadSession
       tags:
         - Upload
@@ -93,6 +92,8 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /upload:
     post:
@@ -100,14 +101,10 @@ paths:
       description: >-
         Uploads an image file directly to storage using a time-limited upload token.
         Use the `upload_url` returned by `POST /upload/sessions` as the target URL.
+        This endpoint is also available on `/api/v1/upload` as a compatibility route.
       operationId: postDirectUpload
       tags:
         - Upload
-      servers:
-        - url: http://localhost:8080/api/internal
-          description: Internal storage upload server (development)
-        - url: https://pixelfox.cc/api/internal
-          description: Internal storage upload server (production)
       security:
         - UploadTokenAuth: []
       requestBody:
@@ -145,11 +142,8 @@ paths:
       operationId: getImageStatus
       tags:
         - Images
-      servers:
-        - url: http://localhost:8080/api/internal
-          description: Internal status endpoint (development)
-        - url: https://pixelfox.cc/api/internal
-          description: Internal status endpoint (production)
+      security:
+        - ApiKeyAuth: []
       parameters:
         - name: uuid
           in: path
@@ -397,7 +391,7 @@ components:
           type: integer
           format: int64
           minimum: 1
-          description: Größe der Datei in Bytes.
+          description: File size in bytes.
 
     UploadSessionResponse:
       type: object
@@ -411,22 +405,22 @@ components:
         upload_url:
           type: string
           format: uri
-          description: Vollständige URL zum Storage-Endpunkt.
+          description: Absolute URL of the upload endpoint.
         token:
           type: string
-          description: Zeitlich begrenzter Upload-Token (Bearer Token).
+          description: Time-limited upload token (Bearer token).
         pool_id:
           type: integer
           format: int64
-          description: Interne ID des Storage-Pools.
+          description: Identifier of the selected storage pool.
         expires_at:
           type: integer
           format: int64
-          description: Ablaufzeit als Unix-Timestamp (Sekunden).
+          description: Expiration time as a Unix timestamp (seconds).
         max_bytes:
           type: integer
           format: int64
-          description: Maximale Dateigröße in Bytes, die mit diesem Token akzeptiert wird.
+          description: Maximum file size in bytes accepted with this token.
 
     UserAccount:
       type: object
@@ -444,40 +438,40 @@ components:
         id:
           type: integer
           format: int64
-          description: Benutzer-ID
+          description: User ID
           example: 42
         username:
           type: string
-          description: Anzeigename des Benutzers
+          description: User display name
           example: pixelpete
         email:
           type: string
           format: email
-          description: Verknüpfte E-Mail-Adresse
+          description: Linked email address
           example: pete@example.com
         status:
           type: string
-          description: Kontostatus
+          description: Account status
           example: active
         plan:
           type: string
-          description: Aktueller Paketplan
+          description: Current subscription plan
           example: premium
-        
+
         created_at:
           type: string
           format: date-time
-          description: Registrierungszeitpunkt
+          description: Registration timestamp
         last_login_at:
           type: string
           format: date-time
           nullable: true
-          description: Zeitpunkt der letzten Anmeldung (falls vorhanden)
+          description: Timestamp of the last login (if available)
         api_key_last_used_at:
           type: string
           format: date-time
           nullable: true
-          description: Letzte Verwendung des aktuellen API-Schlüssels
+          description: Last usage timestamp of the current API key
         stats:
           $ref: '#/components/schemas/UserAccountStats'
         limits:
@@ -500,18 +494,18 @@ components:
             count:
               type: integer
               format: int64
-              description: Anzahl gespeicherter Bilder
+              description: Number of stored images
               example: 128
             storage_used_bytes:
               type: integer
               format: int64
-              description: Belegter Speicher in Bytes
+              description: Used storage in bytes
               example: 734003200
             storage_remaining_bytes:
               type: integer
               format: int64
               nullable: true
-              description: Verbleibender Speicherplatz (null bei unbegrenzt)
+              description: Remaining storage in bytes (null if unlimited)
         albums:
           type: object
           required:
@@ -520,7 +514,7 @@ components:
             count:
               type: integer
               format: int64
-              description: Anzahl erstellter Alben
+              description: Number of created albums
               example: 12
 
     UserAccountLimits:
@@ -536,27 +530,27 @@ components:
         max_upload_bytes:
           type: integer
           format: int64
-          description: Maximale Uploadgröße pro Datei (in Bytes)
+          description: Maximum upload size per file (in bytes)
           example: 52428800
         storage_quota_bytes:
           type: integer
           format: int64
           nullable: true
-          description: Gesamtverfügbarer Speicher (null bei unbegrenzt)
+          description: Total available storage (null if unlimited)
         can_multi_upload:
           type: boolean
-          description: Darf Mehrfach-Uploads durchführen
+          description: Whether multi-upload is allowed
         image_upload_enabled:
           type: boolean
-          description: Globale Einstellung für Bild-Uploads
+          description: Global setting for image uploads
         direct_upload_enabled:
           type: boolean
-          description: Globale Einstellung für Direkt-Uploads
+          description: Global setting for direct uploads
         allowed_thumbnail_formats:
           type: array
           items:
             type: string
-          description: Verfügbare Thumbnail-Formate
+          description: Available thumbnail formats
           example: ["original", "webp"]
 
     UserAccountPreferences:
@@ -568,13 +562,13 @@ components:
       properties:
         thumbnail_original:
           type: boolean
-          description: Bevorzugt Original-Thumbnails
+          description: Prefers original thumbnails
         thumbnail_webp:
           type: boolean
-          description: Bevorzugt WebP-Thumbnails
+          description: Prefers WebP thumbnails
         thumbnail_avif:
           type: boolean
-          description: Bevorzugt AVIF-Thumbnails
+          description: Prefers AVIF thumbnails
 
   securitySchemes:
     ApiKeyAuth:
@@ -582,11 +576,6 @@ components:
       in: header
       name: X-API-Key
       description: API key for authentication
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token authentication
     UploadTokenAuth:
       type: http
       scheme: bearer
@@ -595,4 +584,3 @@ components:
 
 security:
   - ApiKeyAuth: []
-  - BearerAuth: []

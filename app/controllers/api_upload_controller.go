@@ -71,11 +71,12 @@ func HandleImageStatusJSON(c *fiber.Ctx) error {
 	complete := imageprocessor.IsImageProcessingComplete(uuid)
 
 	// try to fetch view url
-	var viewURL string
+	var viewURL *string
 	if complete {
 		imgRepo := repository.GetGlobalFactory().GetImageRepository()
 		if image, err := imgRepo.GetByUUID(uuid); err == nil && image != nil {
-			viewURL = "/i/" + image.ShareLink
+			u := "/i/" + image.ShareLink
+			viewURL = &u
 		}
 	}
 	return c.JSON(fiber.Map{"complete": complete, "view_url": viewURL})
@@ -153,14 +154,7 @@ func createDirectUploadSession(user usercontext.UserContext, requestedSize int64
 		return nil, fiber.StatusInternalServerError, "token_creation_failed", "failed to create token"
 	}
 
-	uploadURL := pool.UploadAPIURL
-	if pb := strings.TrimSpace(pool.PublicBaseURL); pb != "" {
-		lower := strings.ToLower(pb)
-		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
-			base := strings.TrimRight(pb, "/")
-			uploadURL = base + "/api/internal/upload"
-		}
-	}
+	uploadURL := resolvePublicUploadURL(pool)
 
 	return fiber.Map{
 		"upload_url": uploadURL,
@@ -169,4 +163,40 @@ func createDirectUploadSession(user usercontext.UserContext, requestedSize int64
 		"expires_at": time.Now().Add(ttl).Unix(),
 		"max_bytes":  maxBytes,
 	}, fiber.StatusOK, "", ""
+}
+
+// resolvePublicUploadURL returns a client-facing upload URL that never exposes
+// internal API routes.
+func resolvePublicUploadURL(pool *models.StoragePool) string {
+	const publicUploadPath = "/api/v1/upload"
+
+	if pool == nil {
+		return publicUploadPath
+	}
+
+	if pb := strings.TrimSpace(pool.PublicBaseURL); pb != "" {
+		lower := strings.ToLower(pb)
+		if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+			return strings.TrimRight(pb, "/") + publicUploadPath
+		}
+	}
+
+	uploadURL := strings.TrimSpace(pool.UploadAPIURL)
+	if uploadURL == "" {
+		return publicUploadPath
+	}
+
+	if strings.Contains(uploadURL, "/api/internal/upload") {
+		return strings.Replace(uploadURL, "/api/internal/upload", publicUploadPath, 1)
+	}
+
+	if strings.Contains(uploadURL, publicUploadPath) {
+		return uploadURL
+	}
+
+	if strings.HasSuffix(uploadURL, "/upload") {
+		return strings.TrimSuffix(uploadURL, "/upload") + publicUploadPath
+	}
+
+	return uploadURL
 }

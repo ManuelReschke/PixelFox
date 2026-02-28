@@ -32,14 +32,11 @@ func (s *APIServer) GetUserProfile(c *fiber.Ctx) error {
 	return controllers.HandleGetUserAccount(c)
 }
 
-// PostDirectUpload is documented in the public spec to describe the storage upload endpoint,
-// but the actual upload should be performed against the `upload_url` returned by
-// POST /upload/sessions. We don't serve storage uploads on the public v1 base path.
+// PostDirectUpload handles token-authenticated direct uploads.
+// Clients should prefer the `upload_url` returned by POST /upload/sessions.
+// This route is kept as a compatible alias for environments where /api/v1 is used directly.
 func (s *APIServer) PostDirectUpload(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-		"error":   "not_implemented",
-		"message": "Direct uploads must be sent to the 'upload_url' returned by /api/v1/upload/sessions",
-	})
+	return controllers.HandleStorageDirectUpload(c)
 }
 
 // GetImage returns metadata for an image resource by UUID (API key protected).
@@ -57,11 +54,12 @@ func (s *APIServer) GetImageStatus(c *fiber.Ctx, uuid string) error {
 	complete := imageprocessor.IsImageProcessingComplete(uuid)
 
 	// try to fetch view url when complete
-	var viewURL string
+	var viewURL *string
 	if complete {
 		imgRepo := repository.GetGlobalFactory().GetImageRepository()
 		if image, err := imgRepo.GetByUUID(uuid); err == nil && image != nil {
-			viewURL = "/i/" + image.ShareLink
+			u := "/i/" + image.ShareLink
+			viewURL = &u
 		}
 	}
 	return c.JSON(fiber.Map{"complete": complete, "view_url": viewURL})

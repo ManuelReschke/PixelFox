@@ -191,12 +191,27 @@ func (r *userRepository) getUserStats(userID uint) (*userStats, error) {
 		return nil, fmt.Errorf("failed to count albums: %w", err)
 	}
 
-	// Get storage usage (sum of file sizes)
-	err = r.db.Model(&models.Image{}).Where("user_id = ?", userID).
-		Select("COALESCE(SUM(file_size), 0)").Row().Scan(&stats.StorageUsage)
+	// Get storage usage of original images.
+	var imageUsage int64
+	err = r.db.Model(&models.Image{}).
+		Where("user_id = ?", userID).
+		Select("COALESCE(SUM(file_size), 0)").
+		Row().Scan(&imageUsage)
 	if err != nil {
-		return nil, fmt.Errorf("failed to calculate storage usage: %w", err)
+		return nil, fmt.Errorf("failed to calculate image storage usage: %w", err)
 	}
+	// Add storage usage of generated variants for the user's images.
+	var variantUsage int64
+	err = r.db.Model(&models.ImageVariant{}).
+		Joins("JOIN images ON images.id = image_variants.image_id AND images.deleted_at IS NULL").
+		Where("images.user_id = ?", userID).
+		Select("COALESCE(SUM(image_variants.file_size), 0)").
+		Row().Scan(&variantUsage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate variant storage usage: %w", err)
+	}
+
+	stats.StorageUsage = imageUsage + variantUsage
 
 	return &stats, nil
 }
