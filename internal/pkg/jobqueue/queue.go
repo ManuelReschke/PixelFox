@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -19,6 +20,7 @@ const (
 	JobKeyPrefix     = "job:"
 	JobQueueKey      = "job_queue"
 	JobProcessingKey = "job_processing"
+	JobRetryKey      = "job_retry"
 	JobStatsKey      = "job_stats"
 
 	// Job settings
@@ -80,6 +82,10 @@ func (q *Queue) Start() {
 	// Start stuck-processing sweeper (recovers jobs stuck in processing due to crashes)
 	q.wg.Add(1)
 	go q.stuckSweeper(10*time.Minute, 1*time.Minute)
+
+	// Start retry scheduler (moves due retry jobs back to pending queue)
+	q.wg.Add(1)
+	go q.retryScheduler(time.Second, 200)
 }
 
 // Stop stops the job queue workers
@@ -164,6 +170,75 @@ func (q *Queue) stuckSweeper(maxAge time.Duration, interval time.Duration) {
 			}
 		}
 	}
+}
+
+// retryScheduler periodically moves due retry jobs from the retry zset back to pending queue.
+func (q *Queue) retryScheduler(interval time.Duration, batchSize int64) {
+	defer q.wg.Done()
+	log.Infof("[JobQueue] Retry scheduler running (interval=%s, batch=%d)", interval, batchSize)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	ctx := context.Background()
+	for {
+		select {
+		case <-q.stopCh:
+			log.Info("[JobQueue] Retry scheduler stopping")
+			return
+		case <-ticker.C:
+			q.enqueueDueRetries(ctx, batchSize)
+		}
+	}
+}
+
+func (q *Queue) enqueueDueRetries(ctx context.Context, batchSize int64) {
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+	nowMs := time.Now().UnixMilli()
+	ids, err := q.client.ZRangeByScore(ctx, JobRetryKey, &redis.ZRangeBy{
+		Min:    "-inf",
+		Max:    strconv.FormatInt(nowMs, 10),
+		Offset: 0,
+		Count:  batchSize,
+	}).Result()
+	if err != nil {
+		if err != redis.Nil {
+			log.Errorf("[JobQueue] Retry scheduler ZRangeByScore error: %v", err)
+		}
+		return
+	}
+	for _, id := range ids {
+		removed, err := q.client.ZRem(ctx, JobRetryKey, id).Result()
+		if err != nil {
+			log.Errorf("[JobQueue] Retry scheduler ZRem error for %s: %v", id, err)
+			continue
+		}
+		if removed == 0 {
+			// Another worker/node already claimed it.
+			continue
+		}
+		if err := q.client.LPush(ctx, JobQueueKey, id).Err(); err != nil {
+			// Re-add with short delay to avoid losing the retry when queue push fails transiently.
+			retryAt := time.Now().Add(10 * time.Second).UnixMilli()
+			_ = q.client.ZAdd(ctx, JobRetryKey, redis.Z{Score: float64(retryAt), Member: id}).Err()
+			log.Errorf("[JobQueue] Retry scheduler LPush failed for %s: %v", id, err)
+			continue
+		}
+		log.Infof("[JobQueue] Re-enqueued retry job %s", id)
+	}
+}
+
+func (q *Queue) scheduleRetry(ctx context.Context, job *Job) error {
+	delay := time.Minute * time.Duration(job.RetryCount)
+	retryAt := time.Now().Add(delay).UnixMilli()
+	if err := q.client.ZAdd(ctx, JobRetryKey, redis.Z{
+		Score:  float64(retryAt),
+		Member: job.ID,
+	}).Err(); err != nil {
+		return fmt.Errorf("failed scheduling retry for job %s: %w", job.ID, err)
+	}
+	log.Infof("[JobQueue] Scheduled retry for job %s in %s", job.ID, delay)
+	return nil
 }
 
 // worker processes jobs from the queue
@@ -268,6 +343,9 @@ func (q *Queue) dequeueJob(ctx context.Context) (*Job, error) {
 		return nil, fmt.Errorf("failed to unmarshal job %s: %w", jobID, err)
 	}
 
+	// Defensive cleanup: if this job still exists in retry scheduling, remove it.
+	_ = q.client.ZRem(ctx, JobRetryKey, jobID).Err()
+
 	return &job, nil
 }
 
@@ -308,11 +386,12 @@ func (q *Queue) processJob(ctx context.Context, job *Job) {
 			log.Infof("[JobQueue] Retrying job %s (Attempt %d/%d)", job.ID, job.RetryCount, job.MaxRetries)
 			job.MarkAsRetrying()
 			q.updateJob(ctx, job)
-
-			// Re-enqueue for retry after a delay
-			time.AfterFunc(time.Minute*time.Duration(job.RetryCount), func() {
-				q.client.LPush(ctx, JobQueueKey, job.ID)
-			})
+			if serr := q.scheduleRetry(ctx, job); serr != nil {
+				log.Errorf("[JobQueue] Retry scheduling failed for %s, falling back to immediate requeue: %v", job.ID, serr)
+				if perr := q.client.LPush(ctx, JobQueueKey, job.ID).Err(); perr != nil {
+					log.Errorf("[JobQueue] Immediate fallback requeue failed for %s: %v", job.ID, perr)
+				}
+			}
 		} else {
 			log.Errorf("[JobQueue] Job %s permanently failed after %d retries", job.ID, job.RetryCount)
 			q.updateJobStats(ctx, JobStatusFailed, 1)
@@ -350,6 +429,7 @@ func (q *Queue) requeueJob(ctx context.Context, job *Job) error {
 	job.Status = JobStatusPending
 	job.UpdatedAt = time.Now()
 	q.updateJob(ctx, job)
+	_ = q.client.ZRem(ctx, JobRetryKey, job.ID).Err()
 	// Remove from processing list and push to the end of the queue
 	if err := q.client.LRem(ctx, JobProcessingKey, 1, job.ID).Err(); err != nil {
 		log.Errorf("[JobQueue] Failed to remove job %s from processing: %v", job.ID, err)
@@ -375,6 +455,9 @@ func (q *Queue) removeCompletedJob(ctx context.Context, jobID string) {
 		log.Errorf("[JobQueue] Failed to remove completed job %s from Redis: %v", jobID, err)
 	} else {
 		log.Debugf("[JobQueue] Successfully removed completed job %s from Redis", jobID)
+	}
+	if err := q.client.ZRem(ctx, JobRetryKey, jobID).Err(); err != nil {
+		log.Errorf("[JobQueue] Failed to remove completed job %s from retry schedule: %v", jobID, err)
 	}
 }
 

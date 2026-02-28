@@ -116,6 +116,12 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 
 	sm := storage.NewStorageManager()
 	var errSourceMissing = errors.New("source file missing")
+	buildStoredPath := func(relPath, fileName string) string {
+		rel := filepath.Clean(relPath)
+		name := filepath.Clean(fileName)
+		storedPath := filepath.ToSlash(filepath.Join(rel, name))
+		return strings.TrimLeft(storedPath, "/")
+	}
 
 	// Determine if target is on a different node and requires HTTP push replication.
 	srcNode := strings.TrimSpace(srcPool.NodeID)
@@ -144,10 +150,7 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 			targetPool = p
 		}
 
-		rel := filepath.Clean(relPath)
-		name := filepath.Clean(fileName)
-		storedPath := filepath.ToSlash(filepath.Join(rel, name))
-		storedPath = strings.TrimLeft(storedPath, "/")
+		storedPath := buildStoredPath(relPath, fileName)
 
 		exists, _, existsErr := sm.FileExists(storedPath, sourcePoolID)
 		if existsErr != nil {
@@ -193,14 +196,21 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 		return nil
 	}
 
-	// Move original (required). If source missing, treat job as no-op success without DB update.
+	// Move original (required). If source is missing, only continue when the file is already present in target.
 	if err := moveOne(image.FilePath, image.FileName, payload.SourcePoolID, payload.TargetPoolID); err != nil {
 		if errors.Is(err, errSourceMissing) {
-			// Do not retry this job; nothing to do if source is gone. Leave DB as-is.
-			log.Warnf("[MoveImage] Original missing for image %d, leaving records unchanged", image.ID)
-			return nil
+			originalPath := buildStoredPath(image.FilePath, image.FileName)
+			targetExists, _, targetErr := sm.FileExists(originalPath, payload.TargetPoolID)
+			if targetErr != nil {
+				return fmt.Errorf("source original missing and failed to check target copy: %w", targetErr)
+			}
+			if !targetExists {
+				return fmt.Errorf("source original missing and not present in target for image %d (path=%s)", image.ID, originalPath)
+			}
+			log.Warnf("[MoveImage] Original missing in source but already present in target for image %d; continuing reconciliation", image.ID)
+		} else {
+			return fmt.Errorf("move original failed: %w", err)
 		}
-		return fmt.Errorf("move original failed: %w", err)
 	}
 
 	// Move variants
@@ -208,25 +218,39 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 	if err != nil {
 		return fmt.Errorf("load variants failed: %w", err)
 	}
+	movedVariantIDs := make([]uint, 0, len(variants))
 	for i := range variants {
 		v := &variants[i]
-		// If variant already in target pool, skip
+		// If variant already in target pool, keep as target.
 		vp := v.StoragePoolID
 		if vp == 0 {
 			vp = image.StoragePoolID
 		}
 		if vp == payload.TargetPoolID {
+			movedVariantIDs = append(movedVariantIDs, v.ID)
 			continue
 		}
 		rel := normalizeVariantRelativePath(v.FilePath, srcPool)
 		if err := moveOne(rel, v.FileName, vp, payload.TargetPoolID); err != nil {
 			if errors.Is(err, errSourceMissing) {
-				// Non-fatal: Variant is missing; continue with others
-				log.Warnf("[MoveImage] Variant missing for image %d, type %s, skipping", image.ID, v.VariantType)
+				// Source missing can happen after partial success; trust target if file exists there.
+				targetPath := buildStoredPath(rel, v.FileName)
+				targetExists, _, targetErr := sm.FileExists(targetPath, payload.TargetPoolID)
+				if targetErr != nil {
+					return fmt.Errorf("variant source missing and failed to check target copy: %w", targetErr)
+				}
+				if targetExists {
+					log.Warnf("[MoveImage] Variant %s missing in source but present in target (image %d), marking moved", v.VariantType, image.ID)
+					movedVariantIDs = append(movedVariantIDs, v.ID)
+				} else {
+					// Leave DB reference unchanged so reconcile can retry later.
+					log.Warnf("[MoveImage] Variant %s missing in both source and target for image %d; leaving current pool reference", v.VariantType, image.ID)
+				}
 				continue
 			}
 			return fmt.Errorf("move variant failed: %w", err)
 		}
+		movedVariantIDs = append(movedVariantIDs, v.ID)
 	}
 
 	// Update DB references in a transaction
@@ -235,8 +259,8 @@ func (q *Queue) processMoveImageJob(job *Job) error {
 		tx.Rollback()
 		return fmt.Errorf("update image pool failed: %w", err)
 	}
-	if len(variants) > 0 {
-		if err := tx.Model(&models.ImageVariant{}).Where("image_id = ?", image.ID).Update("storage_pool_id", payload.TargetPoolID).Error; err != nil {
+	if len(movedVariantIDs) > 0 {
+		if err := tx.Model(&models.ImageVariant{}).Where("id IN ?", movedVariantIDs).Update("storage_pool_id", payload.TargetPoolID).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("update variants pool failed: %w", err)
 		}

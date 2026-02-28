@@ -3,6 +3,8 @@ package database
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ManuelReschke/PixelFox/app/models"
@@ -13,6 +15,8 @@ import (
 
 const maxRetries = 5
 const retryDelay = 5 * time.Second
+const defaultAutoMigrateLockTimeoutSec = 120
+const defaultAutoMigrateLockName = "pixelfox_automigrate"
 
 func SetupDatabase() {
 	var err error
@@ -50,26 +54,13 @@ func SetupDatabase() {
 				log.Printf("Database connection pool configured: MaxIdle=10, MaxOpen=100, MaxLifetime=1h")
 			}
 
-			DB.AutoMigrate(
-				&models.User{},
-				&models.ProviderAccount{},
-				&models.UserSettings{},
-				&models.Image{},
-				&models.ImageVariant{},
-				&models.ImageMetadata{},
-				&models.ImageReport{},
-				&models.Album{},
-				&models.Tag{},
-				&models.Comment{},
-				&models.Like{},
-				&models.AlbumImage{},
-				&models.ImageTag{},
-				&models.Notification{},
-				&models.News{},
-				&models.Page{},
-				&models.Setting{},
-				&models.StoragePool{},
-			)
+			if shouldAutoMigrate() {
+				if err := runAutoMigrateWithLock(DB); err != nil {
+					panic(fmt.Errorf("auto migrate failed: %w", err))
+				}
+			} else {
+				log.Printf("AutoMigrate disabled by DB_AUTO_MIGRATE")
+			}
 
 			// Load settings into memory
 			err = models.LoadSettings(DB)
@@ -93,6 +84,75 @@ func SetupDatabase() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func shouldAutoMigrate() bool {
+	val := strings.ToLower(strings.TrimSpace(env.GetEnv("DB_AUTO_MIGRATE", "1")))
+	switch val {
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return true
+	}
+}
+
+func runAutoMigrateWithLock(db *gorm.DB) error {
+	lockName := env.GetEnv("DB_AUTO_MIGRATE_LOCK_NAME", defaultAutoMigrateLockName)
+	lockTimeoutSec := defaultAutoMigrateLockTimeoutSec
+	if timeoutRaw := strings.TrimSpace(env.GetEnv("DB_AUTO_MIGRATE_LOCK_TIMEOUT_SEC", "")); timeoutRaw != "" {
+		timeout, err := strconv.Atoi(timeoutRaw)
+		if err != nil || timeout < 1 {
+			return fmt.Errorf("invalid DB_AUTO_MIGRATE_LOCK_TIMEOUT_SEC value %q", timeoutRaw)
+		}
+		lockTimeoutSec = timeout
+	}
+
+	var lockAcquired int
+	if err := db.Raw("SELECT GET_LOCK(?, ?)", lockName, lockTimeoutSec).Scan(&lockAcquired).Error; err != nil {
+		return fmt.Errorf("failed to acquire automigrate lock %q: %w", lockName, err)
+	}
+	if lockAcquired != 1 {
+		return fmt.Errorf("failed to acquire automigrate lock %q within %ds", lockName, lockTimeoutSec)
+	}
+	defer func() {
+		var released int
+		if err := db.Raw("SELECT RELEASE_LOCK(?)", lockName).Scan(&released).Error; err != nil {
+			log.Printf("Warning: failed to release automigrate lock %q: %v", lockName, err)
+			return
+		}
+		if released != 1 {
+			log.Printf("Warning: automigrate lock %q was not released cleanly (result=%d)", lockName, released)
+		}
+	}()
+
+	if err := runAutoMigrate(db); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func runAutoMigrate(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&models.User{},
+		&models.ProviderAccount{},
+		&models.UserSettings{},
+		&models.Image{},
+		&models.ImageVariant{},
+		&models.ImageMetadata{},
+		&models.ImageReport{},
+		&models.Album{},
+		&models.Tag{},
+		&models.Comment{},
+		&models.Like{},
+		&models.AlbumImage{},
+		&models.ImageTag{},
+		&models.Notification{},
+		&models.News{},
+		&models.Page{},
+		&models.Setting{},
+		&models.StoragePool{},
+	)
 }
 
 // applyStoragePoolDefaults ensures default pool has public_base_url/upload_api_url/node_id set

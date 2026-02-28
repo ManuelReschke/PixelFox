@@ -169,8 +169,11 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	// Enforce per-plan storage quota for the user
 	db := database.GetDB()
 	if db != nil {
-		us, _ := models.GetOrCreateUserSettings(db, claims.UserID)
-		quota := entitlements.StorageQuotaBytes(entitlements.Plan(us.Plan))
+		plan := entitlements.PlanFree
+		if us, err := models.GetOrCreateUserSettings(db, claims.UserID); err == nil && us != nil && strings.TrimSpace(us.Plan) != "" {
+			plan = entitlements.Plan(strings.TrimSpace(us.Plan))
+		}
+		quota := entitlements.StorageQuotaBytes(plan)
 		if quota > 0 {
 			var used int64
 			db.Model(&models.Image{}).Where("user_id = ?", claims.UserID).Select("COALESCE(SUM(file_size), 0)").Row().Scan(&used)
@@ -270,9 +273,10 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 	relativePath := fmt.Sprintf("%d/%02d/%02d", now.Year(), now.Month(), now.Day())
 	imageUUID := uuid.New().String()
 	fileName := imageUUID + ext
+	storedPath := filepath.Join("original", relativePath, fileName)
 
 	// Save file using StorageManager.SaveFile to ensure directory creation and usage update
-	op, err := sm.SaveFile(src, filepath.Join("original", relativePath, fileName), pool.ID)
+	op, err := sm.SaveFile(src, storedPath, pool.ID)
 	if err != nil || !op.Success {
 		fiberlog.Errorf("SaveFile error: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to store file"})
@@ -295,7 +299,11 @@ func HandleStorageDirectUpload(c *fiber.Ctx) error {
 		IPv6:          ipv6,
 	}
 	if err := imgRepo.Create(&image); err != nil {
-		// Handle concurrent duplicate insert gracefully (no DB constraint required)
+		// Roll back physical file to avoid orphaned objects/files when DB write fails.
+		if _, delErr := sm.DeleteFile(storedPath, pool.ID); delErr != nil {
+			fiberlog.Warnf("[DirectUpload] Failed to cleanup stored file after DB create error (pool=%d, path=%s): %v", pool.ID, storedPath, delErr)
+		}
+		// Handle concurrent duplicate insert gracefully (now enforced by DB constraint too).
 		if existing, gerr := imgRepo.GetByUserIDAndFileHash(claims.UserID, fileHash); gerr == nil && existing != nil {
 			enriched := buildUploadResponseExtras(existing)
 			enriched["duplicate"] = true
@@ -500,6 +508,11 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "invalid sha256"})
 		}
 	}
+	requireChecksum := models.GetAppSettings().IsReplicationChecksumRequired()
+	if requireChecksum && wantSum == "" {
+		fiberlog.Warnf("[Replicate] Missing required checksum (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "checksum required"})
+	}
 
 	// Capacity/health precheck if size known
 	sm := storage.NewStorageManager()
@@ -516,14 +529,15 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 		}
 	}
 
-	// Idempotency: if file already exists at destination and size matches, skip
+	// Idempotency: skip only if caller did not provide checksum and size already matches.
+	// When checksum is provided, overwrite and verify to avoid false positives on same-size corruption.
 	if exists, existingSize, existsErr := sm.FileExists(storedPath, uint(poolID)); existsErr == nil && exists {
 		// Compare size if provided else with uploaded header size
 		want := expectedSize
 		if want < 0 {
 			want = fh.Size
 		}
-		if want >= 0 && existingSize == want {
+		if want >= 0 && existingSize == want && wantSum == "" {
 			fiberlog.Infof("[Replicate] Skip existing file (pool_id=%d, path=%s, size=%d) from %s", poolID, storedPath, want, c.IP())
 			return c.JSON(fiber.Map{"status": "ok", "skipped": true, "reason": "exists"})
 		}
@@ -542,13 +556,6 @@ func HandleStorageReplicate(c *fiber.Ctx) error {
 	if _, err := sm.SaveFile(tee, storedPath, uint(poolID)); err != nil {
 		fiberlog.Errorf("Replicate SaveFile error: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal_server_error", "message": "failed to store file"})
-	}
-
-	// Enforce checksum by admin setting
-	requireChecksum := models.GetAppSettings().IsReplicationChecksumRequired()
-	if requireChecksum && wantSum == "" {
-		fiberlog.Warnf("[Replicate] Missing required checksum (pool_id=%d, path=%s) from %s", poolID, storedPath, c.IP())
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "checksum required"})
 	}
 
 	if wantSum != "" {
