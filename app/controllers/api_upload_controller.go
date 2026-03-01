@@ -69,6 +69,7 @@ func HandleImageStatusJSON(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "uuid missing"})
 	}
 	complete := imageprocessor.IsImageProcessingComplete(uuid)
+	failed := imageprocessor.IsImageProcessingFailed(uuid)
 
 	// try to fetch view url
 	var viewURL *string
@@ -79,7 +80,11 @@ func HandleImageStatusJSON(c *fiber.Ctx) error {
 			viewURL = &u
 		}
 	}
-	return c.JSON(fiber.Map{"complete": complete, "view_url": viewURL})
+	return c.JSON(fiber.Map{
+		"complete": complete,
+		"failed":   failed,
+		"view_url": viewURL,
+	})
 }
 
 func createDirectUploadSession(user usercontext.UserContext, requestedSize int64) (fiber.Map, int, string, string) {

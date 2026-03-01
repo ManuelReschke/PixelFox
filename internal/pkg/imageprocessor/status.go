@@ -128,6 +128,20 @@ func GetImageStatus(imageUUID string) (string, error) {
 	return status, err
 }
 
+// IsImageProcessingFailed checks whether image processing is currently marked as failed in cache.
+func IsImageProcessingFailed(imageUUID string) bool {
+	if imageUUID == "" {
+		return false
+	}
+
+	status, err := GetImageStatus(imageUUID)
+	if err != nil {
+		return false
+	}
+
+	return status == STATUS_FAILED
+}
+
 // GetImageStatusTimestamp gets the timestamp when the status was set
 func GetImageStatusTimestamp(imageUUID string) (time.Time, error) {
 	if imageUUID == "" {

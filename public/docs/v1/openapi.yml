@@ -101,6 +101,11 @@ paths:
       description: >-
         Uploads an image file directly to storage using a time-limited upload token.
         Use the `upload_url` returned by `POST /upload/sessions` as the target URL.
+        This endpoint returns immediately after accepting the upload and queueing processing.
+        The response is not a guarantee that all variants are already generated.
+        Poll `GET /images/{uuid}/status` until `complete=true`.
+        If `failed=true`, processing ended with an error.
+        When `complete=true` and `failed=false`, fetch final image resource data via `GET /images/{uuid}`.
         This endpoint is also available on `/api/v1/upload` as a compatibility route.
       operationId: postDirectUpload
       tags:
@@ -123,7 +128,7 @@ paths:
               required: [file]
       responses:
         '200':
-          description: Upload accepted
+          description: Upload accepted and processing started asynchronously
           content:
             application/json:
               schema:
@@ -159,6 +164,8 @@ paths:
                 type: object
                 properties:
                   complete:
+                    type: boolean
+                  failed:
                     type: boolean
                   view_url:
                     type: string

@@ -52,6 +52,7 @@ func (s *APIServer) GetImageStatus(c *fiber.Ctx, uuid string) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad_request", "message": "uuid missing"})
 	}
 	complete := imageprocessor.IsImageProcessingComplete(uuid)
+	failed := imageprocessor.IsImageProcessingFailed(uuid)
 
 	// try to fetch view url when complete
 	var viewURL *string
@@ -62,7 +63,11 @@ func (s *APIServer) GetImageStatus(c *fiber.Ctx, uuid string) error {
 			viewURL = &u
 		}
 	}
-	return c.JSON(fiber.Map{"complete": complete, "view_url": viewURL})
+	return c.JSON(fiber.Map{
+		"complete": complete,
+		"failed":   failed,
+		"view_url": viewURL,
+	})
 }
 
 // PostUserUploadSession issues a direct upload session via API key authentication.

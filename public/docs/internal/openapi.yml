@@ -25,7 +25,13 @@ paths:
   /upload:
     post:
       summary: Direct storage upload
-      description: Uploads an image file directly to storage using a time-limited upload token.
+      description: >-
+        Uploads an image file directly to storage using a time-limited upload token.
+        This endpoint returns immediately after accepting the upload and queueing processing.
+        The response is not a guarantee that all variants are already generated.
+        Poll `GET /images/{uuid}/status` until `complete=true`.
+        If `failed=true`, processing ended with an error.
+        When processing is complete, use the returned `view_url`/resource links as final.
       tags: [Upload]
       security:
         - UploadTokenAuth: []
@@ -52,7 +58,7 @@ paths:
               required: [file]
       responses:
         '200':
-          description: Upload accepted
+          description: Upload accepted and processing started asynchronously
           content:
             application/json:
               schema:
@@ -141,6 +147,8 @@ paths:
                 type: object
                 properties:
                   complete:
+                    type: boolean
+                  failed:
                     type: boolean
                   view_url:
                     type: string
