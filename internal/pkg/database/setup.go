@@ -136,6 +136,10 @@ func runAutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&models.User{},
 		&models.ProviderAccount{},
+		&models.BillingAccount{},
+		&models.BillingSubscription{},
+		&models.BillingWebhookEvent{},
+		&models.BillingPlanMapping{},
 		&models.UserSettings{},
 		&models.Image{},
 		&models.ImageVariant{},

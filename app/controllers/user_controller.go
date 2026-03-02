@@ -141,6 +141,93 @@ func HandleUserSettings(c *fiber.Ctx) error {
 	return handler(c)
 }
 
+func HandleUserMembership(c *fiber.Ctx) error {
+	userCtx := usercontext.GetUserContext(c)
+	username := userCtx.Username
+	isAdmin := userCtx.IsAdmin
+	csrfToken := c.Locals("csrf").(string)
+
+	db := database.GetDB()
+	us, _ := models.GetOrCreateUserSettings(db, userCtx.UserID)
+
+	billingConnections := make([]user_views.BillingConnection, 0)
+	patreonConnected := false
+	patreonHasEntitledTier := false
+	patreonLatestStatus := ""
+	patreonCampaignURL := env.GetEnv("PATREON_CAMPAIGN_URL", "https://www.patreon.com/cw/PixelFoxcc")
+
+	var billingAccounts []models.BillingAccount
+	if err := db.Where("user_id = ?", userCtx.UserID).Order("provider ASC").Find(&billingAccounts).Error; err != nil {
+		log.Printf("failed to load billing accounts for user %d: %v", userCtx.UserID, err)
+	} else if len(billingAccounts) > 0 {
+		var subscriptions []models.BillingSubscription
+		if err := db.Where("user_id = ?", userCtx.UserID).Order("updated_at DESC").Find(&subscriptions).Error; err != nil {
+			log.Printf("failed to load billing subscriptions for user %d: %v", userCtx.UserID, err)
+		}
+
+		subByProvider := make(map[string]models.BillingSubscription, len(subscriptions))
+		for _, sub := range subscriptions {
+			if _, exists := subByProvider[sub.Provider]; exists {
+				continue
+			}
+			subByProvider[sub.Provider] = sub
+		}
+
+		billingConnections = make([]user_views.BillingConnection, 0, len(billingAccounts))
+		for _, account := range billingAccounts {
+			if account.Provider == models.BillingProviderPatreon {
+				patreonConnected = true
+			}
+
+			updatedAt := account.UpdatedAt.In(time.Local).Format("02.01.2006 15:04")
+			conn := user_views.BillingConnection{
+				Provider:          account.Provider,
+				ProviderAccountID: account.ProviderAccountID,
+				Email:             account.Email,
+				UpdatedAt:         updatedAt,
+			}
+
+			if sub, ok := subByProvider[account.Provider]; ok {
+				conn.SubscriptionID = sub.ProviderSubscriptionID
+				conn.ProviderPlanRef = sub.ProviderPlanRef
+				conn.InternalPlan = sub.InternalPlan
+				conn.Status = sub.Status
+				if sub.UpdatedAt.After(account.UpdatedAt) {
+					conn.UpdatedAt = sub.UpdatedAt.In(time.Local).Format("02.01.2006 15:04")
+				}
+				if account.Provider == models.BillingProviderPatreon {
+					patreonLatestStatus = sub.Status
+					if sub.ProviderPlanRef != "" && sub.ProviderPlanRef != "none" {
+						switch sub.Status {
+						case models.BillingStatusActive, models.BillingStatusTrialing, models.BillingStatusPastDue:
+							patreonHasEntitledTier = true
+						}
+					}
+				}
+			}
+
+			billingConnections = append(billingConnections, conn)
+		}
+	}
+
+	membershipIndex := user_views.MembershipIndex(
+		username,
+		csrfToken,
+		us.Plan,
+		billingConnections,
+		patreonConnected,
+		patreonHasEntitledTier,
+		patreonLatestStatus,
+		patreonCampaignURL,
+	)
+	membership := user_views.Settings(
+		" | Mitgliedschaft", userCtx.IsLoggedIn, false, flash.Get(c), username, us.Plan, membershipIndex, isAdmin,
+	)
+
+	handler := adaptor.HTTPHandler(templ.Handler(membership))
+	return handler(c)
+}
+
 // HandleUserSettingsPost updates user preferences (clamped by entitlements)
 func HandleUserSettingsPost(c *fiber.Ctx) error {
 	userCtx := usercontext.GetUserContext(c)

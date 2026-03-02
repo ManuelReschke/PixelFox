@@ -1,6 +1,6 @@
 package views
 
-templ PricingPage() {
+templ PricingPage(patreonPremiumCheckoutURL string, patreonPremiumMaxCheckoutURL string) {
 	<section class="mx-auto max-w-6xl px-4 py-8">
 		<div class="text-center mb-12">
 			<h1 class="text-5xl font-bold mb-4">Preise</h1>
@@ -58,7 +58,7 @@ templ PricingPage() {
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            25 GB Speicherlimit
+                            25 GB Speicher (~25.000 Bilder)
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -124,7 +124,7 @@ templ PricingPage() {
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            500 GB Speicherlimit
+                            500 GB Speicher (~500.000 Bilder)
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -132,12 +132,16 @@ templ PricingPage() {
                             </svg>
                             Keine Werbung
                         </li>
-					</ul>
-					<div class="card-actions justify-center">
-						<a href="/" class="btn btn-primary w-full">Bald verfügbar</a>
+						</ul>
+						<div class="card-actions justify-center w-full">
+							if patreonPremiumCheckoutURL != "" {
+								<a href={ patreonPremiumCheckoutURL } hx-boost="false" target="_blank" rel="external noopener noreferrer" class="btn btn-primary w-full">Auf Patreon abonnieren</a>
+							} else {
+								<a href="/" class="btn btn-primary w-full">Bald verfügbar</a>
+							}
+						</div>
 					</div>
 				</div>
-			</div>
 
 			<!-- Premium Max Package -->
 			<div class="card bg-base-100 shadow-xl">
@@ -189,7 +193,7 @@ templ PricingPage() {
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
-                            2000 GB Speicherlimit*
+                            2000 GB Speicher* (~ >2 Mio.)
                         </li>
                         <li class="flex items-center">
                             <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -197,16 +201,56 @@ templ PricingPage() {
                             </svg>
                             Keine Werbung
                         </li>
-					</ul>
-					<div class="card-actions justify-center">
-						<a href="/" class="btn btn-primary w-full">Bald verfügbar</a>
+						</ul>
+						<div class="card-actions justify-center w-full">
+							if patreonPremiumMaxCheckoutURL != "" {
+								<a href={ patreonPremiumMaxCheckoutURL } hx-boost="false" target="_blank" rel="external noopener noreferrer" class="btn btn-primary w-full">Auf Patreon abonnieren</a>
+							} else {
+								<a href="/" class="btn btn-primary w-full">Bald verfügbar</a>
+							}
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-		
-		<!-- Kleingedrucktes -->
-		<div class="max-w-4xl mx-auto mt-10 mb-10 px-4">
+
+			<div class="mt-12 rounded-3xl border border-primary/20 bg-gradient-to-br from-base-200 via-base-100 to-base-200 p-6 md:p-8 shadow-lg">
+				<div class="text-center mb-6">
+					<h3 class="text-2xl md:text-3xl font-bold">So funktioniert dein Abo mit Patreon</h3>
+					<p class="text-sm md:text-base opacity-80 mt-2">In 3 Schritten bist du auf Premium oder Premium Max.</p>
+				</div>
+				<div class="grid gap-4 md:grid-cols-3">
+					<div class="card bg-base-100 border border-base-300 shadow-sm">
+						<div class="card-body p-5">
+							<div class="flex items-center gap-3 mb-2">
+								<span class="badge badge-primary badge-lg">1</span>
+								<h4 class="font-semibold text-lg">Paket wählen</h4>
+							</div>
+							<p class="text-sm opacity-80">Klicke oben auf "Auf Patreon abonnieren" beim gewünschten Paket und schließe den Checkout bei Patreon ab. Wichtig! Du benötigst einen kostenlosen Patreon Account.</p>
+						</div>
+					</div>
+					<div class="card bg-base-100 border border-base-300 shadow-sm">
+						<div class="card-body p-5">
+							<div class="flex items-center gap-3 mb-2">
+								<span class="badge badge-primary badge-lg">2</span>
+								<h4 class="font-semibold text-lg">Konto verbinden</h4>
+							</div>
+							<p class="text-sm opacity-80">Öffne danach <a href="/user/settings/membership" class="link link-primary">Mitgliedschaft</a> und verbinde dein Patreon-Konto mit PixelFox.</p>
+						</div>
+					</div>
+					<div class="card bg-base-100 border border-base-300 shadow-sm">
+						<div class="card-body p-5">
+							<div class="flex items-center gap-3 mb-2">
+								<span class="badge badge-primary badge-lg">3</span>
+								<h4 class="font-semibold text-lg">Plan wird aktiv</h4>
+							</div>
+							<p class="text-sm opacity-80">Nach dem Callback bzw. Re-Sync wird dein Paket aktualisiert und deine Premium-Features sind sofort nutzbar.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Kleingedrucktes -->
+			<div class="max-w-4xl mx-auto mt-10 mb-10 px-4">
 			<div class="text-center text-sm text-gray-500 leading-relaxed">
 				<p>* Mehrwertsteuer ist enthalten</p>
 				<p>* bei Mehrbedarf kann weiterer Speicherplatz bereitgestellt werden</p>

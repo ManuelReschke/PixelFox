@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/ManuelReschke/PixelFox/app/models"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/database"
+	"github.com/ManuelReschke/PixelFox/internal/pkg/env"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/statistics"
 	"github.com/ManuelReschke/PixelFox/internal/pkg/usercontext"
 	"github.com/ManuelReschke/PixelFox/views"
@@ -56,7 +59,17 @@ func HandlePricing(c *fiber.Ctx) error {
 	// Get user context - all user data centrally managed
 	userCtx := usercontext.GetUserContext(c)
 
-	page := views.PricingPage()
+	premiumCheckoutURL := strings.TrimSpace(env.GetEnv("PATREON_CHECKOUT_PREMIUM_URL", ""))
+	if premiumCheckoutURL == "" {
+		premiumCheckoutURL = "https://www.patreon.com/checkout/PixelFoxcc?rid=28043047&vanity=14850240"
+	}
+
+	premiumMaxCheckoutURL := strings.TrimSpace(env.GetEnv("PATREON_CHECKOUT_PREMIUM_MAX_URL", ""))
+	if premiumMaxCheckoutURL == "" {
+		premiumMaxCheckoutURL = "https://www.patreon.com/checkout/PixelFoxcc?rid=28043053&vanity=14850240"
+	}
+
+	page := views.PricingPage(premiumCheckoutURL, premiumMaxCheckoutURL)
 	home := views.HomeCtx(c, "", userCtx.IsLoggedIn, false, flash.Get(c), page, userCtx.IsAdmin, nil)
 
 	handler := adaptor.HTTPHandler(templ.Handler(home))

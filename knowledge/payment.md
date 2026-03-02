@@ -44,7 +44,7 @@ Neue interne Schicht `internal/pkg/billing` mit:
 - OAuth2 vorhanden (`/api/oauth2/authorize`, `/api/oauth2/token`).
 - API v2 liefert Campaign/Members/Identity Daten.
 - Webhooks fuer Member-Ereignisse (`members:create`, `members:update`, `members:delete`).
-- Webhook-Signatur ueber `X-Patreon-Signature` (HMAC SHA256 mit Webhook Secret).
+- Webhook-Signatur ueber `X-Patreon-Signature` (HMAC MD5 mit Webhook Secret; laut offizieller Patreon-Doku).
 
 Hinweis (Ableitung aus offizieller API-Referenz): Patreon API ist fuer Membership-Sync gebaut; der eigentliche Abschluss/Aenderung der Mitgliedschaft passiert auf Patreon, nicht ueber einen eigenen "Create Subscription"-Checkout in eurer App.
 
@@ -306,9 +306,9 @@ Admin-View (spaeter):
 ## Konkrete naechste Schritte (empfohlen)
 
 1. `billing_plan_mappings` final festlegen (Tier/Price IDs + Intervall).
-2. DB-Migrationen fuer `billing_accounts`, `billing_subscriptions`, `billing_webhook_events`, `billing_plan_mappings` erstellen.
-3. Patreon MVP zuerst bauen (OAuth + `/webhooks/patreon` + Sync auf `user_settings.plan`).
-4. Danach Stripe Checkout + `/webhooks/stripe` + Portal.
+2. Billing-Service-Skeleton + Patreon MVP bauen (OAuth + `/webhooks/patreon` + Sync auf `user_settings.plan`).
+3. Danach Stripe Checkout + `/webhooks/stripe` + Portal.
+4. Optional fuer produktive Releases: SQL-Migrationen nachziehen (statt reinem AutoMigrate-Betrieb).
 
 ## Quellen (offizielle Doku)
 
@@ -319,3 +319,79 @@ Admin-View (spaeter):
 - Stripe Customer Portal: https://docs.stripe.com/customer-management/integrate-customer-portal
 - Stripe Webhooks (Signatur/Events): https://docs.stripe.com/webhooks
 - Stripe Idempotency: https://docs.stripe.com/api/idempotent_requests
+
+## Patreon MVP Konfiguration (ENV)
+
+Pflicht:
+
+- `PATREON_CLIENT_ID`
+- `PATREON_CLIENT_SECRET`
+- `PATREON_REDIRECT_URI` (z. B. `https://pixelfox.cc/user/settings/billing/patreon/callback`)
+- `PATREON_WEBHOOK_SECRET`
+- `PATREON_CAMPAIGN_URL` (z. B. `https://www.patreon.com/cw/PixelFoxcc`)
+
+Optional (mit Defaults im Code):
+
+- `PATREON_AUTHORIZE_URL` (Default: `https://www.patreon.com/oauth2/authorize`)
+- `PATREON_TOKEN_URL` (Default: `https://www.patreon.com/api/oauth2/token`)
+- `PATREON_API_BASE_URL` (Default: `https://www.patreon.com/api/oauth2/v2`)
+
+## Patreon Tier IDs finden (fuer `billing_plan_mappings`)
+
+Kurz: nutze die **Tier IDs aus der Patreon API**, nicht nur einen URL-Slug aus der Join-Seite.
+
+Empfohlener Weg:
+
+1. OAuth Token holen (mit den oben gesetzten Patreon OAuth Keys).
+2. Kampagnen-ID lesen (`GET /api/oauth2/v2/identity?include=campaign`).
+3. Tiers der Kampagne lesen (`GET /api/oauth2/v2/campaigns/{campaign_id}/tiers`).
+4. Die `data[].id` Werte als `provider_plan_ref` in `billing_plan_mappings` eintragen.
+
+Beispiel-Mapping:
+
+- `provider=patreon`
+- `provider_plan_ref=<tier_id_von_patreon>`
+- `internal_plan=premium` oder `premium_max`
+- `billing_interval=unknown` (bei Patreon initial)
+
+Hinweis zur Frage "sind das die IDs aus den Beitritts-Links?":
+
+- Der Link kann eine Tier-Referenz enthalten, aber verlass dich fuer das Backend-Mapping auf die API-ID (`tier.id`), damit es stabil bleibt.
+
+Aktuell ausgelesene IDs (Stand 2026-03-01, Campaign `14850240`):
+
+- `26897452` -> `Free` (0 EUR)
+- `28043047` -> `Premium` (3.99 EUR)
+- `28043053` -> `Premium-Max` (10.00 EUR)
+
+## ToDo / Fortschritt
+
+Stand: 2026-03-01
+
+### Bereits erledigt
+
+- [x] Architekturkonzept fuer Patreon-first + Stripe-later erstellt.
+- [x] Ist-Zustand im Projekt geprueft (Entitlements, `user_settings.plan`, OAuth/ProviderAccount, Routing, Pricing-View).
+- [x] Provider-neutrales Billing-Zielbild (`internal/pkg/billing`) beschrieben.
+- [x] Datenmodell fuer `billing_accounts`, `billing_subscriptions`, `billing_webhook_events`, `billing_plan_mappings` definiert.
+- [x] Sicherheits- und Betriebsaspekte dokumentiert (Signaturpruefung, Idempotenz, Reconciliation, Observability).
+- [x] Offizielle Patreon- und Stripe-Dokumentation als Referenz verlinkt.
+- [x] Billing-Modelle in `app/models` implementiert (`BillingAccount`, `BillingSubscription`, `BillingWebhookEvent`, `BillingPlanMapping`).
+- [x] AutoMigrate erweitert, damit die Billing-Tabellen beim naechsten Start automatisch erstellt werden.
+- [x] Billing Repository/Service-Skeleton (`internal/pkg/billing`) implementiert (`SyncSubscription`, `ReconcileUserPlan`, Webhook-Event-Idempotenz).
+- [x] Patreon OAuth-Linking (Connect + Callback) mit Membership-Sync auf `user_settings.plan` implementiert.
+- [x] `POST /webhooks/patreon` mit Signaturpruefung, idempotentem Event-Store und Subscription-Sync implementiert.
+- [x] Patreon ENV-Platzhalter in `.env*` und `docker/prod/.env.app.example` vorbereitet.
+- [x] Patreon Webhook-Signaturpruefung auf HMAC-MD5 (mit SHA256-Fallback) ausgerichtet.
+- [x] Patreon Tier-IDs ausgelesen und in `billing_plan_mappings` hinterlegt.
+- [x] User-Settings-Bereich fuer Billing-Verbindungen inkl. Patreon-Connect und manuellem Plan-Re-Sync umgesetzt.
+- [x] Billing aus den allgemeinen Einstellungen auf eigene Seite `/user/settings/membership` ausgelagert und im User-Menue verlinkt.
+- [x] Membership-UX verbessert: Hinweis/CTA falls Patreon verbunden ist, aber (noch) kein entitling Tier erkannt wurde.
+
+### Offene ToDos (naechste Umsetzungsschritte)
+
+- [ ] Stripe Price-Mapping finalisieren (Patreon Tier-Mapping ist bereits gesetzt).
+- [ ] Optional fuer produktive Releases: SQL-Migrationen fuer Billing-Tabellen anlegen (aktuell bewusst via AutoMigrate).
+- [ ] Stripe Checkout + Billing Portal + `POST /webhooks/stripe` implementieren.
+- [ ] Reconcile-Job + Admin-Debug-Ansicht ergaenzen.
+- [ ] Tests fuer Mapping, Webhooks, Idempotenz und Plan-Transitions schreiben.

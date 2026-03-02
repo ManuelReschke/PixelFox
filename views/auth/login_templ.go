@@ -101,7 +101,7 @@ func LoginIndex(fromProtected bool, csrfToken string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">Einloggen</button></footer></form><div class=\"divider w-96 mt-4\">oder</div><div class=\"card-actions justify-center w-96 px-8\"><a href=\"/register\" class=\"badge badge-secondary px-6 py-4 hover:scale-[1.1]\">Kostenlos registrieren</a></div></div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, ">Einloggen</button></footer></form><div class=\"divider w-96 mt-4\">oder</div><div class=\"card-actions justify-center w-96 px-8\"><a href=\"/register\" class=\"badge badge-secondary px-6 py-4 hover:scale-[1.1]\">Kostenlos Registrieren</a></div></div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

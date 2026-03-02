@@ -28,7 +28,7 @@ templ SettingsIndex(
             <h1 class="card-title border-b border-b-slate-600 pb-[4px]">
                 Einstellungen
             </h1>
-            <div class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8">
+            <div class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-[30rem] p-8">
                 {{
                     planClass := "badge-ghost badge-outline"
                     planLabel := "Free"
@@ -57,6 +57,13 @@ templ SettingsIndex(
                     <div class={ templ.KV("badge "+planClass, true) }>{ planLabel }</div>
                 </div>
                 
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="join w-full">
+                    <a href="/user/settings" class="btn btn-sm join-item btn-primary flex-1">Einstellungen</a>
+                    <a href="/user/settings/membership" class="btn btn-sm join-item btn-outline flex-1">Mitgliedschaft</a>
                 </div>
 
                 <div class="divider"></div>

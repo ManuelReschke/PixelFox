@@ -48,6 +48,7 @@ templ Navbar(appName string, layout viewmodel.Layout) {
                       </a>
                     </li>
                     <li><a href="/user/settings" class="hover:bg-base-200">Einstellungen</a></li>
+                    <li><a href="/user/settings/membership" class="hover:bg-base-200">Mitgliedschaft</a></li>
                     
                     if layout.IsAdmin {
                       <li>

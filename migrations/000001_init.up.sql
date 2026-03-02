@@ -37,3 +37,30 @@ INSERT INTO `storage_pools` (`id`, `name`, `base_path`, `max_size`, `used_size`,
 -- s02 - hot storage
 INSERT INTO `storage_pools` (`id`, `name`, `base_path`, `max_size`, `used_size`, `is_active`, `is_default`, `priority`, `storage_type`, `storage_tier`, `description`, `s3_access_key_id`, `s3_secret_access_key`, `s3_region`, `s3_bucket_name`, `s3_endpoint_url`, `s3_path_prefix`, `public_base_url`, `upload_api_url`, `node_id`, `created_at`, `updated_at`) VALUES
 (3, 'Server 2', '/app/uploads_s02', 322122547200, 0, 1, 0, 2, 'local', 'warm', 'Warm Storage s02', NULL, NULL, NULL, NULL, NULL, '', 'http://localhost:8083', 'http://app_s02:4000/api/internal/upload', 's02', '2025-10-17 09:49:45', '2025-10-17 09:50:14');
+
+-- Billing plan mappings (Patreon)
+-- Guarded by table existence because billing tables are currently managed by AutoMigrate.
+SET @has_billing_plan_mappings := (
+  SELECT COUNT(*)
+  FROM information_schema.tables
+  WHERE table_schema = DATABASE()
+    AND table_name = 'billing_plan_mappings'
+);
+
+SET @billing_plan_seed_sql := IF(
+  @has_billing_plan_mappings > 0,
+  "INSERT INTO `billing_plan_mappings` (`provider`, `provider_plan_ref`, `internal_plan`, `billing_interval`, `is_active`, `created_at`, `updated_at`) VALUES
+('patreon', 'none', 'free', 'unknown', 1, NOW(), NOW()),
+('patreon', '26897452', 'free', 'unknown', 1, NOW(), NOW()),
+('patreon', '28043047', 'premium', 'unknown', 1, NOW(), NOW()),
+('patreon', '28043053', 'premium_max', 'unknown', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+`internal_plan` = VALUES(`internal_plan`),
+`is_active` = VALUES(`is_active`),
+`updated_at` = NOW()",
+  "SELECT 1"
+);
+
+PREPARE stmt_billing_plan_seed FROM @billing_plan_seed_sql;
+EXECUTE stmt_billing_plan_seed;
+DEALLOCATE PREPARE stmt_billing_plan_seed;

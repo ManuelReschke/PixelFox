@@ -43,4 +43,7 @@ func (h HttpRouter) registerPublicRoutes(app *fiber.App) {
 	// Social OAuth
 	app.Get("/auth/:provider", gothfiber.BeginAuthHandler)
 	app.Get("/auth/:provider/callback", controllers.HandleOAuthCallback)
+
+	// Billing provider webhooks (no CSRF, signature-verified in controller)
+	app.Post("/webhooks/patreon", controllers.HandlePatreonWebhook)
 }
